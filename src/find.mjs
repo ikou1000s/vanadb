@@ -61,7 +61,7 @@ export function writeFind(ctx) {
   fs.writeFileSync(path.join(SITE, 'find.html'), head(`名前で探す（装備・アイテム・魔法・だいじなもの・クエスト）｜${SITE_SHORT}`,
     `FF11の装備・アイテム・魔法・だいじなもの・WS・アビリティ・クエスト・ミッション${rows.length.toLocaleString()}件を、名前の一部（日本語・英語・ひらがな）で探せます。`, `${ORIGIN}/find.html`)
     + `<main class="wide finder"><p class="crumb"><a href="${BASE}">トップ</a> › 名前で探す</p><h1>名前で探す</h1>
-<p class="lead">装備・アイテム・魔法・だいじなもの・WS・アビリティ・クエスト・ミッション ${rows.length.toLocaleString()}件から、名前の一部で探します。ひらがな・カタカナ・英語どれでも。空白で区切ると、すべてを含む物だけ出ます（例：「ニャメ 胴」）。</p>
+<p class="lead">装備・アイテム・魔法・だいじなもの・WS・アビリティ・クエスト・ミッション ${rows.length.toLocaleString()}件から、名前の一部で探します。ひらがな・カタカナ・英語どれでも。空白で区切ると、すべてを含む物だけ出ます（例：「ニャメ 胴」）。分類や場所・ストーリーの名前でもまとめて出せます（例：「プロマシア」「バストゥーク クエスト」「白魔法 ケアル」）。</p>
 <form class="findbig" action="${BASE}find.html" method="get" role="search"><input id="fq" name="q" type="search" placeholder="例：モグスーツ、ニャメ、ケアル、トラバーサー石、fire crystal" autocomplete="off" autofocus><button type="submit">探す</button></form>
 <div id="fkinds" class="chips"></div>
 <p id="fcount" class="count"></p>

@@ -3,7 +3,7 @@
   const BASE = '/';
   let data = null, loading = null;
   const load = () => loading || (loading = fetch(BASE + 'find.json').then(r => r.json()).then(d => {
-    d.rows.forEach(r => { r.k = norm(r[2]); r.e = norm(r[3]); });
+    d.rows.forEach(r => { r.k = norm(r[2]); r.e = norm(r[3]); r.s = r[0] === 2 ? norm(r[5]) : ''; }); // r.s＝場所・ストーリー（クエスト・ミッション・だいじなものの分類）
     return (data = d);
   }));
   // ひらがな→カタカナ、全角英数→半角、大文字→小文字、空白・中黒などは無視
@@ -23,7 +23,7 @@
       let score = 0, ok = true;
       for (const w of words) {
         const a = r.k.indexOf(w), b = r.e.indexOf(w);
-        if (a < 0 && b < 0) { if (kind === w || kind.includes(w)) { score += 1; continue; } ok = false; break; }
+        if (a < 0 && b < 0) { if (kind.includes(w) || (r.s && r.s.includes(w))) { score += 1; continue; } ok = false; break; }
         const pos = a >= 0 ? a : b, full = a >= 0 ? r.k : r.e;
         score += full === w ? 100 : pos === 0 ? 50 : 10;
       }
