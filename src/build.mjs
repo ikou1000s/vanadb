@@ -34,6 +34,32 @@ if (fs.existsSync(BLOG_SRC)) fs.copyFileSync(BLOG_SRC, BLOG_COPY);
 const blogUses = loadBlogUses(BLOG_COPY);
 const lsb = fs.existsSync(path.join(DATA, 'lsb.json')) ? JSON.parse(fs.readFileSync(path.join(DATA, 'lsb.json'), 'utf8')) : { sell: {}, flags: {}, fish: [], rods: [] };
 const rxTags = id => { const f = lsb.flags[id] || ''; return (f.includes('R') ? '<span class="rx rare">Rare</span>' : '') + (f.includes('E') ? '<span class="rx exc">Ex</span>' : ''); };
+const mobsData = fs.existsSync(path.join(DATA, 'mobs.json')) ? JSON.parse(fs.readFileSync(path.join(DATA, 'mobs.json'), 'utf8')) : { drops: {}, steal: {} };
+const zonesW = fs.existsSync(path.join(DATA, 'zones.lua')) ? readLua(path.join(DATA, 'zones.lua')) : new Map();
+const zoneJaById = id => (zonesW.get(id) || {}).ja || '';
+const CHANCE_JA = { always: '必ず', very_common: 'とても多い', common: '多い', uncommon: 'ふつう', rare: 'まれ', very_rare: 'とてもまれ', super_rare: 'ごくまれ' };
+const mobName = n => n.replace(/\s(war|mnk|whm|blm|rdm|thf|pld|drk|bst|brd|rng|sam|nin|drg|smn|blu|cor|pup|dnc|sch|geo|run)$/i, '');
+const questsData = fs.existsSync(path.join(DATA, 'quests.json')) ? JSON.parse(fs.readFileSync(path.join(DATA, 'quests.json'), 'utf8')) : { quests: [] };
+const rewardOf = new Map();
+{
+  const byEn = new Map(); for (const [id, it] of items) if (it.en && it.category !== 'Gil') { const k = it.en.toLowerCase(); if (!byEn.has(k)) byEn.set(k, id); }
+  for (const a of questsData.quests) for (const q of a.list) for (const x of (q.reward || '').split(/\s*(?:,|\/| and )\s*/)) {
+    const id = byEn.get(x.toLowerCase().replace(/^\d+x?\s+/, '')); if (!id) continue;
+    if (!rewardOf.has(id)) rewardOf.set(id, []); rewardOf.get(id).push([a.key, a.ja, q.ja || q.en]);
+  }
+}
+const acqHtml = id => {
+  const drops = (mobsData.drops[id] || []).map(([m, z, c, nm]) => [mobName(m), z, c, nm]);
+  const seen = new Set(); const dl = drops.filter(([m, z]) => { const k = m + '|' + z; if (seen.has(k)) return false; seen.add(k); return true; });
+  const steal = mobsData.steal[id] || [];
+  const qs = rewardOf.get(id) || [];
+  let h = '';
+  if (qs.length) h += '<h3>クエストの報酬</h3><ul class="acq">' + qs.map(([k, aja, qja]) => '<li><a href="' + BASE + 'quest/' + k + '.html">' + esc(qja) + '</a> <span class="nl">（' + esc(aja) + 'のクエスト）</span></li>').join('') + '</ul>';
+  if (dl.length) h += '<h3>ドロップ <span class="cnt">' + dl.length + '件</span></h3><ul class="acq drops">' + dl.slice(0, 40).map(([m, z, c, nm]) => '<li><b>' + esc(m) + '</b>' + (nm ? '<span class="tag nm">NM</span>' : '') + ' <span class="zn">' + esc(zoneJaById(z) || ('#' + z)) + '</span>' + (CHANCE_JA[c] ? ' <span class="ch ch-' + c + '">' + CHANCE_JA[c] + '</span>' : '') + '</li>').join('') + (dl.length > 40 ? '<li class="nl">ほか' + (dl.length - 40) + '件</li>' : '') + '</ul>';
+  if (steal.length) h += '<h3>ぬすむ</h3><ul class="acq">' + steal.slice(0, 20).map(([m, z]) => '<li><b>' + esc(mobName(m)) + '</b> <span class="zn">' + esc(zoneJaById(z)) + '</span></li>').join('') + '</ul>';
+  if (dl.length || steal.length) h += '<p class="note">ドロップ・ぬすむは有志のサーバー再現データ（LandSandBoat）。モンスター名は英語、出やすさは目安です。</p>';
+  return h;
+};
 const asof = JSON.parse(fs.readFileSync(path.join(DATA, 'asof.json'), 'utf8'));
 
 // 部位（Windower の slots のビット）→ 日本語。左右は1つにまとめる
@@ -245,7 +271,7 @@ ${Object.keys(st.pet).length ? `<h2>ペットの性能</h2><ul class="stats">${O
 ${Object.keys(st.cond).length ? `<p class="note">※潜在能力などの条件付きの性能は、内訳と絞り込みに含めていません（上のゲーム内の文を見てください）。</p>` : ''}
 ${variants.length > 1 ? `<h2>段階違い（＋1・＋2…）</h2>${tbl(variants)}` : ''}
 ${seriesOk ? `<h2>同じシリーズ</h2>${tbl(series.sort((a, b) => catOrder(a) - catOrder(b) || a.it.ja.localeCompare(b.it.ja, 'ja')))}` : ''}
-<h2>入手方法</h2>${recs.length ? `<p class="note">合成で作れます（有志のサーバー再現データ LandSandBoat のレシピ。数値は参考）。</p>${recs.slice(0, 4).map(recipeHtml).join('')}` : ''}
+<h2>入手方法</h2>${acqHtml(id)}${recs.length ? '<h3>合成</h3>' : ''}${recs.length ? `<p class="note">合成で作れます（有志のサーバー再現データ LandSandBoat のレシピ。数値は参考）。</p>${recs.slice(0, 4).map(recipeHtml).join('')}` : ''}
 <p class="note">${recs.length ? 'ほかの入手方法' : 'ドロップ・報酬・お店などの入手方法'}と、オーグメント（追加の性能）の中身は、<a href="${ffo(it.ja)}" rel="noopener" target="_blank">FF11用語辞典の「${esc(it.ja)}」</a>を見てください。</p>
 ${uses.length ? `<h2>この装備を使っているセット（姉妹ブログ）</h2><ul class="uses">${uses.map(u => `<li><a href="${u.url}">${esc(u.job)}：${esc(u.set)}</a> <span class="k">（${esc(u.parts.join('・'))}）</span></li>`).join('')}</ul>` : ''}
 ${sim.length ? `<h2>性能が近い装備（同じ${esc(kind)}・同じ帯）</h2>${tbl(sim)}` : ''}
@@ -396,7 +422,7 @@ fs.writeFileSync(path.join(SITE, 'search.html'), head(`性能で探す（ヘイ�
 const ICON = { head: '頭', body: '胴', hands: '手', legs: '脚', feet: '足', neck: '首', waist: '腰', back: '背', ear: '耳', ring: '指', shield: '盾', h2h: '拳', dagger: '短', sword: '剣', gsword: '大', axe: '斧', gaxe: '鉞', scythe: '鎌', polearm: '槍', katana: '刀', gkatana: '太', club: '棍', staff: '杖', archery: '弓', marksmanship: '銃', throwing: '投', wind: '笛', string: '琴', handbell: '鈴', fishing: '竿', ammo: '矢', grip: '握' };
 const tile = (href, label, n, ic, cls = '') => `<a class="tile ${cls}" href="${href}"><span class="ic">${esc(ic)}</span><span><b>${esc(label)}</b><span class="n">${n.toLocaleString()}件</span></span></a>`;
 const synthAll = fs.existsSync(path.join(DATA, 'synth.json')) ? JSON.parse(fs.readFileSync(path.join(DATA, 'synth.json'), 'utf8')) : [];
-const more = writeMore({ items, desc, JOB_LIST, skills, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE_SHORT, equipById, synth: synthAll, tile, VER, rxBadges, rxTags, lsb });
+const more = writeMore({ items, desc, JOB_LIST, skills, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE_SHORT, equipById, synth: synthAll, tile, VER, rxBadges, rxTags, lsb, acqHtml });
 console.log('装備以外', JSON.stringify(more.counts));
 const qs2 = writeQuests({ items, JOB_LIST, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE_SHORT, VER, tile });
 console.log('クエスト・ミッション', JSON.stringify(qs2.counts));
