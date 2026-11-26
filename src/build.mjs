@@ -11,6 +11,7 @@ import { writeQuests } from './quests.mjs';
 import { writeExtra } from './extra.mjs';
 import { writeSynth } from './synth.mjs';
 import { writeFishing } from './fishing.mjs';
+import { writeAugment } from './augment.mjs';
 import { writeGuild } from './guild.mjs';
 import { writeFind } from './find.mjs';
 
@@ -489,6 +490,8 @@ const sy = writeSynth({ items, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE_S
 console.log('合成レシピ', sy.count);
 const fi = writeFishing({ items, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE_SHORT, VER, tile, lsb, hasPage: id => equipById.has(id) || more.itemCatOf.has(id) });
 console.log('釣り', fi.count);
+const au = writeAugment({ items, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE_SHORT, VER, tile, hasPage: id => equipById.has(id) || more.itemCatOf.has(id) });
+console.log('オーグメント', au.count);
 const gu = writeGuild({ items, head, foot, esc, BASE, ORIGIN, SITE, SITE_SHORT, VER, tile, lsb, hasPage: id => equipById.has(id) || more.itemCatOf.has(id) });
 console.log('ギルドの納品', gu.count);
 const lk = writeLooks();
@@ -507,7 +510,7 @@ ${updates.slice(0, 2).map(u => updateBlock(u, false)).join('')}</section>
 ${more.home}
 ${sy.home}
 ${qs2.home}
-${ex.home.replace('</div></section>', fi.home + gu.home + lk.home + '</div></section>')}
+${ex.home.replace('</div></section>', fi.home + gu.home + au.home + lk.home + '</div></section>')}
 <section class="box" id="job"><h2>ジョブ別</h2><div class="tiles small">${JOB_LIST.map(j => tile(`${BASE}job/${j.ens.toLowerCase()}.html`, j.ja, equip.filter(e => (e.it.jobs || 0) & (1 << j.id)).length, j.jas, 'j')).join('')}</div></section>
 <section class="box" id="search"><h2>性能で探す</h2><p>ヘイスト・ファストキャスト・マジックバースト・被ダメージなど、性能の数値で絞り込んで大きい順に並べられます。 <a class="btn" href="${BASE}search.html">性能で探す</a></p>
 <div class="quick">${QUICK.map(([label, q]) => `<a href="${BASE}search.html?${q}">${esc(label)}</a>`).join('')}</div></section>
@@ -538,7 +541,7 @@ console.log('名前で探す', fd.count);
 // 検索エンジン向け
 fs.writeFileSync(path.join(SITE, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${ORIGIN}/sitemap.xml\n`);
 fs.writeFileSync(path.join(SITE, 'sitemap.xml'), '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-  + [`${ORIGIN}/`, `${ORIGIN}/new.html`, `${ORIGIN}/search.html`, `${ORIGIN}/about.html`, ...listPages, ...jobPages, ...more.urls, ...qs2.urls, ...ex.urls, ...sy.urls, ...fi.urls, ...gu.urls, ...lk.urls, ...fd.urls, ...equip.map(e => `${ORIGIN}/item/${e.id}.html`)].map(u => `<url><loc>${u}</loc></url>`).join('\n') + '\n</urlset>\n');
+  + [`${ORIGIN}/`, `${ORIGIN}/new.html`, `${ORIGIN}/search.html`, `${ORIGIN}/about.html`, ...listPages, ...jobPages, ...more.urls, ...qs2.urls, ...ex.urls, ...sy.urls, ...fi.urls, ...au.urls, ...gu.urls, ...lk.urls, ...fd.urls, ...equip.map(e => `${ORIGIN}/item/${e.id}.html`)].map(u => `<url><loc>${u}</loc></url>`).join('\n') + '\n</urlset>\n');
 fs.writeFileSync(path.join(SITE, '.nojekyll'), '');
 
 console.log(`装備 ${equip.length}件 / 性能の種類 ${STATS.length}（ペット ${petCount.size}） / データ ${asof.date}`);

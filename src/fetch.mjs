@@ -65,6 +65,7 @@ await import('./fetch_quests.mjs');
 
 // 売値・Rare/Ex・釣り（LandSandBoat・GPLv3）
 await import('./fetch_lsb.mjs');
+await import('./fetch_aug.mjs');
 
 // ドロップ・ぬすむ（LandSandBoat・GPLv3）
 await import('./fetch_mobs.mjs');

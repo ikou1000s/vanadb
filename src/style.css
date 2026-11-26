@@ -411,3 +411,9 @@ p.src{color:var(--sub);font-size:12px;margin-top:18px}
 .tbl.ab .r{grid-template-columns:52px 320px 140px 80px 70px 70px}
 .tbl.ab.nolv .r{grid-template-columns:320px 140px 80px 70px 70px}
 .tbl.ws .r{grid-template-columns:56px 280px 220px 190px 70px}
+
+/* オーグメント（augment.html） */
+.tbl.aug .r{grid-template-columns:minmax(170px,1.3fr) 64px minmax(260px,2.4fr) minmax(200px,1.6fr)}
+.tbl.aug .c-lv{color:var(--gold);font-size:12.5px}
+.aug{display:inline-block;font-size:12.5px;color:#cfe6ff;border:1px solid #3b5f8c;border-radius:4px;padding:0 5px;margin:1px 2px;white-space:nowrap}
+@media (max-width:860px){.tbl.aug .r{display:flex;flex-wrap:wrap;gap:0 8px}.tbl.aug .r>div{padding:4px 8px}.tbl.aug .c-n{flex:1 1 60%}}
