@@ -253,3 +253,11 @@ main.wide h2 .cnt{font-size:12.5px;color:var(--sub);font-weight:normal;margin-le
 .tbl.ws .r{grid-template-columns:minmax(220px,1.6fr) minmax(220px,2fr) 80px}
 .tbl.ab .r{grid-template-columns:minmax(240px,2fr) 60px 60px 80px}
 #items .tiles,#magic .tiles,#ki .tiles{grid-template-columns:repeat(auto-fill,minmax(178px,1fr))}
+
+/* 食事で探す */
+.tbl.foods .r{grid-template-columns:minmax(200px,1.3fr) minmax(300px,4fr)}
+.tbl.foods .r.hasv{grid-template-columns:minmax(200px,1.3fr) 130px minmax(280px,4fr)}
+.tbl.foods .c-v small{display:block;font-size:11px;color:var(--gold);font-weight:700;text-shadow:none}
+.stats li a{color:#dbe6fb}
+.tile.hot{border-color:var(--gold2);box-shadow:0 0 0 1px rgba(229,196,107,.35),0 0 12px rgba(229,196,107,.18)}
+@media (max-width:860px){.tbl.foods .r,.tbl.foods .r.hasv{display:flex;flex-wrap:wrap}.tbl.foods .c-n{flex:1 1 100%}}

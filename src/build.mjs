@@ -151,6 +151,7 @@ const css = fs.readFileSync(path.join(ROOT, 'src', 'style.css'), 'utf8');
 fs.writeFileSync(path.join(SITE, 'style.css'), css);
 fs.copyFileSync(path.join(ROOT, 'src', 'app.js'), path.join(SITE, 'app.js'));
 fs.copyFileSync(path.join(ROOT, 'src', 'list.js'), path.join(SITE, 'list.js'));
+fs.copyFileSync(path.join(ROOT, 'src', 'food.js'), path.join(SITE, 'food.js'));
 
 const head = (title, description, canonical) => `<!DOCTYPE html>
 <html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
@@ -158,7 +159,7 @@ const head = (title, description, canonical) => `<!DOCTYPE html>
 <link rel="stylesheet" href="${BASE}style.css?v=${VER}">
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE}" crossorigin="anonymous"></script></head><body>
 <header class="top"><div class="in"><a class="brand" href="${BASE}">ヴァナDB<small>FF11 データベース</small></a><span class="asof">データ ${esc(asof.date)} 時点（${esc(asof.note)}）</span></div>
-<nav class="gnav"><a class="new" href="${BASE}new.html">新装備・新アイテム</a><a href="${BASE}#armor">防具</a><a href="${BASE}#weapon">武器</a><a href="${BASE}#items">アイテム</a><a href="${BASE}#magic">魔法</a><a href="${BASE}ws/index.html">WS</a><a href="${BASE}ability/index.html">アビリティ</a><a href="${BASE}#ki">だいじなもの</a><a href="${BASE}#job">ジョブ別</a><a href="${BASE}search.html">性能で探す</a></nav></header>`;
+<nav class="gnav"><a class="new" href="${BASE}new.html">新装備・新アイテム</a><a href="${BASE}#armor">防具</a><a href="${BASE}#weapon">武器</a><a href="${BASE}#items">アイテム</a><a href="${BASE}#magic">魔法</a><a href="${BASE}ws/index.html">WS</a><a href="${BASE}ability/index.html">アビリティ</a><a href="${BASE}#ki">だいじなもの</a><a href="${BASE}#job">ジョブ別</a><a href="${BASE}search.html">性能で探す</a><a href="${BASE}food.html">食事で探す</a></nav></header>`;
 const foot = `<footer class="foot"><p>装備の名前と性能の文はゲーム内の表記（データの出典：<a href="https://github.com/Windower/Resources" rel="noopener">Windower Resources</a>）。誤りに気づいたら教えてください。</p>
 <p>姉妹サイト：<a href="https://ff11ikou.blog.fc2.com/">【 FF11 】いこう！ の実験＆実用メモ帳</a>（ジョブ別の装備セットと選んだ理由）</p>
 <p><a href="${BASE}about.html">このサイトについて・プライバシーポリシー・お問い合わせ</a></p>

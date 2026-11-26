@@ -50,7 +50,7 @@ export function writeMore(ctx) {
     else if (it.type === 8) c = 'crystal';
     else if (it.type === 10) c = 'furnishing';
     else if (it.category === 'Usable' && /^scroll of /i.test(it.en || '')) c = 'scroll';
-    else if (it.category === 'Usable' && /[+＋]\d/.test(d) && !/秘薬|薬/.test(d)) c = 'food';
+    else if (it.category === 'Usable' && /[+＋]\d/.test(d) && !/秘薬|薬|『|入った/.test(d)) c = 'food';
     else if (it.category === 'Usable') c = 'medicine';
     else if (usedIn.has(id)) c = 'material';
     itemCatOf.set(id, c);
@@ -77,6 +77,49 @@ ${catNavItems(key)}${pager(pages, p, `items/${key}`)}
   }
   function catNavItems(cur) { return `<nav class="catnav"><div><span class="lbl">アイテム</span>${ITEM_CATS.map(([k, ja]) => k === cur ? `<b>${esc(ja)}</b>` : `<a href="${BASE}items/${k}.html">${esc(ja)}</a>`).join('')}</div></nav>`; }
 
+  // ── 食事の効果で探す（説明文を効果に分ける：「攻+12% (最大75)」→ 割合12・上限75）
+  const FOOD_RE = /(ペット[:：])|([^\s\n+\-:：＋"「」（）()\[\]『』×]+?)([+\-＋]\d+)(%?)(?:\s*[（(]最大(\d+)[）)])?/g;
+  const parseFood = d => {
+    const s = {}, p = {}; let tgt = s;
+    for (const m of d.matchAll(FOOD_RE)) {
+      if (m[1]) { tgt = p; continue; }
+      const k = m[2] + (m[4] ? '%' : ''), v = Number(m[3].replace('＋', '+'));
+      if (!(k in tgt)) tgt[k] = m[5] ? [v, Number(m[5])] : [v];
+    }
+    return { s, p };
+  };
+  const foods = [...itemCatOf].filter(([, c]) => c === 'food').map(([id]) => {
+    const it = items.get(id), d = ((desc.get(id) || {}).ja || '').trim();
+    const { s, p } = parseFood(d);
+    return { i: id, n: it.ja, e: it.en, d: d.replace(/\n+/g, '　'), s, p };
+  }).filter(f => Object.keys(f.s).length || Object.keys(f.p).length);
+  const foodStats = new Map(), petStats = new Map();
+  for (const f of foods) { for (const k of Object.keys(f.s)) foodStats.set(k, (foodStats.get(k) || 0) + 1); for (const k of Object.keys(f.p)) petStats.set(k, (petStats.get(k) || 0) + 1); }
+  const FOOD_GENRES = [
+    ['基本', ['HP', 'HP%', 'MP', 'MP%', 'STR', 'DEX', 'VIT', 'AGI', 'INT', 'MND', 'CHR']],
+    ['物理', ['命中', '命中%', '攻', '攻%', 'ストアTP', 'ダブルアタック%', 'トリプルアタック%', 'ウェポンスキルのダメージ%']],
+    ['遠隔', ['飛命', '飛命%', '飛攻', '飛攻%']],
+    ['魔法', ['魔攻', '魔命', '魔命%', '魔防', '魔回避', '魔回避%', 'ファストキャスト%', 'マジックバーストダメージII']],
+    ['防御', ['防', '防%', '回避', '回避%', '敵対心', 'モクシャ', 'カウンター']],
+    ['回復', ['リジェネ', 'リフレシュ', 'ヒーリングHP', 'ヒーリングMP']],
+  ];
+  const fUsed = new Set(FOOD_GENRES.flatMap(([, l]) => l));
+  const fAuto = (name, test) => { const l = [...foodStats.keys()].filter(k => !fUsed.has(k) && test(k)).sort((a, b) => foodStats.get(b) - foodStats.get(a)); l.forEach(k => fUsed.add(k)); return [name, l]; };
+  FOOD_GENRES.push(fAuto('キラー・レジスト・耐性', k => /キラー$|^レジスト|^耐/.test(k)));
+  FOOD_GENRES.push(fAuto('合成・釣り', k => /合成|ハイクォリティー|釣り/.test(k)));
+  FOOD_GENRES.push(fAuto('そのほか', () => true));
+  const foodGenres = FOOD_GENRES.map(([g, l]) => [g, l.filter(k => foodStats.has(k)).map(k => [k, foodStats.get(k)])]).filter(([, l]) => l.length);
+  const petList = [...petStats].sort((a, b) => b[1] - a[1]);
+  write('food.html', head(`食事の効果で探す（${foods.length}品）｜攻・命中・魔攻・リジェネなど｜${SITE_SHORT}`,
+    `FF11の食事${foods.length}品を、効果（攻%・命中・飛攻・魔攻・魔命・リジェネ・リフレシュ・ストアTPなど）の大きい順に並べられます。割合の物は上限（最大）でも比べられます。`, `${ORIGIN}/food.html`)
+    + `<main class="finder">${crumb('アイテム', '食事の効果で探す')}<h1>食事の効果で探す <span class="cnt">${foods.length}品</span></h1>
+<p class="lead">効果のボタンを押すと、その効果が大きい順に並びます。「攻+12%（最大75）」のような割合の物は、上限（最大）の大きい順に並べ、同じなら割合で並べます。ペットへの効果は下の段で選べます。</p>
+<div class="ctl"><div class="row"><label>効果</label><div class="statpick" id="fpick"></div></div>
+<div class="row"><label>名前</label><input id="fq" type="search" placeholder="食事の名前の一部（日本語・英語）"></div></div>
+<p id="fcount" class="count"></p><div id="flist" class="tbl foods"></div></main>
+<script>window.FOOD=${JSON.stringify({ foods, genres: foodGenres, pet: petList }).replace(/</g, '\\u003c')};</script><script src="${BASE}food.js?v=${VER}"></script>` + foot);
+
+  const foodById = new Map(foods.map(f => [f.i, f]));
   // アイテム1件のページ（作り方・使い道・スクロールの魔法）
   const SK = r => Object.entries(r.skills).map(([k, v]) => `<span class="bd">${esc(k)} ${v}</span>`).join('');
   for (const [id, c] of itemCatOf) {
@@ -92,6 +135,7 @@ ${catNavItems(key)}${pager(pages, p, `items/${key}`)}
 <div class="badges"><a class="bd cat" href="${BASE}items/${c}.html">${esc(cj[1])}</a>${it.stack > 1 ? `<span class="bd">スタック ${it.stack}</span>` : '<span class="bd">スタックなし</span>'}</div></section>
 <div class="ingame">${esc(d).replace(/\n/g, '<br>') || '（説明なし）'}</div>
 <div class="extl"><a href="${ffo(it.ja)}" rel="noopener" target="_blank">FF11用語辞典で見る（入手方法など）</a><a href="https://www.bg-wiki.com/ffxi/${encodeURIComponent((it.en || '').replace(/ /g, '_'))}" rel="noopener" target="_blank">BG-Wiki（英語）</a><a href="https://jp.ffxiah.com/item/${id}" rel="noopener" target="_blank">FFXIAH（競売の相場）</a></div>
+${foodById.has(id) ? `<h2>食事の効果</h2><ul class="stats">${Object.entries(foodById.get(id).s).map(([k, a]) => `<li><a href="${BASE}food.html?stat=${encodeURIComponent(k)}">${esc(k.replace(/%$/, ''))}</a> <b>${a[0] > 0 ? '+' : ''}${a[0]}${/%$/.test(k) ? '%' : ''}${a[1] != null ? `（最大${a[1]}）` : ''}</b></li>`).join('')}</ul>${Object.keys(foodById.get(id).p).length ? `<h2>ペットへの効果</h2><ul class="stats">${Object.entries(foodById.get(id).p).map(([k, a]) => `<li>${esc(k.replace(/%$/, ''))} <b>${a[0] > 0 ? '+' : ''}${a[0]}${/%$/.test(k) ? '%' : ''}${a[1] != null ? `（最大${a[1]}）` : ''}</b></li>`).join('')}</ul>` : ''}<p class="note">効果の名前を押すと、その効果の大きい順に食事が並びます（<a href="${BASE}food.html">食事の効果で探す</a>）。</p>` : ''}
 ${sp ? `<h2>この巻物で覚える魔法</h2><p><a class="bd cat" href="${BASE}spell/${sp.id}.html">${esc(sp.ja)}</a></p>` : ''}
 ${made.length ? `<h2>作り方（合成）</h2><p class="note">有志のサーバー再現データ（LandSandBoat）のレシピ。数値は参考。</p>${made.slice(0, 6).map(r => `<div class="recipe"><div class="rq">${SK(r)}<span class="bd">${esc(iname(r.crystal))}</span></div><div class="ri">${r.ings.map(([i, n]) => `${ilink(i)}${n > 1 ? ` ×${n}` : ''}`).join('　')}</div><div class="ro">→ NQ：${ilink(r.result)}${r.hq.filter(Boolean).length ? `　HQ：${[...new Set(r.hq.filter(Boolean))].map(ilink).join('・')}` : ''}</div></div>`).join('')}` : ''}
 ${uses.length ? `<h2>使い道（この素材で作れる物 ${uses.length}品）</h2><p class="same">${uses.sort((a, b) => iname(a).localeCompare(iname(b), 'ja')).slice(0, 120).map(x => (equipById.has(x) || itemCatOf.has(x)) ? `<a href="${BASE}item/${x}.html">${esc(iname(x))}</a>` : `<b>${esc(iname(x))}</b>`).join('')}</p>` : ''}
@@ -173,10 +217,10 @@ ${JA_TYPES.filter(([t]) => abByType.has(t)).map(([t, k, ja]) => `<h2 id="ab-${k}
 </main><script src="${BASE}list.js?v=${VER}"></script>` + foot);
 
   // ── トップに出す節
-  const home = `<section class="box" id="items"><h2>アイテム（装備以外 ${[...itemCount.values()].reduce((a, b) => a + b, 0).toLocaleString()}件）</h2><div class="tiles">${ITEM_CATS.filter(([k]) => itemCount.get(k)).map(([k, ja, ic]) => tile(`${BASE}items/${k}.html`, ja, itemCount.get(k), ic, 'it')).join('')}</div></section>
+  const home = `<section class="box" id="items"><h2>アイテム（装備以外 ${[...itemCount.values()].reduce((a, b) => a + b, 0).toLocaleString()}件）</h2><div class="tiles">${ITEM_CATS.filter(([k]) => itemCount.get(k)).map(([k, ja, ic]) => tile(`${BASE}items/${k}.html`, ja, itemCount.get(k), ic, 'it')).join('')}${tile(`${BASE}food.html`, '食事の効果で探す', foods.length, '探', 'it hot')}</div></section>
 <section class="box" id="magic"><h2>魔法（${[...spCount.values()].reduce((a, b) => a + b, 0)}件）</h2><div class="tiles">${SPELL_TYPES.map(([, k, ja]) => tile(`${BASE}magic/${k}.html`, ja, spCount.get(k) || 0, ja[0], 'mg')).join('')}</div></section>
 <section class="box" id="ws"><h2>ウェポンスキル・アビリティ</h2><div class="tiles">${tile(`${BASE}ws/index.html`, 'ウェポンスキル', [...wsBySkill.values()].flat().length, '技', 'w')}${tile(`${BASE}ability/index.html`, 'アビリティ', [...abByType.values()].flat().length, '能', 'w')}</div></section>
 <section class="box" id="ki"><h2>だいじなもの（${[...kiByCat.values()].flat().length.toLocaleString()}件）</h2><div class="tiles">${kiCats.map(c => tile(`${BASE}ki/${KI_KEY[c] || 'other'}.html`, KI_JA[c] || c, kiByCat.get(c).length, (KI_JA[c] || c)[0], 'ki')).join('')}</div></section>`;
-  const counts = { items: [...itemCount.values()].reduce((a, b) => a + b, 0), ki: [...kiByCat.values()].flat().length, spells: [...spCount.values()].reduce((a, b) => a + b, 0), ws: [...wsBySkill.values()].flat().length, ab: [...abByType.values()].flat().length };
+  const counts = { foods: foods.length, items: [...itemCount.values()].reduce((a, b) => a + b, 0), ki: [...kiByCat.values()].flat().length, spells: [...spCount.values()].reduce((a, b) => a + b, 0), ws: [...wsBySkill.values()].flat().length, ab: [...abByType.values()].flat().length };
   return { home, urls, counts, itemCatOf };
 }
