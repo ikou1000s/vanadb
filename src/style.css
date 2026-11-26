@@ -1,0 +1,43 @@
+:root{--bg:#f6f4ef;--card:#fff;--ink:#222;--sub:#666;--line:#e2ddd2;--acc:#3a5a8c;--acc2:#8a6d3b;--chip:#eef1f6}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;font-size:15px;line-height:1.6}
+a{color:var(--acc)}
+.top{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;padding:10px 16px;background:#24324a;color:#fff}
+.top .brand{color:#fff;font-weight:bold;font-size:17px;text-decoration:none}
+.top .asof{font-size:12px;color:#c9d3e3}
+main{max-width:980px;margin:0 auto;padding:12px 16px}
+.ctl{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:6px 0}
+.row>label{width:4.5em;font-size:13px;color:var(--sub);flex:none}
+.chips{display:flex;flex-wrap:wrap;gap:4px;flex:1}
+.chip{border:1px solid var(--line);background:var(--chip);border-radius:14px;padding:2px 9px;font-size:13px;cursor:pointer;user-select:none}
+.chip.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+select,input[type=number],input[type=search]{font-size:14px;padding:4px 6px;border:1px solid #cfc8b8;border-radius:5px;background:#fff;max-width:100%}
+input[type=number]{width:4.2em}
+input[type=search]{flex:1;min-width:12em}
+.ck{font-size:13px;color:var(--sub);display:flex;align-items:center;gap:3px;margin-left:8px}
+.count{font-size:13px;color:var(--sub);margin:10px 2px 4px}
+.list{display:grid;gap:6px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:7px;padding:7px 10px}
+.card .nm{font-weight:bold}
+.card .k{font-size:12px;color:var(--sub);margin-left:6px}
+.card .v{float:right;font-weight:bold;color:var(--acc2)}
+.card .s{font-size:12.5px;color:#444;margin-top:2px;overflow-wrap:anywhere}
+.card .s b{color:#24324a}
+.more{text-align:center}
+.more button{font-size:14px;padding:6px 18px;border:1px solid var(--acc);background:#fff;color:var(--acc);border-radius:6px;cursor:pointer}
+.item h1{font-size:22px;margin:4px 0 10px}
+.crumb{font-size:13px;margin:0}
+.ingame{background:#1f2633;color:#f2efe6;border-radius:8px;padding:10px 12px;font-size:14.5px;line-height:1.7}
+.spec{border-collapse:collapse;margin:12px 0;width:100%;max-width:560px;background:var(--card)}
+.spec th,.spec td{border:1px solid var(--line);padding:5px 8px;text-align:left;font-size:14px}
+.spec th{width:6.5em;background:#f1ede4;font-weight:normal;color:var(--sub)}
+.item h2{font-size:16px;margin:14px 0 6px;border-left:4px solid var(--acc2);padding-left:6px}
+.stats{list-style:none;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:4px}
+.stats li{background:var(--card);border:1px solid var(--line);border-radius:5px;padding:2px 8px;font-size:13.5px}
+.note{font-size:12.5px;color:var(--sub)}
+.foot{max-width:980px;margin:24px auto 0;padding:12px 16px 28px;font-size:12px;color:var(--sub);border-top:1px solid var(--line)}
+.foot .cr{font-size:11px}
+@media (max-width:560px){.row>label{width:100%}.card .v{float:none;display:block}}
+.uses{margin:0;padding-left:1.2em}.uses li{margin:2px 0}.uses .k{font-size:12px;color:var(--sub)}
+.same{line-height:2}
