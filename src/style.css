@@ -41,3 +41,14 @@ input[type=search]{flex:1;min-width:12em}
 @media (max-width:560px){.row>label{width:100%}.card .v{float:none;display:block}}
 .uses{margin:0;padding-left:1.2em}.uses li{margin:2px 0}.uses .k{font-size:12px;color:var(--sub)}
 .same{line-height:2}
+.intro h1{font-size:20px;margin:2px 0 6px}
+.intro p{margin:0 0 8px;font-size:14px}
+.quick,.recent{font-size:13px;margin:6px 0;line-height:2}
+.quick a,.recent a,.recent .nl{display:inline-block;margin-right:10px}
+.recent .vu{display:inline-block;background:#24324a;color:#fff;border-radius:4px;padding:0 6px;margin-right:6px;font-size:12px}
+.nl{color:var(--sub)}
+.tw{overflow-x:auto;margin:10px 0}
+.grid{border-collapse:collapse;background:var(--card);font-size:13.5px;white-space:nowrap}
+.grid th,.grid td{border:1px solid var(--line);padding:4px 8px;text-align:center}
+.grid tr:first-child th{background:#f1ede4;font-weight:normal;color:var(--sub)}
+.grid td a{font-weight:bold}

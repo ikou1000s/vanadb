@@ -155,10 +155,70 @@ ${Object.keys(st.cond).length ? `<p class="note">※潜在能力などの条件�
   fs.writeFileSync(path.join(SITE, 'item', `${id}.html`), html);
 }
 
+// よく使う絞り込み（トップのリンク）
+const qs = o => Object.entries(o).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&amp;');
+const jobId = ens => JOB_LIST.find(j => j.ens === ens).id;
+const QUICK = [
+  ['忍者・頭のヘイスト', qs({ job: jobId('NIN'), slot: '頭', stat: 'ヘイスト%' })],
+  ['赤魔・胴のファストキャスト', qs({ job: jobId('RDM'), slot: '胴', stat: 'ファストキャスト%' })],
+  ['黒魔・MBダメージ', qs({ job: jobId('BLM'), stat: 'マジックバーストダメージ' })],
+  ['全ジョブ・被ダメージ', qs({ stat: '被ダメージ%' })],
+  ['戦士・WSダメージ', qs({ job: jobId('WAR'), stat: 'ウェポンスキルのダメージ%' })],
+  ['白魔・ケアル回復量', qs({ job: jobId('WHM'), stat: 'ケアル回復量%' })],
+  ['ストアTP', qs({ stat: 'ストアTP' })],
+  ['移動速度', qs({ stat: '移動速度%' })],
+];
+
+// 最近のバージョンアップで増えた物（data/updates.json＝fetch で作る）
+const updates = fs.existsSync(path.join(DATA, 'updates.json')) ? JSON.parse(fs.readFileSync(path.join(DATA, 'updates.json'), 'utf8')) : [];
+const equipIds = new Set(equip.map(e => e.id));
+const recentHtml = updates.length ? `<div class="recent"><b>最近のバージョンアップで増えた物：</b>${updates.map(u => `<span class="vu">${esc(u.label)}</span>`
+  + (u.ids.length ? u.ids.map(id => { const it = items.get(id); if (!it || !it.ja) return ''; return equipIds.has(id) ? `<a href="${BASE}item/${id}.html">${esc(it.ja)}</a>` : `<span class="nl">${esc(it.ja)}</span>`; }).filter(Boolean).join('') : '<span class="nl">（増えた物なし）</span>')).join('')}</div>` : '';
+
+// ジョブ別のページ：部位×性能の入口と、姉妹ブログの記事
+const ROLE = {
+  melee: ['ヘイスト%', '命中', 'ダブルアタック%', 'ストアTP', 'ウェポンスキルのダメージ%', 'クリティカルヒット%', '被ダメージ%'],
+  mage: ['ファストキャスト%', '魔攻', '魔命', 'マジックバーストダメージ', 'ケアル回復量%', 'リフレシュ', '被ダメージ%'],
+  tank: ['被ダメージ%', '敵対心', 'HP', '魔回避', 'ヘイスト%', 'ファストキャスト%', '物理ダメージ上限%'],
+};
+const JOB_ROLE = { WHM: 'mage', BLM: 'mage', RDM: 'mage', SMN: 'mage', SCH: 'mage', GEO: 'mage', BRD: 'mage', PLD: 'tank', RUN: 'tank' };
+const BLOG_JOB = { MNK: 89, RDM: 73, THF: 124, BST: 168, BRD: 154, NIN: 113, DRG: 60, SMN: 68, BLU: 169, COR: 54, PUP: 131, SCH: 67, GEO: 104, RUN: 71 };
+fs.mkdirSync(path.join(SITE, 'job'), { recursive: true });
+const jobPages = [];
+for (const j of JOB_LIST) {
+  const mine = equip.filter(e => (e.it.jobs || 0) & (1 << j.id));
+  const il119 = mine.filter(e => e.it.item_level === 119).length;
+  const stats = ROLE[JOB_ROLE[j.ens] || 'melee'].filter(k => statIdx.has(k));
+  const slotsOf = SLOT_GROUPS.filter(([, , mask]) => mine.some(e => e.it.slots & mask));
+  const cell = (slot, k) => {
+    const n = mine.filter(e => e.it.slots & SLOT_GROUPS.find(s => s[1] === slot)[2] && k in e.st.main).length;
+    return n ? `<a href="${BASE}?${qs({ job: j.id, slot, stat: k })}">${n}</a>` : '<span class="nl">—</span>';
+  };
+  const blog = BLOG_JOB[j.ens] ? `<p>このジョブの装備セットと選んだ理由は、姉妹ブログの <a href="https://ff11ikou.blog.fc2.com/blog-entry-${BLOG_JOB[j.ens]}.html">${esc(j.ja)}の装備の記事</a> にまとめています。</p>` : '';
+  const url = `${ORIGIN}/job/${j.ens.toLowerCase()}.html`;
+  jobPages.push(url);
+  fs.writeFileSync(path.join(SITE, 'job', `${j.ens.toLowerCase()}.html`), head(`${j.ja}の装備｜部位×性能で探す｜${SITE_SHORT}`,
+    `FF11 ${j.ja}が装備できる${mine.length.toLocaleString()}件（IL119は${il119}件）を、部位と性能（${stats.slice(0, 4).map(k => k.replace(/%$/, '')).join('・')}など）で絞り込めます。`, url)
+    + `<main class="item"><p class="crumb"><a href="${BASE}">装備を探す</a> › ジョブ別</p><h1>${esc(j.ja)}の装備</h1>
+<p>${esc(j.ja)}が装備できる物は ${mine.length.toLocaleString()}件（そのうち IL119 は ${il119}件）。下の表の数字を押すと、その部位でその性能が付いた装備が大きい順に並びます。</p>
+${blog}
+<div class="tw"><table class="grid"><tr><th>部位</th>${stats.map(k => `<th>${esc(k.replace(/%$/, ''))}</th>`).join('')}</tr>
+${slotsOf.map(([, ja]) => `<tr><th><a href="${BASE}?${qs({ job: j.id, slot: ja })}">${ja}</a></th>${stats.map(k => `<td>${cell(ja, k)}</td>`).join('')}</tr>`).join('\n')}</table></div>
+<p class="note">数字は、その性能が付いている装備の件数です（潜在能力などの条件付きの性能とオーグメントは数えていません）。</p>
+<h2>ほかのジョブ</h2><p class="same">${JOB_LIST.map(o => o.id === j.id ? `<b>${esc(o.ja)}</b>` : `<a href="${BASE}job/${o.ens.toLowerCase()}.html">${esc(o.ja)}</a>`).join('　')}</p>
+</main>` + foot);
+}
+
 // トップ（絞り込み）
 fs.writeFileSync(path.join(SITE, 'index.html'), head(`${SITE_NAME}｜ジョブ・部位・性能で探せる（最新のバージョンアップまで）`,
   `FF11の装備${equip.length.toLocaleString()}件を、ジョブ・部位・ヘイストやファストキャストなどの性能で絞り込んで並べ替えられるデータベース。毎月のバージョンアップの新装備まで入っています。`, `${ORIGIN}/`)
   + `<main class="finder">
+<section class="intro"><h1>FF11の装備を、ジョブ・部位・性能で探す</h1>
+<p>ヴァナDBは、FF11の装備${equip.length.toLocaleString()}件を、ジョブ・部位・性能（ヘイスト・ファストキャスト・マジックバーストなど）で絞り込み、大きい順に並べられるデータベースです。毎日、最新のデータを取り込んでいます（${esc(asof.note)}）。装備の名前を押すと、性能の内訳と、姉妹ブログでその装備を使っているセットが見られます。</p>
+<div class="quick"><b>よく使う絞り込み：</b>${QUICK.map(([label, q]) => `<a href="${BASE}?${q}">${esc(label)}</a>`).join('')}</div>
+<div class="quick"><b>ジョブ別：</b>${JOB_LIST.map(j => `<a href="${BASE}job/${j.ens.toLowerCase()}.html">${esc(j.ja)}</a>`).join('')}</div>
+${recentHtml}
+</section>
 <div class="ctl">
  <div class="row"><label>ジョブ</label><div id="jobs" class="chips"></div></div>
  <div class="row"><label>部位</label><div id="slots" class="chips"></div></div>
@@ -194,7 +254,7 @@ fs.writeFileSync(path.join(SITE, 'ads.txt'), `google.com, ${ADSENSE.replace('ca-
 // 検索エンジン向け
 fs.writeFileSync(path.join(SITE, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${ORIGIN}/sitemap.xml\n`);
 fs.writeFileSync(path.join(SITE, 'sitemap.xml'), '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-  + [`${ORIGIN}/`, `${ORIGIN}/about.html`, ...equip.map(e => `${ORIGIN}/item/${e.id}.html`)].map(u => `<url><loc>${u}</loc></url>`).join('\n') + '\n</urlset>\n');
+  + [`${ORIGIN}/`, `${ORIGIN}/about.html`, ...jobPages, ...equip.map(e => `${ORIGIN}/item/${e.id}.html`)].map(u => `<url><loc>${u}</loc></url>`).join('\n') + '\n</urlset>\n');
 fs.writeFileSync(path.join(SITE, '.nojekyll'), '');
 
 console.log(`装備 ${equip.length}件 / 性能の種類 ${STATS.length}（ペット ${petCount.size}） / データ ${asof.date}`);

@@ -2,3 +2,4 @@ site/
 data/*.lua
 data/asof.json
 node_modules/
+data/updates.json
