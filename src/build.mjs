@@ -89,78 +89,166 @@ const LOWER_BETTER = /^(被.*ダメージ|敵対心|.*詠唱時間|.*使用間�
 fs.rmSync(SITE, { recursive: true, force: true });
 fs.mkdirSync(path.join(SITE, 'item'), { recursive: true });
 
+// ── カテゴリー（防具＝部位、武器＝種類）。1つの装備は1つのカテゴリーに入る
+const ARMOR_CATS = [
+  ['head', '頭', e => e.it.category === 'Armor' && e.it.slots === 16],
+  ['body', '胴', e => e.it.category === 'Armor' && e.it.slots === 32],
+  ['hands', '両手', e => e.it.category === 'Armor' && e.it.slots === 64],
+  ['legs', '両脚', e => e.it.category === 'Armor' && e.it.slots === 128],
+  ['feet', '両足', e => e.it.category === 'Armor' && e.it.slots === 256],
+  ['neck', '首', e => e.it.category === 'Armor' && e.it.slots === 512],
+  ['waist', '腰', e => e.it.category === 'Armor' && e.it.slots === 1024],
+  ['back', '背', e => e.it.category === 'Armor' && e.it.slots === 32768],
+  ['ear', '耳', e => e.it.category === 'Armor' && (e.it.slots & 6144) && !(e.it.slots & ~6144)],
+  ['ring', '指', e => e.it.category === 'Armor' && (e.it.slots & 24576) && !(e.it.slots & ~24576)],
+  ['shield', '盾', e => e.it.category === 'Armor' && e.it.slots === 2],
+];
+const W = (key, ja, test) => [key, ja, test];
+const mainW = s => e => e.it.category === 'Weapon' && (e.it.slots & 1) && e.skill === s;
+const rangeW = s => e => e.it.category === 'Weapon' && e.it.slots === 4 && e.skill === s;
+const WEAPON_CATS = [
+  W('h2h', '格闘', mainW('格闘')), W('dagger', '短剣', mainW('短剣')), W('sword', '片手剣', mainW('片手剣')), W('gsword', '両手剣', mainW('両手剣')),
+  W('axe', '片手斧', mainW('片手斧')), W('gaxe', '両手斧', mainW('両手斧')), W('scythe', '両手鎌', mainW('両手鎌')), W('polearm', '両手槍', mainW('両手槍')),
+  W('katana', '片手刀', mainW('片手刀')), W('gkatana', '両手刀', mainW('両手刀')), W('club', '片手棍', mainW('片手棍')), W('staff', '両手棍', mainW('両手棍')),
+  W('archery', '弓術', rangeW('弓術')), W('marksmanship', '射撃', rangeW('射撃')), W('throwing', '投てき', rangeW('投てき')),
+  W('wind', '管楽器', rangeW('管楽器')), W('string', '弦楽器', rangeW('弦楽器')), W('handbell', '風水鈴', rangeW('風水鈴')), W('fishing', '釣り竿', rangeW('釣り')),
+  W('ammo', '矢弾', e => e.it.slots === 8), W('grip', 'グリップ', e => e.it.category === 'Weapon' && e.it.slots === 2),
+];
+const ALL_CATS = [...ARMOR_CATS.map(c => [...c, 'armor']), ...WEAPON_CATS.map(c => [...c, 'weapon'])];
+const catOf = new Map();
+for (const e of equip) { const c = ALL_CATS.find(([, , t]) => t(e)); if (c) catOf.set(e.id, c); }
+
+// レベルの区切り（ff11db と同じく、Lv と IL の帯で並べる）
+const BANDS = ['IL119', 'IL117〜118', 'IL113〜116', 'IL100〜112', 'Lv99', 'Lv91〜98', 'Lv81〜90', 'Lv76〜80', 'Lv71〜75', 'Lv61〜70', 'Lv51〜60', 'Lv41〜50', 'Lv31〜40', 'Lv21〜30', 'Lv11〜20', 'Lv1〜10'];
+const bandOf = it => {
+  const il = it.item_level || 0, lv = it.level;
+  if (il >= 119) return 0; if (il >= 117) return 1; if (il >= 113) return 2; if (il >= 100) return 3;
+  if (lv >= 99) return 4; if (lv >= 91) return 5; if (lv >= 81) return 6; if (lv >= 76) return 7; if (lv >= 71) return 8;
+  return 9 + (6 - Math.floor((lv - 1) / 10)); // Lv61〜70→9 … Lv1〜10→15
+};
+
+
 // 一覧用のデータ（短い配列で軽くする）
 // [id, 名前, Lv, IL, ジョブ, 部位, 武器の種類, D, 隔, 性能(番号:値,…), ペット性能あり, 条件付きあり, 英名]
 const rows = equip.map(({ id, it, st, skill }) => [
   id, it.ja, it.level, it.item_level || 0, it.jobs || 0, it.slots, skill, it.damage || 0, it.delay || 0,
   Object.entries(st.main).filter(([k]) => statIdx.has(k)).map(([k, v]) => statIdx.get(k) + ':' + v).join(','),
   Object.keys(st.pet).length ? 1 : 0, Object.keys(st.cond).length ? 1 : 0, it.en,
+  catOf.get(id) ? ALL_CATS.indexOf(catOf.get(id)) : -1,
 ]);
 const meta = {
   asof, stats: STATS.map(k => [k, statCount.get(k), LOWER_BETTER.test(k) ? 1 : 0]),
   jobs: JOB_LIST.map(j => [j.id, j.jas, j.ja]),
   slots: SLOT_GROUPS.map(([k, ja, mask]) => [k, ja, mask]),
   skills: [...new Set(equip.map(e => e.skill).filter(Boolean))],
+  cats: ALL_CATS.map(([key, ja, , kind]) => [key, ja, kind]),
 };
 fs.writeFileSync(path.join(SITE, 'items.json'), JSON.stringify({ meta, rows }));
 
 const css = fs.readFileSync(path.join(ROOT, 'src', 'style.css'), 'utf8');
 fs.writeFileSync(path.join(SITE, 'style.css'), css);
 fs.copyFileSync(path.join(ROOT, 'src', 'app.js'), path.join(SITE, 'app.js'));
+fs.copyFileSync(path.join(ROOT, 'src', 'list.js'), path.join(SITE, 'list.js'));
 
 const head = (title, description, canonical) => `<!DOCTYPE html>
 <html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(title)}</title><meta name="description" content="${esc(description)}">${canonical ? `<link rel="canonical" href="${canonical}">` : ''}
 <link rel="stylesheet" href="${BASE}style.css">
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE}" crossorigin="anonymous"></script></head><body>
-<header class="top"><a class="brand" href="${BASE}">${SITE_NAME}</a><span class="asof">データ ${esc(asof.date)} 時点（${esc(asof.note)}）</span></header>`;
+<header class="top"><div class="in"><a class="brand" href="${BASE}">ヴァナDB<small>FF11 装備データベース</small></a><span class="asof">データ ${esc(asof.date)} 時点（${esc(asof.note)}）</span></div>
+<nav class="gnav"><a class="new" href="${BASE}new.html">新装備</a><a href="${BASE}#armor">防具</a><a href="${BASE}#weapon">武器</a><a href="${BASE}#job">ジョブ別</a><a href="${BASE}search.html">性能で探す</a><a href="${BASE}about.html">このサイトについて</a></nav></header>`;
 const foot = `<footer class="foot"><p>装備の名前と性能の文はゲーム内の表記（データの出典：<a href="https://github.com/Windower/Resources" rel="noopener">Windower Resources</a>）。誤りに気づいたら教えてください。</p>
 <p>姉妹サイト：<a href="https://ff11ikou.blog.fc2.com/">【 FF11 】いこう！ の実験＆実用メモ帳</a>（ジョブ別の装備セットと選んだ理由）</p>
 <p><a href="${BASE}about.html">このサイトについて・プライバシーポリシー・お問い合わせ</a></p>
 <p class="cr">FINAL FANTASY XI © SQUARE ENIX CO., LTD. All Rights Reserved. このサイトは個人のファンサイトで、株式会社スクウェア・エニックスとは関係ありません。</p></footer></body></html>`;
 
-// 1装備1ページ
-for (const { id, it, text, st, skill } of equip) {
-  const slot = slotNames(it.slots);
-  const kind = skill || slot;
-  const lines = text.split('\n').map(esc).join('<br>');
-  const rows2 = [
-    ['部位', slot], skill ? ['種類', skill] : null,
-    it.damage ? ['D／隔', `${it.damage}／${it.delay}`] : null,
-    ['装備Lv', `Lv${it.level}` + (it.item_level ? `（IL${it.item_level}）` : '') + (it.superior_level ? `　Su${it.superior_level}` : '')],
-    ['ジョブ', jobNames(it.jobs || 0)],
-    raceNames(it.races) ? ['種族', raceNames(it.races)] : null,
-    ['英語名', esc(it.en)],
-  ].filter(Boolean);
-  const fmtStat = (k, v) => `<li>${esc(k.replace(/%$/, ''))} <b>${v > 0 && k !== '防' ? '+' : ''}${v}${/%$/.test(k) ? '%' : ''}</b></li>`;
-  const statRows = Object.entries(st.main).map(([k, v]) => fmtStat(k, v)).join('');
-  const uses = blogUses.get(it.ja) || [];
-  const usesHtml = uses.length ? `<h2>この装備を使っているセット（姉妹ブログ）</h2><ul class="uses">${uses.map(u => `<li><a href="${u.url}">${esc(u.job)}：${esc(u.set)}</a> <span class="k">（${esc(u.parts.join('・'))}）</span></li>`).join('')}</ul>` : '';
-  const slot1 = slot.split('・')[0];
-  const sameLinks = Object.keys(st.main).filter(k => statIdx.has(k) && k !== '防' && statCount.get(k) >= 30).slice(0, 8)
-    .map(k => `<a href="${BASE}?slot=${encodeURIComponent(slot1)}&amp;stat=${encodeURIComponent(k)}">${esc(k.replace(/%$/, ''))}</a>`).join('　');
-  const descText = `${it.ja}（${kind}・Lv${it.level}${it.item_level ? '・IL' + it.item_level : ''}）の性能。` + text.replace(/\n/g, ' ').slice(0, 90);
-  const html = head(`${it.ja}｜${kind}の性能｜${SITE_SHORT}`, descText, `${ORIGIN}/item/${id}.html`)
-    + `<main class="item"><p class="crumb"><a href="${BASE}">装備を探す</a> › <a href="${BASE}?slot=${encodeURIComponent(slot.split('・')[0])}">${esc(slot)}</a></p>
-<h1>${esc(it.ja)}</h1>
+// 1装備1ページ（一覧の表の部品を使うので、ファイルの最後で呼ぶ）
+function writeItemPages() {
+  // 合成のレシピ（有志のサーバー再現データ LandSandBoat の synth_recipes。fetch で data/synth.json）
+  const synth = fs.existsSync(path.join(DATA, 'synth.json')) ? JSON.parse(fs.readFileSync(path.join(DATA, 'synth.json'), 'utf8')) : [];
+  const recipesOf = new Map();
+  for (const r of synth) for (const [res, q] of [[r.result, 'NQ'], ...r.hq.map((h, i) => [h, 'HQ' + (i + 1)])]) {
+    if (!res) continue;
+    if (!recipesOf.has(res)) recipesOf.set(res, []);
+    if (!recipesOf.get(res).some(x => x.r === r)) recipesOf.get(res).push({ r, q });
+  }
+  const iname = id => (items.get(id) || {}).ja || `#${id}`;
+  const recipeHtml = ({ r, q }) => `<div class="recipe"><div class="rq">${q === 'NQ' ? '' : `<span class="bd il">${q}で出る</span>`}${Object.entries(r.skills).map(([k, v]) => `<span class="bd">${esc(k)} ${v}</span>`).join('')}<span class="bd">${esc(iname(r.crystal))}</span></div>`
+    + `<div class="ri">${r.ings.map(([id, n]) => `${equipById.has(id) ? `<a href="${BASE}item/${id}.html">${esc(iname(id))}</a>` : esc(iname(id))}${n > 1 ? ` ×${n}` : ''}`).join('　')}</div>`
+    + `<div class="ro">→ NQ：${esc(iname(r.result))}${r.hq.filter(Boolean).length ? `　HQ：${[...new Set(r.hq.filter(Boolean))].map(h => equipById.has(h) ? `<a href="${BASE}item/${h}.html">${esc(iname(h))}</a>` : esc(iname(h))).join('・')}` : ''}</div></div>`;
+
+  // 段階違い（＋1・＋2…）と、同じシリーズ（英語名の頭の語が同じで、部位をまたぐ一式）
+  const baseOf = e => e.it.ja.replace(/[+＋][0-9０-９]+$/, '');
+  const byBase = new Map();
+  for (const e of equip) { const b = baseOf(e); if (!byBase.has(b)) byBase.set(b, []); byBase.get(b).push(e); }
+  const seriesKey = e => { const w = (e.it.en || '').split(/[ ']/)[0]; return w.length >= 3 && catOf.get(e.id) ? `${w}|${e.it.item_level || 0}|${catOf.get(e.id)[3]}` : ''; };
+  const bySeries = new Map();
+  for (const e of equip) { const k = seriesKey(e); if (!k) continue; if (!bySeries.has(k)) bySeries.set(k, []); bySeries.get(k).push(e); }
+  const catOrder = e => ALL_CATS.indexOf(catOf.get(e.id));
+
+  // 性能が近い装備（同じカテゴリー・同じ帯で、性能の向きが近い物）
+  const vecOf = e => Object.entries(e.st.main).filter(([k]) => k !== '防');
+  const groups = new Map();
+  for (const e of equip) { const c = catOf.get(e.id); if (!c) continue; const k = c[0] + '|' + bandOf(e.it); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(e); }
+  const norm = v => Math.sqrt(v.reduce((s, [, x]) => s + x * x, 0)) || 1;
+  const similar = e => {
+    const c = catOf.get(e.id); if (!c) return [];
+    const va = vecOf(e), na = norm(va), ma = new Map(va);
+    if (!va.length) return [];
+    return (groups.get(c[0] + '|' + bandOf(e.it)) || []).filter(o => o.id !== e.id && baseOf(o) !== baseOf(e))
+      .map(o => { const vb = vecOf(o); let dot = 0; for (const [k, x] of vb) if (ma.has(k)) dot += ma.get(k) * x; return [o, dot / (na * norm(vb))]; })
+      .filter(([, s]) => s > 0.75).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([o]) => o);
+  };
+  const ffo = ja => `https://wiki.ffo.jp/search.cgi?CCC=%E6%84%9B&amp;Command=Search&amp;qf=${encodeURIComponent(ja)}&amp;order=match&amp;ffotype=title&amp;type=title`;
+  const bg = en => `https://www.bg-wiki.com/ffxi/${encodeURIComponent((en || '').replace(/ /g, '_'))}`;
+
+  for (const e of equip) {
+    const { id, it, text, st, skill } = e;
+    const slot = slotNames(it.slots);
+    const cat = catOf.get(id);
+    const kind = cat ? cat[1] : (skill || slot);
+    const lines = text.split('\n').map(esc).join('<br>');
+    const fmtStat = (k, v) => `<li>${esc(k.replace(/%$/, ''))} <b>${v > 0 && k !== '防' ? '+' : ''}${v}${/%$/.test(k) ? '%' : ''}</b></li>`;
+    const statRows = Object.entries(st.main).map(([k, v]) => fmtStat(k, v)).join('');
+    const uses = blogUses.get(it.ja) || [];
+    const variants = (byBase.get(baseOf(e)) || []).filter(o => catOf.get(o.id) === cat).sort((a, b) => a.it.ja.length - b.it.ja.length || a.it.ja.localeCompare(b.it.ja, 'ja'));
+    const series = (bySeries.get(seriesKey(e)) || []).filter(o => baseOf(o) !== baseOf(e) || o.id === id);
+    const seriesOk = series.length >= 2 && series.length <= 16 && new Set(series.map(o => catOf.get(o.id))).size >= 2;
+    const sim = similar(e);
+    const recs = recipesOf.get(id) || [];
+    const sameLinks = cat ? Object.keys(st.main).filter(k => statIdx.has(k) && k !== '防' && statCount.get(k) >= 30).slice(0, 8)
+      .map(k => `<a href="${BASE}search.html?cat=${cat[0]}&amp;stat=${encodeURIComponent(k)}">${esc(k.replace(/%$/, ''))}</a>`).join('') : '';
+    const mark = o => (o.id === id ? ' me' : '');
+    const tbl = list => `<div class="tbl">${tableHead}${list.map(o => rowHtml(o).replace('<div class="r"', `<div class="r${mark(o)}"`)).join('')}</div>`;
+    const descText = `${it.ja}（${kind}・Lv${it.level}${it.item_level ? '・IL' + it.item_level : ''}）の性能・装備できるジョブ・${recs.length ? '合成レシピ・' : ''}${variants.length > 1 ? '段階違い・' : ''}性能が近い装備。` + text.replace(/\n/g, ' ').slice(0, 70);
+    const html = head(`${it.ja}｜${kind}の性能｜${SITE_SHORT}`, descText, `${ORIGIN}/item/${id}.html`)
+      + `<main class="item"><p class="crumb"><a href="${BASE}">トップ</a> › ${cat ? `<a href="${BASE}list/${cat[0]}.html">${esc(cat[1])}の一覧</a>` : esc(slot)} › ${esc(it.ja)}</p>
+<section class="ihead"><div class="nm"><h1>${esc(it.ja)}</h1><small>${esc(it.en)}</small></div>
+<div class="badges">${cat ? `<a class="bd cat" href="${BASE}list/${cat[0]}.html">${esc(cat[1])}</a>` : ''}<span class="bd">Lv${it.level}</span>${it.item_level ? `<span class="bd il">IL${it.item_level}</span>` : ''}${it.superior_level ? `<span class="bd">Su${it.superior_level}</span>` : ''}${it.damage ? `<span class="bd">D${it.damage}／隔${it.delay}</span>` : ''}${raceNames(it.races) ? `<span class="bd">${esc(raceNames(it.races))}</span>` : ''}</div>
+<div class="jobsrow"><span class="lbl">装備できるジョブ</span>${jobCells(it.jobs || 0)}</div></section>
 <div class="ingame">${lines || '（性能の文なし）'}</div>
-<table class="spec">${rows2.map(([k, v]) => `<tr><th>${k}</th><td>${v}</td></tr>`).join('')}</table>
+<div class="extl"><a href="${ffo(it.ja)}" rel="noopener" target="_blank">FF11用語辞典で見る（入手方法・オーグメント）</a><a href="${bg(it.en)}" rel="noopener" target="_blank">BG-Wiki（英語）</a><a href="https://jp.ffxiah.com/item/${id}" rel="noopener" target="_blank">FFXIAH（競売の相場）</a></div>
 ${statRows ? `<h2>性能の内訳</h2><ul class="stats">${statRows}</ul>` : ''}
-${Object.keys(st.pet).length ? `<h2>ペット</h2><ul class="stats">${Object.entries(st.pet).map(([k, v]) => fmtStat(k, v)).join('')}</ul>` : ''}
-${usesHtml}
-${sameLinks ? `<h2>同じ部位（${esc(slot1)}）で比べる</h2><p class="same">${sameLinks}</p>` : ''}
+${Object.keys(st.pet).length ? `<h2>ペットの性能</h2><ul class="stats">${Object.entries(st.pet).map(([k, v]) => fmtStat(k, v)).join('')}</ul>` : ''}
 ${Object.keys(st.cond).length ? `<p class="note">※潜在能力などの条件付きの性能は、内訳と絞り込みに含めていません（上のゲーム内の文を見てください）。</p>` : ''}
-<p class="note">※オーグメント（追加の性能）はこのページに含まれていません。</p>
+${variants.length > 1 ? `<h2>段階違い（＋1・＋2…）</h2>${tbl(variants)}` : ''}
+${seriesOk ? `<h2>同じシリーズ</h2>${tbl(series.sort((a, b) => catOrder(a) - catOrder(b) || a.it.ja.localeCompare(b.it.ja, 'ja')))}` : ''}
+<h2>入手方法</h2>${recs.length ? `<p class="note">合成で作れます（有志のサーバー再現データ LandSandBoat のレシピ。数値は参考）。</p>${recs.slice(0, 4).map(recipeHtml).join('')}` : ''}
+<p class="note">${recs.length ? 'ほかの入手方法' : 'ドロップ・報酬・お店などの入手方法'}と、オーグメント（追加の性能）の中身は、<a href="${ffo(it.ja)}" rel="noopener" target="_blank">FF11用語辞典の「${esc(it.ja)}」</a>を見てください。</p>
+${uses.length ? `<h2>この装備を使っているセット（姉妹ブログ）</h2><ul class="uses">${uses.map(u => `<li><a href="${u.url}">${esc(u.job)}：${esc(u.set)}</a> <span class="k">（${esc(u.parts.join('・'))}）</span></li>`).join('')}</ul>` : ''}
+${sim.length ? `<h2>性能が近い装備（同じ${esc(kind)}・同じ帯）</h2>${tbl(sim)}` : ''}
+${sameLinks ? `<h2>同じ${cat && cat[3] === 'weapon' ? '種類' : '部位'}（${esc(kind)}）を性能の大きい順で見る</h2><p class="same">${sameLinks}</p>` : ''}
 </main>` + foot;
-  fs.writeFileSync(path.join(SITE, 'item', `${id}.html`), html);
+    fs.writeFileSync(path.join(SITE, 'item', `${id}.html`), html);
+  }
 }
 
-// よく使う絞り込み（トップのリンク）
+// よく使う絞り込み（トップのリンク）→ 性能で探す（search.html）
 const qs = o => Object.entries(o).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&amp;');
 const jobId = ens => JOB_LIST.find(j => j.ens === ens).id;
 const QUICK = [
-  ['忍者・頭のヘイスト', qs({ job: jobId('NIN'), slot: '頭', stat: 'ヘイスト%' })],
-  ['赤魔・胴のファストキャスト', qs({ job: jobId('RDM'), slot: '胴', stat: 'ファストキャスト%' })],
+  ['忍者・頭のヘイスト', qs({ job: jobId('NIN'), cat: 'head', stat: 'ヘイスト%' })],
+  ['赤魔・胴のファストキャスト', qs({ job: jobId('RDM'), cat: 'body', stat: 'ファストキャスト%' })],
   ['黒魔・MBダメージ', qs({ job: jobId('BLM'), stat: 'マジックバーストダメージ' })],
   ['全ジョブ・被ダメージ', qs({ stat: '被ダメージ%' })],
   ['戦士・WSダメージ', qs({ job: jobId('WAR'), stat: 'ウェポンスキルのダメージ%' })],
@@ -169,13 +257,75 @@ const QUICK = [
   ['移動速度', qs({ stat: '移動速度%' })],
 ];
 
-// 最近のバージョンアップで増えた物（data/updates.json＝fetch で作る）
-const updates = fs.existsSync(path.join(DATA, 'updates.json')) ? JSON.parse(fs.readFileSync(path.join(DATA, 'updates.json'), 'utf8')) : [];
-const equipIds = new Set(equip.map(e => e.id));
-const recentHtml = updates.length ? `<div class="recent"><b>最近のバージョンアップで増えた物：</b>${updates.map(u => `<span class="vu">${esc(u.label)}</span>`
-  + (u.ids.length ? u.ids.map(id => { const it = items.get(id); if (!it || !it.ja) return ''; return equipIds.has(id) ? `<a href="${BASE}item/${id}.html">${esc(it.ja)}</a>` : `<span class="nl">${esc(it.ja)}</span>`; }).filter(Boolean).join('') : '<span class="nl">（増えた物なし）</span>')).join('')}</div>` : '';
+// 装備できるジョブ：22ジョブを1行に（ff11db の形）。全ジョブは「全ジョブ」
+const jobCells = mask => {
+  const n = JOB_LIST.filter(j => mask & (1 << j.id)).length;
+  if (n >= 22) return '<span class="jb all">全ジョブ</span>';
+  return `<span class="jb">${JOB_LIST.map(j => (mask & (1 << j.id) ? `<b title="${esc(j.ja)}">${esc(j.jas)}</b>` : `<i>${esc(j.jas)}</i>`)).join('')}</span>`;
+};
+const fxText = text => esc(text.replace(/\n+/g, '　'));
+const rowHtml = e => {
+  const it = e.it;
+  const df = it.category === 'Weapon' && it.damage ? `D${it.damage}<br>隔${it.delay}` : (e.st.main['防'] != null ? `防${e.st.main['防']}` : '');
+  return `<div class="r" data-j="${it.jobs || 0}"><div class="c-n"><a href="${BASE}item/${e.id}.html">${esc(it.ja)}</a><small>${esc(it.en)}</small></div>`
+    + `<div class="c-lv">${it.level}</div><div class="c-il">${it.item_level || ''}</div><div class="c-df">${df}</div>`
+    + `<div class="c-jb">${jobCells(it.jobs || 0)}</div><div class="c-fx">${fxText(e.text) || '<span class="nl">（性能の文なし）</span>'}</div></div>`;
+};
+const tableHead = '<div class="r h"><div class="c-n">名前</div><div class="c-lv">Lv</div><div class="c-il">IL</div><div class="c-df">防／D</div><div class="c-jb">装備できるジョブ</div><div class="c-fx">性能（ゲーム内の表記）</div></div>';
+const jobChips = `<div class="jfilter"><span class="lbl">ジョブで絞る：</span><button type="button" data-job="" class="on">すべて</button>${JOB_LIST.map(j => `<button type="button" data-job="${j.id}" title="${esc(j.ja)}">${esc(j.jas)}</button>`).join('')}</div>`;
 
-// ジョブ別のページ：部位×性能の入口と、姉妹ブログの記事
+// ── 一覧ページ（部位・武器の種類ごと）
+fs.mkdirSync(path.join(SITE, 'list'), { recursive: true });
+const listPages = [];
+const catCount = new Map();
+for (const [key, ja, , kind] of ALL_CATS) {
+  const list = equip.filter(e => catOf.get(e.id) && catOf.get(e.id)[0] === key)
+    .sort((a, b) => bandOf(a.it) - bandOf(b.it) || (b.it.item_level || 0) - (a.it.item_level || 0) || b.it.level - a.it.level || b.id - a.id);
+  catCount.set(key, list.length);
+  if (!list.length) continue;
+  const groups = BANDS.map((label, i) => [label, list.filter(e => bandOf(e.it) === i)]).filter(([, l]) => l.length);
+  const kindJa = kind === 'armor' ? '防具' : '武器';
+  const url = `${ORIGIN}/list/${key}.html`;
+  listPages.push(url);
+  const searchLink = `${BASE}search.html?${qs({ cat: key })}`;
+  fs.writeFileSync(path.join(SITE, 'list', `${key}.html`), head(`${ja}の${kindJa}一覧（${list.length.toLocaleString()}件）｜${SITE_SHORT}`,
+    `FF11の${ja}の${kindJa}${list.length.toLocaleString()}件を、IL119からLv1まで帯ごとに一覧。装備できるジョブと性能を1行で見比べられ、ジョブで絞り込めます（${asof.note}）。`, url)
+    + `<main class="wide"><p class="crumb"><a href="${BASE}">トップ</a> › ${kindJa} › ${esc(ja)}</p>
+<h1>${esc(ja)}の${kindJa}一覧 <span class="cnt">${list.length.toLocaleString()}件</span></h1>
+<p class="lead">IL・Lvの高い順に、帯ごとに並べています。ジョブを押すと、そのジョブが装備できる物だけになります。性能の数値で並べ替えたい時は <a href="${searchLink}">性能で探す</a>。</p>
+${catNav(key)}
+${jobChips}
+<nav class="bands">${groups.map(([label, l]) => `<a href="#${encodeURIComponent(label)}" data-band="${esc(label)}">${esc(label)}<span>${l.length}</span></a>`).join('')}</nav>
+<div class="tbl">${tableHead}${groups.map(([label, l]) => `<div class="band" id="${esc(label)}" data-band="${esc(label)}">${esc(label)} <span>${l.length}件</span></div>${l.map(rowHtml).join('')}`).join('')}</div>
+<p class="none" hidden>このジョブが装備できる物はありません。</p>
+</main><script src="${BASE}list.js"></script>` + foot);
+}
+function catNav(current) {
+  const a = ([key, ja]) => key === current ? `<b>${esc(ja)}</b>` : `<a href="${BASE}list/${key}.html">${esc(ja)}</a>`;
+  return `<nav class="catnav"><div><span class="lbl">防具</span>${ARMOR_CATS.map(a).join('')}</div><div><span class="lbl">武器</span>${WEAPON_CATS.map(a).join('')}</div></nav>`;
+}
+
+// ── 最新：バージョンアップごとに「新装備」と「新アイテム（装備以外）」を分けて出す
+const updates = [];
+for (const u of (fs.existsSync(path.join(DATA, 'updates.json')) ? JSON.parse(fs.readFileSync(path.join(DATA, 'updates.json'), 'utf8')) : [])) {
+  const same = updates.find(x => x.label === u.label);
+  if (same) same.ids.push(...u.ids); else updates.push({ label: u.label, ids: [...u.ids] });
+}
+const equipById = new Map(equip.map(e => [e.id, e]));
+const updateBlock = (u, full) => {
+  const eqs = u.ids.map(id => equipById.get(id)).filter(Boolean);
+  const others = u.ids.filter(id => !equipById.has(id)).map(id => items.get(id)).filter(it => it && it.ja && it.ja !== '.');
+  return `<section class="vu-block"><h3>${esc(u.label)} のバージョンアップ</h3>
+<h4>新装備 <span>${eqs.length}件</span></h4>${eqs.length ? `<div class="tbl">${tableHead}${eqs.map(rowHtml).join('')}</div>` : '<p class="nl">新しい装備はありません。</p>'}
+<h4>新アイテム（装備以外） <span>${others.length}件</span></h4>${others.length ? `<ul class="newitems">${others.slice(0, full ? 999 : 12).map(it => `<li>${esc(it.ja)}</li>`).join('')}${!full && others.length > 12 ? `<li class="more"><a href="${BASE}new.html">ほか${others.length - 12}件</a></li>` : ''}</ul>` : '<p class="nl">新しいアイテムはありません。</p>'}</section>`;
+};
+fs.writeFileSync(path.join(SITE, 'new.html'), head(`FF11の新装備・新アイテム（バージョンアップごと）｜${SITE_SHORT}`,
+  `FF11のバージョンアップごとに増えた装備とアイテムの一覧（${updates.map(u => u.label).slice(0, 3).join('・')}など）。毎日自動で更新しています。`, `${ORIGIN}/new.html`)
+  + `<main class="wide"><p class="crumb"><a href="${BASE}">トップ</a> › 新装備・新アイテム</p><h1>新装備・新アイテム</h1>
+<p class="lead">バージョンアップごとに、ゲームのデータに増えた物を「装備」と「アイテム（装備以外）」に分けて並べています。データは毎日自動で取り込んでいます（${esc(asof.note)}）。</p>
+${updates.map(u => updateBlock(u, true)).join('')}</main><script src="${BASE}list.js"></script>` + foot);
+
+// ── ジョブ別のページ：部位ごとの一覧（そのジョブで絞った一覧へ）と、部位×性能の件数
 const ROLE = {
   melee: ['ヘイスト%', '命中', 'ダブルアタック%', 'ストアTP', 'ウェポンスキルのダメージ%', 'クリティカルヒット%', '被ダメージ%'],
   mage: ['ファストキャスト%', '魔攻', '魔命', 'マジックバーストダメージ', 'ケアル回復量%', 'リフレシュ', '被ダメージ%'],
@@ -189,50 +339,64 @@ for (const j of JOB_LIST) {
   const mine = equip.filter(e => (e.it.jobs || 0) & (1 << j.id));
   const il119 = mine.filter(e => e.it.item_level === 119).length;
   const stats = ROLE[JOB_ROLE[j.ens] || 'melee'].filter(k => statIdx.has(k));
-  const slotsOf = SLOT_GROUPS.filter(([, , mask]) => mine.some(e => e.it.slots & mask));
-  const cell = (slot, k) => {
-    const n = mine.filter(e => e.it.slots & SLOT_GROUPS.find(s => s[1] === slot)[2] && k in e.st.main).length;
-    return n ? `<a href="${BASE}?${qs({ job: j.id, slot, stat: k })}">${n}</a>` : '<span class="nl">—</span>';
+  const cats = ALL_CATS.map(c => [c, mine.filter(e => catOf.get(e.id) === c)]).filter(([, l]) => l.length);
+  const cell = (key, l, k) => {
+    const n = l.filter(e => k in e.st.main).length;
+    const p = { job: j.id, cat: key, stat: k };
+    return n ? `<a href="${BASE}search.html?${qs(p)}">${n}</a>` : '<span class="nl">—</span>';
   };
   const blog = BLOG_JOB[j.ens] ? `<p>このジョブの装備セットと選んだ理由は、姉妹ブログの <a href="https://ff11ikou.blog.fc2.com/blog-entry-${BLOG_JOB[j.ens]}.html">${esc(j.ja)}の装備の記事</a> にまとめています。</p>` : '';
   const url = `${ORIGIN}/job/${j.ens.toLowerCase()}.html`;
   jobPages.push(url);
-  fs.writeFileSync(path.join(SITE, 'job', `${j.ens.toLowerCase()}.html`), head(`${j.ja}の装備｜部位×性能で探す｜${SITE_SHORT}`,
-    `FF11 ${j.ja}が装備できる${mine.length.toLocaleString()}件（IL119は${il119}件）を、部位と性能（${stats.slice(0, 4).map(k => k.replace(/%$/, '')).join('・')}など）で絞り込めます。`, url)
-    + `<main class="item"><p class="crumb"><a href="${BASE}">装備を探す</a> › ジョブ別</p><h1>${esc(j.ja)}の装備</h1>
-<p>${esc(j.ja)}が装備できる物は ${mine.length.toLocaleString()}件（そのうち IL119 は ${il119}件）。下の表の数字を押すと、その部位でその性能が付いた装備が大きい順に並びます。</p>
+  fs.writeFileSync(path.join(SITE, 'job', `${j.ens.toLowerCase()}.html`), head(`${j.ja}の装備一覧｜部位・武器ごと｜${SITE_SHORT}`,
+    `FF11 ${j.ja}が装備できる${mine.length.toLocaleString()}件（IL119は${il119}件）を、部位・武器ごとの一覧と、性能（${stats.slice(0, 4).map(k => k.replace(/%$/, '')).join('・')}など）で探せます。`, url)
+    + `<main class="wide"><p class="crumb"><a href="${BASE}">トップ</a> › ジョブ別 › ${esc(j.ja)}</p><h1>${esc(j.ja)}の装備 <span class="cnt">${mine.length.toLocaleString()}件（IL119 ${il119}件）</span></h1>
 ${blog}
-<div class="tw"><table class="grid"><tr><th>部位</th>${stats.map(k => `<th>${esc(k.replace(/%$/, ''))}</th>`).join('')}</tr>
-${slotsOf.map(([, ja]) => `<tr><th><a href="${BASE}?${qs({ job: j.id, slot: ja })}">${ja}</a></th>${stats.map(k => `<td>${cell(ja, k)}</td>`).join('')}</tr>`).join('\n')}</table></div>
-<p class="note">数字は、その性能が付いている装備の件数です（潜在能力などの条件付きの性能とオーグメントは数えていません）。</p>
+<div class="tw"><table class="grid"><tr><th>一覧</th><th>件数</th>${stats.map(k => `<th>${esc(k.replace(/%$/, ''))}</th>`).join('')}</tr>
+${cats.map(([[key, ja], l]) => `<tr><th><a href="${BASE}list/${key}.html?job=${j.id}">${esc(ja)}</a></th><td>${l.length}</td>${stats.map(k => `<td>${cell(key, l, k)}</td>`).join('')}</tr>`).join('\n')}</table></div>
+<p class="note">部位・武器の名前を押すと、${esc(j.ja)}が装備できる物だけの一覧になります。性能の列の数字は、その性能が付いている装備の件数で、押すと大きい順に並びます（潜在能力などの条件付きの性能とオーグメントは数えていません）。</p>
 <h2>ほかのジョブ</h2><p class="same">${JOB_LIST.map(o => o.id === j.id ? `<b>${esc(o.ja)}</b>` : `<a href="${BASE}job/${o.ens.toLowerCase()}.html">${esc(o.ja)}</a>`).join('　')}</p>
 </main>` + foot);
 }
 
-// トップ（絞り込み）
-fs.writeFileSync(path.join(SITE, 'index.html'), head(`${SITE_NAME}｜ジョブ・部位・性能で探せる（最新のバージョンアップまで）`,
-  `FF11の装備${equip.length.toLocaleString()}件を、ジョブ・部位・ヘイストやファストキャストなどの性能で絞り込んで並べ替えられるデータベース。毎月のバージョンアップの新装備まで入っています。`, `${ORIGIN}/`)
-  + `<main class="finder">
-<section class="intro"><h1>FF11の装備を、ジョブ・部位・性能で探す</h1>
-<p>ヴァナDBは、FF11の装備${equip.length.toLocaleString()}件を、ジョブ・部位・性能（ヘイスト・ファストキャスト・マジックバーストなど）で絞り込み、大きい順に並べられるデータベースです。毎日、最新のデータを取り込んでいます（${esc(asof.note)}）。装備の名前を押すと、性能の内訳と、姉妹ブログでその装備を使っているセットが見られます。</p>
-<div class="quick"><b>よく使う絞り込み：</b>${QUICK.map(([label, q]) => `<a href="${BASE}?${q}">${esc(label)}</a>`).join('')}</div>
-<div class="quick"><b>ジョブ別：</b>${JOB_LIST.map(j => `<a href="${BASE}job/${j.ens.toLowerCase()}.html">${esc(j.ja)}</a>`).join('')}</div>
-${recentHtml}
-</section>
+// ── 性能で探す（絞り込み・並べ替え）
+fs.writeFileSync(path.join(SITE, 'search.html'), head(`性能で探す（ヘイスト・ファストキャストなど）｜${SITE_SHORT}`,
+  `FF11の装備${equip.length.toLocaleString()}件を、ジョブ・部位・性能（ヘイスト・ファストキャスト・マジックバーストなど）で絞り込み、大きい順に並べられます。`, `${ORIGIN}/search.html`)
+  + `<main class="finder"><p class="crumb"><a href="${BASE}">トップ</a> › 性能で探す</p><h1>性能で探す</h1>
+<div class="quick"><b>よく使う：</b>${QUICK.map(([label, q]) => `<a href="${BASE}search.html?${q}">${esc(label)}</a>`).join('')}</div>
 <div class="ctl">
  <div class="row"><label>ジョブ</label><div id="jobs" class="chips"></div></div>
- <div class="row"><label>部位</label><div id="slots" class="chips"></div></div>
- <div class="row"><label>武器</label><select id="skill"><option value="">すべて</option></select></div>
- <div class="row"><label>性能</label><select id="stat"></select><select id="dir"><option value="desc">大きい順</option><option value="asc">小さい順</option></select></div>
+ <div class="row"><label>防具</label><div id="cats-armor" class="chips"></div></div>
+ <div class="row"><label>武器</label><div id="cats-weapon" class="chips"></div></div>
+ <div class="row"><label>性能</label><div class="statpick" id="statpick"></div></div>
+ <div class="row"><label>並び</label><select id="dir"><option value="desc">大きい順</option><option value="asc">小さい順</option></select></div>
  <div class="row"><label>装備Lv</label><input id="lvmin" type="number" min="1" max="99" value="1">〜<input id="lvmax" type="number" min="1" max="99" value="99">
   <label class="ck"><input id="il" type="checkbox">IL装備だけ</label></div>
  <div class="row"><label>名前</label><input id="q" type="search" placeholder="名前の一部（日本語・英語）"></div>
 </div>
 <p id="count" class="count"></p>
-<div id="list" class="list"></div>
+<div id="list" class="tbl"></div>
 <p class="more"><button id="more" hidden>もっと見る</button></p>
 <noscript><p>絞り込みにはJavaScriptが要ります。</p></noscript>
 </main><script src="${BASE}app.js"></script>` + foot);
+
+// ── トップ：最新の枠 → 防具 → 武器 → ジョブ別 → 性能で探す
+const ICON = { head: '頭', body: '胴', hands: '手', legs: '脚', feet: '足', neck: '首', waist: '腰', back: '背', ear: '耳', ring: '指', shield: '盾', h2h: '拳', dagger: '短', sword: '剣', gsword: '大', axe: '斧', gaxe: '鉞', scythe: '鎌', polearm: '槍', katana: '刀', gkatana: '太', club: '棍', staff: '杖', archery: '弓', marksmanship: '銃', throwing: '投', wind: '笛', string: '琴', handbell: '鈴', fishing: '竿', ammo: '矢', grip: '握' };
+const tile = (href, label, n, ic, cls = '') => `<a class="tile ${cls}" href="${href}"><span class="ic">${esc(ic)}</span><span><b>${esc(label)}</b><span class="n">${n.toLocaleString()}件</span></span></a>`;
+fs.writeFileSync(path.join(SITE, 'index.html'), head(`${SITE_NAME}｜部位・武器・ジョブごとの一覧と性能で探す（最新のバージョンアップまで）`,
+  `FF11の装備${equip.length.toLocaleString()}件を、部位・武器の種類・ジョブごとの一覧で見比べ、ヘイストやファストキャストなどの性能でも探せるデータベース。バージョンアップごとの新装備も毎日自動で更新（${asof.note}）。`, `${ORIGIN}/`)
+  + `<main class="wide home">
+<section class="hero"><h1>FF11の装備を、一覧でざっと見比べる</h1>
+<p>装備${equip.length.toLocaleString()}件を、部位・武器の種類・ジョブごとに、IL・Lvの帯で並べています。装備できるジョブは22ジョブを1行で、性能はゲーム内の表記のまま。毎日、最新のデータを取り込んでいます（<b>${esc(asof.note)}</b>）。</p></section>
+<section class="box latest"><h2>最新の新装備・新アイテム <a class="all" href="${BASE}new.html">バージョンアップごとの一覧へ</a></h2>
+${updates.slice(0, 2).map(u => updateBlock(u, false)).join('')}</section>
+<section class="box" id="armor"><h2>防具（部位ごと）</h2><div class="tiles">${ARMOR_CATS.map(([k, ja]) => tile(`${BASE}list/${k}.html`, ja, catCount.get(k) || 0, ICON[k])).join('')}</div></section>
+<section class="box" id="weapon"><h2>武器（種類ごと）</h2><div class="tiles">${WEAPON_CATS.filter(([k]) => catCount.get(k)).map(([k, ja]) => tile(`${BASE}list/${k}.html`, ja, catCount.get(k), ICON[k], 'w')).join('')}</div></section>
+<section class="box" id="job"><h2>ジョブ別</h2><div class="tiles small">${JOB_LIST.map(j => tile(`${BASE}job/${j.ens.toLowerCase()}.html`, j.ja, equip.filter(e => (e.it.jobs || 0) & (1 << j.id)).length, j.jas, 'j')).join('')}</div></section>
+<section class="box" id="search"><h2>性能で探す</h2><p>ヘイスト・ファストキャスト・マジックバースト・被ダメージなど、性能の数値で絞り込んで大きい順に並べられます。 <a class="btn" href="${BASE}search.html">性能で探す</a></p>
+<div class="quick">${QUICK.map(([label, q]) => `<a href="${BASE}search.html?${q}">${esc(label)}</a>`).join('')}</div></section>
+</main><script src="${BASE}list.js"></script>` + foot);
+
 
 // このサイトについて（運営者・データ・プライバシーポリシー・お問い合わせ）
 fs.writeFileSync(path.join(SITE, 'about.html'), head(`このサイトについて｜${SITE_SHORT}`, 'ヴァナDB（FF11 装備データベース）の運営者・データの出典・プライバシーポリシー・お問い合わせ。', `${ORIGIN}/about.html`)
@@ -251,10 +415,12 @@ fs.writeFileSync(path.join(SITE, 'about.html'), head(`このサイトについ�
 fs.writeFileSync(path.join(SITE, 'ads.txt'), `google.com, ${ADSENSE.replace('ca-', '')}, DIRECT, f08c47fec0942fa0
 `);
 
+writeItemPages();
+
 // 検索エンジン向け
 fs.writeFileSync(path.join(SITE, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${ORIGIN}/sitemap.xml\n`);
 fs.writeFileSync(path.join(SITE, 'sitemap.xml'), '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-  + [`${ORIGIN}/`, `${ORIGIN}/about.html`, ...jobPages, ...equip.map(e => `${ORIGIN}/item/${e.id}.html`)].map(u => `<url><loc>${u}</loc></url>`).join('\n') + '\n</urlset>\n');
+  + [`${ORIGIN}/`, `${ORIGIN}/new.html`, `${ORIGIN}/search.html`, `${ORIGIN}/about.html`, ...listPages, ...jobPages, ...equip.map(e => `${ORIGIN}/item/${e.id}.html`)].map(u => `<url><loc>${u}</loc></url>`).join('\n') + '\n</urlset>\n');
 fs.writeFileSync(path.join(SITE, '.nojekyll'), '');
 
 console.log(`装備 ${equip.length}件 / 性能の種類 ${STATS.length}（ペット ${petCount.size}） / データ ${asof.date}`);
