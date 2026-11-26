@@ -224,6 +224,14 @@ function writeItemPages() {
   for (const e of equip) { const k = seriesKey(e); if (!k) continue; if (!bySeries.has(k)) bySeries.set(k, []); bySeries.get(k).push(e); }
   const catOrder = e => ALL_CATS.indexOf(catOf.get(e.id));
 
+  // 見た目が同じ装備（LandSandBoat の item_equipment：同じ部位で同じモデル番号 MId）と、ほかの部位も覆う印
+  const LOOK_SLOT = s => (s & 1 ? 'main' : s & 2 ? 'sub' : s & 4 ? 'range' : s & 16 ? 'head' : s & 32 ? 'body' : s & 64 ? 'hands' : s & 128 ? 'legs' : s & 256 ? 'feet' : '');
+  const lookKey = id => { const l = (lsb.look || {})[id]; if (!l) return ''; const s = LOOK_SLOT(l[1]); return s ? `${s}|${l[0]}` : ''; };
+  const byLook = new Map();
+  for (const e of equip) { const k = lookKey(e.id); if (!k) continue; if (!byLook.has(k)) byLook.set(k, []); byLook.get(k).push(e); }
+  const COVER = [[16, '頭'], [64, '両手'], [128, '両脚'], [256, '両足']];
+  const coverOf = id => { const l = (lsb.look || {})[id]; if (!l || !l[2]) return []; return COVER.filter(([b]) => l[2] & b).map(([, n]) => n); };
+
   // 性能が近い装備（同じカテゴリー・同じ帯で、性能の向きが近い物）
   const vecOf = e => Object.entries(e.st.main).filter(([k]) => k !== '防');
   const groups = new Map();
@@ -253,16 +261,18 @@ function writeItemPages() {
     const series = (bySeries.get(seriesKey(e)) || []).filter(o => baseOf(o) !== baseOf(e) || o.id === id);
     const seriesOk = series.length >= 2 && series.length <= 16 && new Set(series.map(o => catOf.get(o.id))).size >= 2;
     const sim = similar(e);
+    const sameLook = (byLook.get(lookKey(id)) || []).slice().sort((a, b) => (a.it.level - b.it.level) || ((a.it.item_level || 0) - (b.it.item_level || 0)) || a.it.ja.localeCompare(b.it.ja, 'ja'));
+    const cover = coverOf(id);
     const recs = recipesOf.get(id) || [];
     const sameLinks = cat ? Object.keys(st.main).filter(k => statIdx.has(k) && k !== '防' && statCount.get(k) >= 30).slice(0, 8)
       .map(k => `<a href="${BASE}search.html?cat=${cat[0]}&amp;stat=${encodeURIComponent(k)}">${esc(k.replace(/%$/, ''))}</a>`).join('') : '';
     const mark = o => (o.id === id ? ' me' : '');
     const tbl = list => `<div class="tbl">${tableHead}${list.map(o => rowHtml(o).replace('<div class="r"', `<div class="r${mark(o)}"`)).join('')}</div>`;
-    const descText = `${it.ja}（${kind}・Lv${it.level}${it.item_level ? '・IL' + it.item_level : ''}）の性能・装備できるジョブ・${recs.length ? '合成レシピ・' : ''}${variants.length > 1 ? '段階違い・' : ''}性能が近い装備。` + text.replace(/\n/g, ' ').slice(0, 70);
+    const descText = `${it.ja}（${kind}・Lv${it.level}${it.item_level ? '・IL' + it.item_level : ''}）の性能・装備できるジョブ・${recs.length ? '合成レシピ・' : ''}${variants.length > 1 ? '段階違い・' : ''}${sameLook.length > 1 ? '見た目が同じ装備・' : ''}性能が近い装備。` + text.replace(/\n/g, ' ').slice(0, 70);
     const html = head(`${it.ja}｜${kind}の性能｜${SITE_SHORT}`, descText, `${ORIGIN}/item/${id}.html`)
       + `<main class="item"><p class="crumb"><a href="${BASE}">トップ</a> › ${cat ? `<a href="${BASE}list/${cat[0]}.html">${esc(cat[1])}の一覧</a>` : esc(slot)} › ${esc(it.ja)}</p>
 <section class="ihead"><div class="nm"><h1>${esc(it.ja)}</h1><small>${esc(it.en)}</small></div>
-<div class="badges">${cat ? `<a class="bd cat" href="${BASE}list/${cat[0]}.html">${esc(cat[1])}</a>` : ''}<span class="bd">Lv${it.level}</span>${it.item_level ? `<span class="bd il">IL${it.item_level}</span>` : ''}${it.superior_level ? `<span class="bd">Su${it.superior_level}</span>` : ''}${it.damage ? `<span class="bd">D${it.damage}／隔${it.delay}</span>` : ''}${raceNames(it.races) ? `<span class="bd">${esc(raceNames(it.races))}</span>` : ''}${rxBadges(id)}</div>
+<div class="badges">${cat ? `<a class="bd cat" href="${BASE}list/${cat[0]}.html">${esc(cat[1])}</a>` : ''}<span class="bd">Lv${it.level}</span>${it.item_level ? `<span class="bd il">IL${it.item_level}</span>` : ''}${it.superior_level ? `<span class="bd">Su${it.superior_level}</span>` : ''}${it.damage ? `<span class="bd">D${it.damage}／隔${it.delay}</span>` : ''}${raceNames(it.races) ? `<span class="bd">${esc(raceNames(it.races))}</span>` : ''}${cover.length ? `<span class="bd cover" title="着ている間、${esc(cover.join('・'))}の枠には装備できません">${esc(cover.join('・'))}も覆う</span>` : ''}${rxBadges(id)}</div>
 <div class="jobsrow"><span class="lbl">装備できるジョブ</span>${jobCells(it.jobs || 0)}</div></section>
 <div class="ingame">${lines || '（性能の文なし）'}</div>
 <div class="extl"><a href="${ffo(it.ja)}" rel="noopener" target="_blank">FF11用語辞典で見る（入手方法・オーグメント）</a><a href="${bg(it.en)}" rel="noopener" target="_blank">BG-Wiki（英語）</a><a href="https://jp.ffxiah.com/item/${id}" rel="noopener" target="_blank">FFXIAH（競売の相場）</a></div>
@@ -271,6 +281,7 @@ ${Object.keys(st.pet).length ? `<h2>ペットの性能</h2><ul class="stats">${O
 ${Object.keys(st.cond).length ? `<p class="note">※潜在能力などの条件付きの性能は、内訳と絞り込みに含めていません（上のゲーム内の文を見てください）。</p>` : ''}
 ${variants.length > 1 ? `<h2>段階違い（＋1・＋2…）</h2>${tbl(variants)}` : ''}
 ${seriesOk ? `<h2>同じシリーズ</h2>${tbl(series.sort((a, b) => catOrder(a) - catOrder(b) || a.it.ja.localeCompare(b.it.ja, 'ja')))}` : ''}
+${sameLook.length > 1 ? `<h2>見た目が同じ装備（${sameLook.length}件）</h2><p class="note">ゲームの中で同じ見た目になる装備です（有志のサーバー再現データ LandSandBoat で、同じ部位のモデル番号が同じ物）。見た目の固定（ロックスタイル）選びに。</p>${tbl(sameLook.slice(0, 40))}${sameLook.length > 40 ? `<p class="note">ほか${sameLook.length - 40}件。</p>` : ''}` : ''}
 <h2>入手方法</h2>${acqHtml(id)}${recs.length ? '<h3>合成</h3>' : ''}${recs.length ? `<p class="note">合成で作れます（有志のサーバー再現データ LandSandBoat のレシピ。数値は参考）。</p>${recs.slice(0, 4).map(recipeHtml).join('')}` : ''}
 <p class="note">${recs.length ? 'ほかの入手方法' : 'ドロップ・報酬・お店などの入手方法'}と、オーグメント（追加の性能）の中身は、<a href="${ffo(it.ja)}" rel="noopener" target="_blank">FF11用語辞典の「${esc(it.ja)}」</a>を見てください。</p>
 ${uses.length ? `<h2>この装備を使っているセット（姉妹ブログ）</h2><ul class="uses">${uses.map(u => `<li><a href="${u.url}">${esc(u.job)}：${esc(u.set)}</a> <span class="k">（${esc(u.parts.join('・'))}）</span></li>`).join('')}</ul>` : ''}
