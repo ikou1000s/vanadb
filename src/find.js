@@ -34,9 +34,9 @@
   };
   const tag = r => `<span class="fk">${esc(data.kinds[r[4]])}</span>${r[5] ? `<span class="fl">${esc(r[5])}</span>` : ''}`;
 
-  // ── 上の検索窓
-  const form = document.querySelector('.hfind');
-  if (form) {
+  // ── 検索窓（上の窓と、トップの真ん中の大きい窓）
+  const forms = [...document.querySelectorAll('.hfind')];
+  for (const form of forms) {
     const input = form.querySelector('input'), box = document.createElement('div');
     box.className = 'hsug'; box.hidden = true; form.appendChild(box);
     let sel = -1, list = [];
@@ -62,11 +62,13 @@
       else if (e.key === 'Escape') { box.hidden = true; }
     });
     document.addEventListener('click', e => { if (!form.contains(e.target)) box.hidden = true; });
-    // 「/」キーで検索窓へ
-    document.addEventListener('keydown', e => {
-      if (e.key === '/' && !/^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName || '')) { input.focus(); e.preventDefault(); }
-    });
+    // トップの例のボタン：押すとその語で探す
+    form.querySelectorAll('[data-q]').forEach(b => b.addEventListener('click', e => { e.preventDefault(); input.value = b.dataset.q; input.focus(); show(); }));
   }
+  // 「/」キーで検索窓へ（トップは真ん中の大きい窓）
+  document.addEventListener('keydown', e => {
+    if (e.key === '/' && forms.length && !/^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName || '')) { forms[forms.length - 1].querySelector('input').focus(); e.preventDefault(); }
+  });
 
   // ── 一覧のページで #r-… の行へ飛んで光らせる（検索から来た時）
   const jump = () => {
