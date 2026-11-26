@@ -200,6 +200,51 @@ const foot = `<footer class="foot"><p>装備の名前と性能の文はゲーム
 
 // Rare/Ex/競売不可・NPCへの売値のバッジ（LandSandBoat の item_basic）
 function rxBadges(id) { const f = lsb.flags[id] || ''; return (f.includes('R') ? '<span class="bd rx rare">Rare</span>' : '') + (f.includes('E') ? '<span class="bd rx exc">Ex</span>' : '') + (f.includes('N') ? '<span class="bd">競売不可</span>' : '') + (lsb.sell[id] ? `<span class="bd">NPC売値 ${lsb.sell[id].toLocaleString()}ギル</span>` : ''); }
+// 見た目が同じ装備（LandSandBoat の item_equipment：同じ部位で同じモデル番号 MId）と、ほかの部位も覆う印
+const LOOK_SLOT = s => (s & 1 ? 'main' : s & 2 ? 'sub' : s & 4 ? 'range' : s & 16 ? 'head' : s & 32 ? 'body' : s & 64 ? 'hands' : s & 128 ? 'legs' : s & 256 ? 'feet' : '');
+const lookKey = id => { const l = (lsb.look || {})[id]; if (!l) return ''; const s = LOOK_SLOT(l[1]); return s ? `${s}|${l[0]}` : ''; };
+function lookGroups() {
+  const m = new Map();
+  for (const e of equip) { const k = lookKey(e.id); if (!k) continue; if (!m.has(k)) m.set(k, []); m.get(k).push(e); }
+  for (const l of m.values()) l.sort((a, b) => (a.it.level - b.it.level) || ((a.it.item_level || 0) - (b.it.item_level || 0)) || a.it.ja.localeCompare(b.it.ja, 'ja'));
+  return m;
+}
+const COVER = [[16, '頭'], [64, '両手'], [128, '両脚'], [256, '両足']];
+const coverOf = id => { const l = (lsb.look || {})[id]; if (!l || !l[2]) return []; return COVER.filter(([b]) => l[2] & b).map(([, n]) => n); };
+
+// 見た目で探す：部位・武器の種類ごとに、同じ見た目の装備をまとめた一覧（画像は載せない）
+function writeLooks() {
+  fs.mkdirSync(path.join(SITE, 'looks'), { recursive: true });
+  const groups = lookGroups();
+  const pages = [];
+  const cats = ALL_CATS.filter(c => ['head', 'body', 'hands', 'legs', 'feet'].includes(c[0]) || c[3] === 'weapon' || c[0] === 'shield');
+  const perCat = cats.map(c => {
+    const gs = [...groups.values()].map(l => l.filter(e => catOf.get(e.id) === c)).filter(l => l.length >= 1);
+    gs.sort((a, b) => b.length - a.length || a[0].it.ja.localeCompare(b[0].it.ja, 'ja'));
+    return [c, gs];
+  }).filter(([, gs]) => gs.length);
+  const nav = cur => `<nav class="catnav"><div><span class="lbl">防具</span>${perCat.filter(([c]) => c[3] !== 'weapon').map(([c]) => c[0] === cur ? `<b>${esc(c[1])}</b>` : `<a href="${BASE}looks/${c[0]}.html">${esc(c[1])}</a>`).join('')}</div><div><span class="lbl">武器</span>${perCat.filter(([c]) => c[3] === 'weapon').map(([c]) => c[0] === cur ? `<b>${esc(c[1])}</b>` : `<a href="${BASE}looks/${c[0]}.html">${esc(c[1])}</a>`).join('')}</div></nav>`;
+  for (const [c, gs] of perCat) {
+    const multi = gs.filter(l => l.length >= 2), single = gs.filter(l => l.length === 1);
+    const card = l => { const cv = coverOf(l[0].id); return `<div class="look" data-q="${esc(l.map(e => e.it.ja + ' ' + (e.it.en || '')).join(' ').toLowerCase())}"><h3>${esc(l[0].it.ja)}の見た目 <span class="cnt">${l.length}件</span>${cv.length ? ` <span class="bd cover">${esc(cv.join('・'))}も覆う</span>` : ''}</h3><p>${l.map(e => `<a href="${BASE}item/${e.id}.html">${esc(e.it.ja)}</a><small>Lv${e.it.level}${e.it.item_level ? '・IL' + e.it.item_level : ''}${raceNames(e.it.races) ? '・' + esc(raceNames(e.it.races)) : ''}</small>`).join('　')}</p></div>`; };
+    const url = `${ORIGIN}/looks/${c[0]}.html`; pages.push(url);
+    fs.writeFileSync(path.join(SITE, 'looks', `${c[0]}.html`), head(`${c[1]}の見た目で探す（同じ見た目の装備）｜${SITE_SHORT}`,
+      `FF11の${c[1]}を、ゲームの中で同じ見た目になる物ごとにまとめた一覧。${multi.length}通りの見た目に2件以上の装備。見た目の固定（ロックスタイル）選びに。`, url)
+      + `<main class="wide"><p class="crumb"><a href="${BASE}">トップ</a> › <a href="${BASE}looks/head.html">見た目で探す</a> › ${esc(c[1])}</p><h1>${esc(c[1])}の見た目で探す <span class="cnt">${gs.length}通り</span></h1>
+<p class="lead">ゲームの中で同じ見た目になる${esc(c[1])}を、まとめて並べています（件数の多い順）。見た目の固定（ロックスタイル）で、低いレベルの物や手に入れやすい物を探す時に。画像は載せていません。見た目は FF11用語辞典などで確かめてください。種族専用の装備（ヒューム用・ガルカ用など）は、同じ組でもそれぞれの種族の体での見た目です。</p>
+${nav(c[0])}
+<div class="row"><input id="lq" type="search" placeholder="装備の名前で絞る（日本語・英語）"> <span id="lc" class="cnt"></span></div>
+<h2>同じ見た目の装備が2件以上 <span class="cnt">${multi.length}通り</span></h2>
+<div id="looks">${multi.map(card).join('')}</div>
+${single.length ? `<h2>この見た目は1件だけ <span class="cnt">${single.length}件</span></h2><div class="looks1">${single.map(card).join('')}</div>` : ''}
+<p class="note">元データ：有志のサーバー再現データ LandSandBoat（GPLv3）の、装備ごとのモデル番号。同じ部位で番号が同じ物を「同じ見た目」としています（参考）。</p>
+<script>(function(){var q=document.getElementById('lq'),c=document.getElementById('lc'),cards=[].slice.call(document.querySelectorAll('.look'));function f(){var v=q.value.trim().toLowerCase(),n=0;cards.forEach(function(d){var ok=!v||d.getAttribute('data-q').indexOf(v)>=0;d.hidden=!ok;if(ok)n++;});c.textContent=v?n+'通り':'';}q.addEventListener('input',f);})();</script>
+</main>` + foot);
+  }
+  const total = [...groups.values()].filter(l => l.length >= 2).length;
+  return { home: tile(`${BASE}looks/head.html`, '見た目で探す', total, '見', 'ex'), urls: pages, count: total };
+}
+
 // 1装備1ページ（一覧の表の部品を使うので、ファイルの最後で呼ぶ）
 function writeItemPages() {
   // 合成のレシピ（有志のサーバー再現データ LandSandBoat の synth_recipes。fetch で data/synth.json）
@@ -224,13 +269,7 @@ function writeItemPages() {
   for (const e of equip) { const k = seriesKey(e); if (!k) continue; if (!bySeries.has(k)) bySeries.set(k, []); bySeries.get(k).push(e); }
   const catOrder = e => ALL_CATS.indexOf(catOf.get(e.id));
 
-  // 見た目が同じ装備（LandSandBoat の item_equipment：同じ部位で同じモデル番号 MId）と、ほかの部位も覆う印
-  const LOOK_SLOT = s => (s & 1 ? 'main' : s & 2 ? 'sub' : s & 4 ? 'range' : s & 16 ? 'head' : s & 32 ? 'body' : s & 64 ? 'hands' : s & 128 ? 'legs' : s & 256 ? 'feet' : '');
-  const lookKey = id => { const l = (lsb.look || {})[id]; if (!l) return ''; const s = LOOK_SLOT(l[1]); return s ? `${s}|${l[0]}` : ''; };
-  const byLook = new Map();
-  for (const e of equip) { const k = lookKey(e.id); if (!k) continue; if (!byLook.has(k)) byLook.set(k, []); byLook.get(k).push(e); }
-  const COVER = [[16, '頭'], [64, '両手'], [128, '両脚'], [256, '両足']];
-  const coverOf = id => { const l = (lsb.look || {})[id]; if (!l || !l[2]) return []; return COVER.filter(([b]) => l[2] & b).map(([, n]) => n); };
+  const byLook = lookGroups();
 
   // 性能が近い装備（同じカテゴリー・同じ帯で、性能の向きが近い物）
   const vecOf = e => Object.entries(e.st.main).filter(([k]) => k !== '防');
@@ -281,7 +320,7 @@ ${Object.keys(st.pet).length ? `<h2>ペットの性能</h2><ul class="stats">${O
 ${Object.keys(st.cond).length ? `<p class="note">※潜在能力などの条件付きの性能は、内訳と絞り込みに含めていません（上のゲーム内の文を見てください）。</p>` : ''}
 ${variants.length > 1 ? `<h2>段階違い（＋1・＋2…）</h2>${tbl(variants)}` : ''}
 ${seriesOk ? `<h2>同じシリーズ</h2>${tbl(series.sort((a, b) => catOrder(a) - catOrder(b) || a.it.ja.localeCompare(b.it.ja, 'ja')))}` : ''}
-${sameLook.length > 1 ? `<h2>見た目が同じ装備（${sameLook.length}件）</h2><p class="note">ゲームの中で同じ見た目になる装備です（有志のサーバー再現データ LandSandBoat で、同じ部位のモデル番号が同じ物）。見た目の固定（ロックスタイル）選びに。</p>${tbl(sameLook.slice(0, 40))}${sameLook.length > 40 ? `<p class="note">ほか${sameLook.length - 40}件。</p>` : ''}` : ''}
+${sameLook.length > 1 ? `<h2>見た目が同じ装備（${sameLook.length}件）</h2><p class="note">ゲームの中で同じ見た目になる装備です（有志のサーバー再現データ LandSandBoat で、同じ部位のモデル番号が同じ物）。見た目の固定（ロックスタイル）選びに。${cat ? ` <a href="${BASE}looks/${cat[0]}.html">${esc(cat[1])}の見た目で探す</a>` : ''}</p>${tbl(sameLook.slice(0, 40))}${sameLook.length > 40 ? `<p class="note">ほか${sameLook.length - 40}件。</p>` : ''}` : ''}
 <h2>入手方法</h2>${acqHtml(id)}${recs.length ? '<h3>合成</h3>' : ''}${recs.length ? `<p class="note">合成で作れます（有志のサーバー再現データ LandSandBoat のレシピ。数値は参考）。</p>${recs.slice(0, 4).map(recipeHtml).join('')}` : ''}
 <p class="note">${recs.length ? 'ほかの入手方法' : 'ドロップ・報酬・お店などの入手方法'}と、オーグメント（追加の性能）の中身は、<a href="${ffo(it.ja)}" rel="noopener" target="_blank">FF11用語辞典の「${esc(it.ja)}」</a>を見てください。</p>
 ${uses.length ? `<h2>この装備を使っているセット（姉妹ブログ）</h2><ul class="uses">${uses.map(u => `<li><a href="${u.url}">${esc(u.job)}：${esc(u.set)}</a> <span class="k">（${esc(u.parts.join('・'))}）</span></li>`).join('')}</ul>` : ''}
@@ -445,6 +484,8 @@ const fi = writeFishing({ items, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE
 console.log('釣り', fi.count);
 const gu = writeGuild({ items, head, foot, esc, BASE, ORIGIN, SITE, SITE_SHORT, VER, tile, lsb, hasPage: id => equipById.has(id) || more.itemCatOf.has(id) });
 console.log('ギルドの納品', gu.count);
+const lk = writeLooks();
+console.log('見た目で探す', lk.count, '通り', lk.urls.length, 'ページ');
 fs.writeFileSync(path.join(SITE, 'index.html'), head(`${SITE_NAME}｜部位・武器・ジョブごとの一覧と性能で探す（最新のバージョンアップまで）`,
   `FF11の装備${equip.length.toLocaleString()}件を、部位・武器の種類・ジョブごとの一覧で見比べ、ヘイストやファストキャストなどの性能でも探せるデータベース。バージョンアップごとの新装備も毎日自動で更新（${asof.note}）。`, `${ORIGIN}/`)
   + `<main class="wide home">
@@ -457,7 +498,7 @@ ${updates.slice(0, 2).map(u => updateBlock(u, false)).join('')}</section>
 ${more.home}
 ${sy.home}
 ${qs2.home}
-${ex.home.replace('</div></section>', fi.home + gu.home + '</div></section>')}
+${ex.home.replace('</div></section>', fi.home + gu.home + lk.home + '</div></section>')}
 <section class="box" id="job"><h2>ジョブ別</h2><div class="tiles small">${JOB_LIST.map(j => tile(`${BASE}job/${j.ens.toLowerCase()}.html`, j.ja, equip.filter(e => (e.it.jobs || 0) & (1 << j.id)).length, j.jas, 'j')).join('')}</div></section>
 <section class="box" id="search"><h2>性能で探す</h2><p>ヘイスト・ファストキャスト・マジックバースト・被ダメージなど、性能の数値で絞り込んで大きい順に並べられます。 <a class="btn" href="${BASE}search.html">性能で探す</a></p>
 <div class="quick">${QUICK.map(([label, q]) => `<a href="${BASE}search.html?${q}">${esc(label)}</a>`).join('')}</div></section>
@@ -486,7 +527,7 @@ writeItemPages();
 // 検索エンジン向け
 fs.writeFileSync(path.join(SITE, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${ORIGIN}/sitemap.xml\n`);
 fs.writeFileSync(path.join(SITE, 'sitemap.xml'), '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-  + [`${ORIGIN}/`, `${ORIGIN}/new.html`, `${ORIGIN}/search.html`, `${ORIGIN}/about.html`, ...listPages, ...jobPages, ...more.urls, ...qs2.urls, ...ex.urls, ...sy.urls, ...fi.urls, ...gu.urls, ...equip.map(e => `${ORIGIN}/item/${e.id}.html`)].map(u => `<url><loc>${u}</loc></url>`).join('\n') + '\n</urlset>\n');
+  + [`${ORIGIN}/`, `${ORIGIN}/new.html`, `${ORIGIN}/search.html`, `${ORIGIN}/about.html`, ...listPages, ...jobPages, ...more.urls, ...qs2.urls, ...ex.urls, ...sy.urls, ...fi.urls, ...gu.urls, ...lk.urls, ...equip.map(e => `${ORIGIN}/item/${e.id}.html`)].map(u => `<url><loc>${u}</loc></url>`).join('\n') + '\n</urlset>\n');
 fs.writeFileSync(path.join(SITE, '.nojekyll'), '');
 
 console.log(`装備 ${equip.length}件 / 性能の種類 ${STATS.length}（ペット ${petCount.size}） / データ ${asof.date}`);
