@@ -96,8 +96,8 @@ h1 .cnt{font-size:14px;color:var(--sub);font-weight:normal;margin-left:10px}
 
 /* 表（ff11db の並び：名前／Lv／IL／防・D／装備できるジョブ／性能） */
 .tbl{overflow:hidden;padding:0}
-.tbl .r{display:grid;grid-template-columns:minmax(180px,1.25fr) 40px 42px 70px 292px minmax(260px,3fr);border-top:1px solid rgba(95,130,192,.25);align-items:center}
-.tbl .r.hasv{grid-template-columns:minmax(180px,1.25fr) 40px 42px 76px 292px 78px minmax(240px,3fr)}
+.tbl .r{display:grid;grid-template-columns:236px 40px 42px 70px 186px minmax(300px,1fr);border-top:1px solid rgba(95,130,192,.25);align-items:center}
+.tbl .r.hasv{grid-template-columns:236px 40px 42px 76px 186px 78px minmax(280px,1fr)}
 .tbl .r>div{padding:7px 9px}
 .tbl .r:nth-child(even of .r:not(.h)){background:var(--zebra)}
 .tbl .r:not(.h):hover{background:var(--hover)}
