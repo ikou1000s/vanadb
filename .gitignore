@@ -4,3 +4,5 @@ data/asof.json
 node_modules/
 data/updates.json
 data/synth.json
+data/quests.json
+data/zones.lua

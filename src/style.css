@@ -261,3 +261,18 @@ main.wide h2 .cnt{font-size:12.5px;color:var(--sub);font-weight:normal;margin-le
 .stats li a{color:#dbe6fb}
 .tile.hot{border-color:var(--gold2);box-shadow:0 0 0 1px rgba(229,196,107,.35),0 0 12px rgba(229,196,107,.18)}
 @media (max-width:860px){.tbl.foods .r,.tbl.foods .r.hasv{display:flex;flex-wrap:wrap}.tbl.foods .c-n{flex:1 1 100%}}
+
+/* クエスト・ミッション */
+.tbl.quests .r{grid-template-columns:minmax(220px,1.6fr) minmax(150px,1.1fr) minmax(110px,.8fr) minmax(150px,1.1fr) minmax(170px,1.3fr) 70px}
+.tbl.missions .r{grid-template-columns:60px minmax(260px,4fr) 80px}
+.c-no{text-align:center;color:var(--gold);font-weight:800}
+.c-loc .grid{display:inline-block;font-size:11px;color:var(--gold);border:1px solid var(--gold2);border-radius:4px;padding:0 4px;margin-left:2px}
+.c-npc,.c-req,.c-rw,.c-loc{font-size:12.5px}
+.c-req .pre{color:var(--sub);font-size:12px;margin-top:2px}
+.en{color:#b5c3dc}
+.tag.rep{font-size:10.5px;font-weight:700;color:#a6f0b2;border:1px solid #3f9c55;border-radius:4px;padding:0 4px;margin-left:4px;vertical-align:1px}
+.c-n small{display:block}
+.tile.qs .ic{background:radial-gradient(circle at 35% 30%,#fff0de,#f2b36b 55%,#b5702a);color:#2a1606}
+.tile.ms .ic{background:radial-gradient(circle at 35% 30%,#ffe3e3,#f28b8b 55%,#b54444);color:#2a0606}
+#quest .tiles{grid-template-columns:repeat(auto-fill,minmax(178px,1fr))}
+@media (max-width:860px){.tbl.quests .r,.tbl.missions .r{display:flex;flex-wrap:wrap;gap:0 8px}.tbl.quests .r>div,.tbl.missions .r>div{padding:4px 8px}.tbl.quests .c-n,.tbl.missions .c-n{flex:1 1 100%}}

@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DATA = path.join(ROOT, 'data');
-const FILES = ['items', 'item_descriptions', 'jobs', 'slots', 'skills', 'key_items', 'spells', 'weapon_skills', 'job_abilities'];
+const FILES = ['items', 'item_descriptions', 'jobs', 'slots', 'skills', 'key_items', 'spells', 'weapon_skills', 'job_abilities', 'zones'];
 const RAW = 'https://raw.githubusercontent.com/Windower/Resources/master/resources_data/';
 
 fs.mkdirSync(DATA, { recursive: true });
@@ -59,3 +59,6 @@ if (synth.length > 1000) fs.writeFileSync(path.join(DATA, 'synth.json'), JSON.st
 asof.synth = synth.length;
 fs.writeFileSync(path.join(DATA, 'asof.json'), JSON.stringify(asof, null, 1));
 console.log('取り込み完了', asof);
+
+// クエスト・ミッションの一覧（Journal-FFXI-JP・GPL-3.0）
+await import('./fetch_quests.mjs');

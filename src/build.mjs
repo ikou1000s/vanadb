@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { readLua } from './lua.mjs';
 import { loadBlogUses } from './blog.mjs';
 import { writeMore } from './more.mjs';
+import { writeQuests } from './quests.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DATA = path.join(ROOT, 'data');
@@ -159,7 +160,7 @@ const head = (title, description, canonical) => `<!DOCTYPE html>
 <link rel="stylesheet" href="${BASE}style.css?v=${VER}">
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE}" crossorigin="anonymous"></script></head><body>
 <header class="top"><div class="in"><a class="brand" href="${BASE}">ヴァナDB<small>FF11 データベース</small></a><span class="asof">データ ${esc(asof.date)} 時点（${esc(asof.note)}）</span></div>
-<nav class="gnav"><a class="new" href="${BASE}new.html">新装備・新アイテム</a><a href="${BASE}#armor">防具</a><a href="${BASE}#weapon">武器</a><a href="${BASE}#items">アイテム</a><a href="${BASE}#magic">魔法</a><a href="${BASE}ws/index.html">WS</a><a href="${BASE}ability/index.html">アビリティ</a><a href="${BASE}#ki">だいじなもの</a><a href="${BASE}#job">ジョブ別</a><a href="${BASE}search.html">性能で探す</a><a href="${BASE}food.html">食事で探す</a></nav></header>`;
+<nav class="gnav"><a class="new" href="${BASE}new.html">新装備・新アイテム</a><a href="${BASE}#armor">防具</a><a href="${BASE}#weapon">武器</a><a href="${BASE}#items">アイテム</a><a href="${BASE}#magic">魔法</a><a href="${BASE}ws/index.html">WS</a><a href="${BASE}ability/index.html">アビリティ</a><a href="${BASE}#ki">だいじなもの</a><a href="${BASE}quest/index.html">クエスト</a><a href="${BASE}mission/index.html">ミッション</a><a href="${BASE}#job">ジョブ別</a><a href="${BASE}search.html">性能で探す</a><a href="${BASE}food.html">食事で探す</a></nav></header>`;
 const foot = `<footer class="foot"><p>装備の名前と性能の文はゲーム内の表記（データの出典：<a href="https://github.com/Windower/Resources" rel="noopener">Windower Resources</a>）。誤りに気づいたら教えてください。</p>
 <p>姉妹サイト：<a href="https://ff11ikou.blog.fc2.com/">【 FF11 】いこう！ の実験＆実用メモ帳</a>（ジョブ別の装備セットと選んだ理由）</p>
 <p><a href="${BASE}about.html">このサイトについて・プライバシーポリシー・お問い合わせ</a></p>
@@ -389,16 +390,19 @@ const tile = (href, label, n, ic, cls = '') => `<a class="tile ${cls}" href="${h
 const synthAll = fs.existsSync(path.join(DATA, 'synth.json')) ? JSON.parse(fs.readFileSync(path.join(DATA, 'synth.json'), 'utf8')) : [];
 const more = writeMore({ items, desc, JOB_LIST, skills, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE_SHORT, equipById, synth: synthAll, tile, VER });
 console.log('装備以外', JSON.stringify(more.counts));
+const qs2 = writeQuests({ items, JOB_LIST, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE_SHORT, VER, tile });
+console.log('クエスト・ミッション', JSON.stringify(qs2.counts));
 fs.writeFileSync(path.join(SITE, 'index.html'), head(`${SITE_NAME}｜部位・武器・ジョブごとの一覧と性能で探す（最新のバージョンアップまで）`,
   `FF11の装備${equip.length.toLocaleString()}件を、部位・武器の種類・ジョブごとの一覧で見比べ、ヘイストやファストキャストなどの性能でも探せるデータベース。バージョンアップごとの新装備も毎日自動で更新（${asof.note}）。`, `${ORIGIN}/`)
   + `<main class="wide home">
 <section class="hero"><h1>FF11の装備・アイテム・魔法を、一覧でざっと見比べる</h1>
-<p>装備${equip.length.toLocaleString()}件・アイテム${more.counts.items.toLocaleString()}件・だいじなもの${more.counts.ki.toLocaleString()}件・魔法${more.counts.spells}件・WS${more.counts.ws}件・アビリティ${more.counts.ab}件。装備は部位・武器の種類・ジョブごとに、IL・Lvの帯で並べています。装備できるジョブは22ジョブを1行で、性能はゲーム内の表記のまま。毎日、最新のデータを取り込んでいます（<b>${esc(asof.note)}</b>）。</p></section>
+<p>装備${equip.length.toLocaleString()}件・アイテム${more.counts.items.toLocaleString()}件・だいじなもの${more.counts.ki.toLocaleString()}件・魔法${more.counts.spells}件・WS${more.counts.ws}件・アビリティ${more.counts.ab}件・クエスト${qs2.counts.quests}件・ミッション${qs2.counts.missions}件。装備は部位・武器の種類・ジョブごとに、IL・Lvの帯で並べています。装備できるジョブは22ジョブを1行で、性能はゲーム内の表記のまま。毎日、最新のデータを取り込んでいます（<b>${esc(asof.note)}</b>）。</p></section>
 <section class="box latest"><h2>最新の新装備・新アイテム <a class="all" href="${BASE}new.html">バージョンアップごとの一覧へ</a></h2>
 ${updates.slice(0, 2).map(u => updateBlock(u, false)).join('')}</section>
 <section class="box" id="armor"><h2>防具（部位ごと）</h2><div class="tiles">${ARMOR_CATS.map(([k, ja]) => tile(`${BASE}list/${k}.html`, ja, catCount.get(k) || 0, ICON[k])).join('')}</div></section>
 <section class="box" id="weapon"><h2>武器（種類ごと）</h2><div class="tiles">${WEAPON_CATS.filter(([k]) => catCount.get(k)).map(([k, ja]) => tile(`${BASE}list/${k}.html`, ja, catCount.get(k), ICON[k], 'w')).join('')}</div></section>
 ${more.home}
+${qs2.home}
 <section class="box" id="job"><h2>ジョブ別</h2><div class="tiles small">${JOB_LIST.map(j => tile(`${BASE}job/${j.ens.toLowerCase()}.html`, j.ja, equip.filter(e => (e.it.jobs || 0) & (1 << j.id)).length, j.jas, 'j')).join('')}</div></section>
 <section class="box" id="search"><h2>性能で探す</h2><p>ヘイスト・ファストキャスト・マジックバースト・被ダメージなど、性能の数値で絞り込んで大きい順に並べられます。 <a class="btn" href="${BASE}search.html">性能で探す</a></p>
 <div class="quick">${QUICK.map(([label, q]) => `<a href="${BASE}search.html?${q}">${esc(label)}</a>`).join('')}</div></section>
@@ -427,7 +431,7 @@ writeItemPages();
 // 検索エンジン向け
 fs.writeFileSync(path.join(SITE, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${ORIGIN}/sitemap.xml\n`);
 fs.writeFileSync(path.join(SITE, 'sitemap.xml'), '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-  + [`${ORIGIN}/`, `${ORIGIN}/new.html`, `${ORIGIN}/search.html`, `${ORIGIN}/about.html`, ...listPages, ...jobPages, ...more.urls, ...equip.map(e => `${ORIGIN}/item/${e.id}.html`)].map(u => `<url><loc>${u}</loc></url>`).join('\n') + '\n</urlset>\n');
+  + [`${ORIGIN}/`, `${ORIGIN}/new.html`, `${ORIGIN}/search.html`, `${ORIGIN}/about.html`, ...listPages, ...jobPages, ...more.urls, ...qs2.urls, ...equip.map(e => `${ORIGIN}/item/${e.id}.html`)].map(u => `<url><loc>${u}</loc></url>`).join('\n') + '\n</urlset>\n');
 fs.writeFileSync(path.join(SITE, '.nojekyll'), '');
 
 console.log(`装備 ${equip.length}件 / 性能の種類 ${STATS.length}（ペット ${petCount.size}） / データ ${asof.date}`);
