@@ -276,3 +276,11 @@ main.wide h2 .cnt{font-size:12.5px;color:var(--sub);font-weight:normal;margin-le
 .tile.ms .ic{background:radial-gradient(circle at 35% 30%,#ffe3e3,#f28b8b 55%,#b54444);color:#2a0606}
 #quest .tiles{grid-template-columns:repeat(auto-fill,minmax(178px,1fr))}
 @media (max-width:860px){.tbl.quests .r,.tbl.missions .r{display:flex;flex-wrap:wrap;gap:0 8px}.tbl.quests .r>div,.tbl.missions .r>div{padding:4px 8px}.tbl.quests .c-n,.tbl.missions .c-n{flex:1 1 100%}}
+
+/* そのほかの一覧 */
+.tbl.simple .r{grid-template-columns:minmax(240px,2fr) minmax(220px,3fr) 80px}
+.tbl.simple2 .r{grid-template-columns:minmax(220px,1.4fr) minmax(320px,4fr)}
+.tile.ex .ic{background:radial-gradient(circle at 35% 30%,#e6fff8,#7fe0c4 55%,#2f9c80);color:#04241c;font-size:13px}
+#more .tiles{grid-template-columns:repeat(auto-fill,minmax(178px,1fr))}
+.c-fx .tag{margin-left:4px}
+@media (max-width:860px){.tbl.simple .r,.tbl.simple2 .r{display:flex;flex-wrap:wrap;gap:0 8px}.tbl.simple .r>div,.tbl.simple2 .r>div{padding:4px 8px}.tbl.simple .c-n,.tbl.simple2 .c-n{flex:1 1 100%}}

@@ -38,14 +38,21 @@
     bar.addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; mode = b.getAttribute('data-mode'); try { localStorage.setItem('vanadb:ckmode', mode); } catch (x) {} apply(); });
   }
 
+  // 名前で絞る（input.tfilter の data-for＝表の id）
+  var tf = {};
+  [].forEach.call(document.querySelectorAll('.tfilter'), function (inp) {
+    inp.addEventListener('input', function () { tf[inp.getAttribute('data-for')] = inp.value.trim().toLowerCase(); apply(); });
+  });
   function apply() {
     var bit = job ? (1 << Number(job)) : 0, shown = 0, total = 0, done = 0;
     [].forEach.call(document.querySelectorAll('.tbl .r:not(.h)'), function (r) {
       var okJob = !bit || !r.hasAttribute('data-j') || (Number(r.getAttribute('data-j')) & bit);
+      var t = r.parentNode, q = t && t.id ? tf[t.id] : '';
+      var okQ = !q || r.textContent.toLowerCase().indexOf(q) >= 0;
       var isDone = r.classList.contains('done');
       if (okJob && r.hasAttribute('data-id')) { total++; if (isDone) done++; }
       var okMode = mode === 'all' || !r.hasAttribute('data-id') || (mode === 'done' ? isDone : !isDone);
-      r.hidden = !(okJob && okMode); if (!r.hidden) shown++;
+      r.hidden = !(okJob && okMode && okQ); if (!r.hidden) shown++;
     });
     // 帯ごとの件数と、空の帯を隠す
     [].forEach.call(document.querySelectorAll('.tbl .band'), function (b) {
