@@ -50,6 +50,10 @@ out.blueTraits = {}; // 特性の種類 → [必要ポイント, 特性ID]
 for (const r of rows(await get('blue_traits'))) { const c = Number(r[0]); if (!out.blueTraits[c]) out.blueTraits[c] = []; out.blueTraits[c].push([Number(r[1]), Number(r[2])]); }
 // ギルドの納品（ギルド・アイテム・ランク・ポイント・上限・日替わりの型）
 out.guild = rows(await get('guild_item_points')).map(r => r.slice(0, 6).map(Number));
+// 装備の見た目（モデル番号）：[MId, 部位, ほかに覆う部位]
+out.look = {};
+for (const r of rows(await get('item_equipment'))) { const mid = Number(r[5]); if (mid > 0) out.look[Number(r[0])] = [mid, Number(r[8]), Number(r[9])]; }
 fs.writeFileSync(path.join(DATA, 'lsb.json'), JSON.stringify(out));
+console.log('見た目', Object.keys(out.look).length);
 console.log('青魔法', Object.keys(out.blue).length, 'ギルド納品', out.guild.length);
 console.log('売値', Object.keys(out.sell).length, '印', Object.keys(out.flags).length, '魚', out.fish.length, '竿', out.rods.length);
