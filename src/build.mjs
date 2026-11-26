@@ -11,6 +11,7 @@ import { writeQuests } from './quests.mjs';
 import { writeExtra } from './extra.mjs';
 import { writeSynth } from './synth.mjs';
 import { writeFishing } from './fishing.mjs';
+import { writeGuild } from './guild.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DATA = path.join(ROOT, 'data');
@@ -395,7 +396,7 @@ fs.writeFileSync(path.join(SITE, 'search.html'), head(`性能で探す（ヘイ�
 const ICON = { head: '頭', body: '胴', hands: '手', legs: '脚', feet: '足', neck: '首', waist: '腰', back: '背', ear: '耳', ring: '指', shield: '盾', h2h: '拳', dagger: '短', sword: '剣', gsword: '大', axe: '斧', gaxe: '鉞', scythe: '鎌', polearm: '槍', katana: '刀', gkatana: '太', club: '棍', staff: '杖', archery: '弓', marksmanship: '銃', throwing: '投', wind: '笛', string: '琴', handbell: '鈴', fishing: '竿', ammo: '矢', grip: '握' };
 const tile = (href, label, n, ic, cls = '') => `<a class="tile ${cls}" href="${href}"><span class="ic">${esc(ic)}</span><span><b>${esc(label)}</b><span class="n">${n.toLocaleString()}件</span></span></a>`;
 const synthAll = fs.existsSync(path.join(DATA, 'synth.json')) ? JSON.parse(fs.readFileSync(path.join(DATA, 'synth.json'), 'utf8')) : [];
-const more = writeMore({ items, desc, JOB_LIST, skills, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE_SHORT, equipById, synth: synthAll, tile, VER, rxBadges, rxTags });
+const more = writeMore({ items, desc, JOB_LIST, skills, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE_SHORT, equipById, synth: synthAll, tile, VER, rxBadges, rxTags, lsb });
 console.log('装備以外', JSON.stringify(more.counts));
 const qs2 = writeQuests({ items, JOB_LIST, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE_SHORT, VER, tile });
 console.log('クエスト・ミッション', JSON.stringify(qs2.counts));
@@ -405,6 +406,8 @@ const sy = writeSynth({ items, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE_S
 console.log('合成レシピ', sy.count);
 const fi = writeFishing({ items, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE_SHORT, VER, tile, lsb, hasPage: id => equipById.has(id) || more.itemCatOf.has(id) });
 console.log('釣り', fi.count);
+const gu = writeGuild({ items, head, foot, esc, BASE, ORIGIN, SITE, SITE_SHORT, VER, tile, lsb, hasPage: id => equipById.has(id) || more.itemCatOf.has(id) });
+console.log('ギルドの納品', gu.count);
 fs.writeFileSync(path.join(SITE, 'index.html'), head(`${SITE_NAME}｜部位・武器・ジョブごとの一覧と性能で探す（最新のバージョンアップまで）`,
   `FF11の装備${equip.length.toLocaleString()}件を、部位・武器の種類・ジョブごとの一覧で見比べ、ヘイストやファストキャストなどの性能でも探せるデータベース。バージョンアップごとの新装備も毎日自動で更新（${asof.note}）。`, `${ORIGIN}/`)
   + `<main class="wide home">
@@ -417,7 +420,7 @@ ${updates.slice(0, 2).map(u => updateBlock(u, false)).join('')}</section>
 ${more.home}
 ${sy.home}
 ${qs2.home}
-${ex.home.replace('</div></section>', fi.home + '</div></section>')}
+${ex.home.replace('</div></section>', fi.home + gu.home + '</div></section>')}
 <section class="box" id="job"><h2>ジョブ別</h2><div class="tiles small">${JOB_LIST.map(j => tile(`${BASE}job/${j.ens.toLowerCase()}.html`, j.ja, equip.filter(e => (e.it.jobs || 0) & (1 << j.id)).length, j.jas, 'j')).join('')}</div></section>
 <section class="box" id="search"><h2>性能で探す</h2><p>ヘイスト・ファストキャスト・マジックバースト・被ダメージなど、性能の数値で絞り込んで大きい順に並べられます。 <a class="btn" href="${BASE}search.html">性能で探す</a></p>
 <div class="quick">${QUICK.map(([label, q]) => `<a href="${BASE}search.html?${q}">${esc(label)}</a>`).join('')}</div></section>
@@ -446,7 +449,7 @@ writeItemPages();
 // 検索エンジン向け
 fs.writeFileSync(path.join(SITE, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${ORIGIN}/sitemap.xml\n`);
 fs.writeFileSync(path.join(SITE, 'sitemap.xml'), '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-  + [`${ORIGIN}/`, `${ORIGIN}/new.html`, `${ORIGIN}/search.html`, `${ORIGIN}/about.html`, ...listPages, ...jobPages, ...more.urls, ...qs2.urls, ...ex.urls, ...sy.urls, ...fi.urls, ...equip.map(e => `${ORIGIN}/item/${e.id}.html`)].map(u => `<url><loc>${u}</loc></url>`).join('\n') + '\n</urlset>\n');
+  + [`${ORIGIN}/`, `${ORIGIN}/new.html`, `${ORIGIN}/search.html`, `${ORIGIN}/about.html`, ...listPages, ...jobPages, ...more.urls, ...qs2.urls, ...ex.urls, ...sy.urls, ...fi.urls, ...gu.urls, ...equip.map(e => `${ORIGIN}/item/${e.id}.html`)].map(u => `<url><loc>${u}</loc></url>`).join('\n') + '\n</urlset>\n');
 fs.writeFileSync(path.join(SITE, '.nojekyll'), '');
 
 console.log(`装備 ${equip.length}件 / 性能の種類 ${STATS.length}（ペット ${petCount.size}） / データ ${asof.date}`);

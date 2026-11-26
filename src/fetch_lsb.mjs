@@ -43,5 +43,13 @@ for (const r of fishRows) {
   out.fish.push({ id, skill: Number(r[2]), size: Number(r[9]), water: Number(r[10]), where: where.get(id) || [], baits: (baits.get(id) || []).sort((a, b) => b[1] - a[1]) });
 }
 for (const r of rows(await get('fishing_rod'))) out.rods.push({ id: Number(r[0]), min: Number(r[5]), max: Number(r[6]) });
+// 青魔法：セットポイント・特性の種類・連携属性（番号：1貫通 2収縮 3溶解 4切断 5振動 6炸裂 7硬化 8衝撃 9重力 10湾曲 11核熱 12分解 13光 14闇）
+out.blue = {};
+for (const r of rows(await get('blue_spell_list'))) out.blue[Number(r[0])] = { sp: Number(r[2]), cat: Number(r[3]), sc: [Number(r[5]), Number(r[6]), Number(r[7])].filter(Boolean) };
+out.blueTraits = {}; // 特性の種類 → [必要ポイント, 特性ID]
+for (const r of rows(await get('blue_traits'))) { const c = Number(r[0]); if (!out.blueTraits[c]) out.blueTraits[c] = []; out.blueTraits[c].push([Number(r[1]), Number(r[2])]); }
+// ギルドの納品（ギルド・アイテム・ランク・ポイント・上限・日替わりの型）
+out.guild = rows(await get('guild_item_points')).map(r => r.slice(0, 6).map(Number));
 fs.writeFileSync(path.join(DATA, 'lsb.json'), JSON.stringify(out));
+console.log('青魔法', Object.keys(out.blue).length, 'ギルド納品', out.guild.length);
 console.log('売値', Object.keys(out.sell).length, '印', Object.keys(out.flags).length, '魚', out.fish.length, '竿', out.rods.length);

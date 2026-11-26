@@ -14,7 +14,7 @@ const JA_TYPES = [['JobAbility', 'job', 'ジョブアビリティ'], ['PetComman
   ['Scholar', 'stratagem', '戦術魔道書'], ['Rune', 'rune', 'ルーン'], ['Ward', 'ward', 'ワード'], ['Effusion', 'effusion', 'エフューズ'], ['BloodPactRage', 'bp-rage', '契約の履行：神獣'], ['BloodPactWard', 'bp-ward', '契約の履行：験術'], ['Monster', 'monster', 'モンストロス']];
 
 export function writeMore(ctx) {
-  const { items, desc, JOB_LIST, skills, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE_SHORT, equipById, synth, tile, VER, rxBadges, rxTags } = ctx;
+  const { items, desc, JOB_LIST, skills, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE_SHORT, equipById, synth, tile, VER, rxBadges, rxTags, lsb } = ctx;
   const urls = [];
   const write = (rel, html) => { const f = path.join(SITE, rel); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, html); urls.push(`${ORIGIN}/${rel}`); };
   const load = f => (fs.existsSync(path.join(DATA, f)) ? readLua(path.join(DATA, f)) : new Map());
@@ -167,22 +167,27 @@ ${uses.length ? `<h2>使い道（この素材で作れる物 ${uses.length}品�
   const scrollOf = new Map(); for (const [id, c] of itemCatOf) if (c === 'scroll') scrollOf.set((items.get(id).en || '').replace(/^scroll of /i, '').toLowerCase(), id);
   const spNav = cur => `<nav class="catnav"><div><span class="lbl">魔法</span>${SPELL_TYPES.map(([, k, ja]) => k === cur ? `<b>${ja}</b>` : `<a href="${BASE}magic/${k}.html">${ja}</a>`).join('')}</div></nav>`;
   const spCount = new Map();
+  const SC_NO = { 1: 'Transfixion', 2: 'Compression', 3: 'Liquefaction', 4: 'Scission', 5: 'Reverberation', 6: 'Detonation', 7: 'Induration', 8: 'Impaction', 9: 'Gravitation', 10: 'Distortion', 11: 'Fusion', 12: 'Fragmentation', 13: 'Light', 14: 'Darkness' };
+  const traitsW = fs.existsSync(path.join(DATA, 'job_traits.lua')) ? readLua(path.join(DATA, 'job_traits.lua')) : new Map();
+  const blueOf = s => (lsb && lsb.blue ? lsb.blue[s.id] : null);
+  const blueTrait = b => { const t = b && lsb.blueTraits[b.cat]; return t && t[0] ? ((traitsW.get(t[0][1]) || {}).ja || '') : ''; };
+  const blueSc = b => (b ? b.sc.map(n => SC_NO[n]).filter(Boolean).map(x => `<span class="sc sc-${x}">${esc(SC_JA[x] || x)}</span>`).join('') : '');
   for (const [type, key, ja] of SPELL_TYPES) {
     const list = [...spells.values()].filter(s => s.type === type && s.ja && s.ja !== '.')
       .sort((a, b) => (Math.min(...parseLv(a.levels).map(x => x[1]), 999) - Math.min(...parseLv(b.levels).map(x => x[1]), 999)) || a.id - b.id);
     spCount.set(key, list.length);
     write(`magic/${key}.html`, head(`${ja}の一覧（${list.length}件）｜覚えるジョブとLv・MP・詠唱｜${SITE_SHORT}`,
-      `FF11の${ja}${list.length}件。覚えるジョブとレベル、消費MP、詠唱時間、再詠唱、属性、対象を一覧で。`, `${ORIGIN}/magic/${key}.html`)
+      `FF11の${ja}${list.length}件。覚えるジョブとレベル、消費MP、詠唱時間、再詠唱、属性、対象${key === 'blue' ? '、セットポイント、付く特性、連携属性' : ''}を一覧で。`, `${ORIGIN}/magic/${key}.html`)
       + `<main class="wide">${crumb('魔法', ja)}<h1>${ja} <span class="cnt">${list.length}件</span></h1>${spNav(key)}${jobChipsFor(list)}
-<div class="tbl spells" data-ck="sp"><div class="r h"><div class="c-n">名前</div><div class="c-jl">覚えるジョブとLv</div><div class="c-m">MP</div><div class="c-m">詠唱</div><div class="c-m">再詠唱</div><div class="c-m">属性</div><div class="c-m">対象</div></div>
-${list.map(s => `<div class="r" data-id="${s.id}" data-j="${parseLv(s.levels).reduce((a, [j]) => a | (1 << j), 0)}"><div class="c-n"><a href="${BASE}spell/${s.id}.html">${esc(s.ja)}</a><small>${esc(s.en)}</small></div><div class="c-jl">${lvText(s) || '<span class="nl">—</span>'}</div><div class="c-m">${s.mp_cost ?? ''}</div><div class="c-m">${s.cast_time ?? ''}秒</div><div class="c-m">${s.recast ?? ''}秒</div><div class="c-m el el${s.element}">${ELEMENT_JA[s.element] ?? ''}</div><div class="c-m">${tgt(s.targets || 0)}</div></div>`).join('')}</div>
+<div class="tbl spells${key === 'blue' ? ' blue' : ''}" data-ck="sp"><div class="r h"><div class="c-n">名前</div><div class="c-jl">覚えるジョブとLv</div><div class="c-m">MP</div><div class="c-m">詠唱</div><div class="c-m">再詠唱</div><div class="c-m">属性</div><div class="c-m">対象</div>${key === 'blue' ? '<div class="c-m">セット</div><div class="c-tr">特性</div><div class="c-sc">連携属性</div>' : ''}</div>
+${list.map(s => `<div class="r" data-id="${s.id}" data-j="${parseLv(s.levels).reduce((a, [j]) => a | (1 << j), 0)}"><div class="c-n"><a href="${BASE}spell/${s.id}.html">${esc(s.ja)}</a><small>${esc(s.en)}</small></div><div class="c-jl">${lvText(s) || '<span class="nl">—</span>'}</div><div class="c-m">${s.mp_cost ?? ''}</div><div class="c-m">${s.cast_time ?? ''}秒</div><div class="c-m">${s.recast ?? ''}秒</div><div class="c-m el el${s.element}">${ELEMENT_JA[s.element] ?? ''}</div><div class="c-m">${tgt(s.targets || 0)}</div>${key === 'blue' ? `<div class="c-m">${blueOf(s) ? blueOf(s).sp : ''}</div><div class="c-tr">${esc(blueTrait(blueOf(s)))}</div><div class="c-sc">${blueSc(blueOf(s))}</div>` : ''}</div>`).join('')}</div>
 <p class="none" hidden>このジョブが覚える物はありません。</p></main><script src="${BASE}list.js?v=${VER}"></script>` + foot);
     for (const s of list) {
       const sc = scrollOf.get((s.en || '').toLowerCase());
       write(`spell/${s.id}.html`, head(`${s.ja}｜${ja}｜${SITE_SHORT}`, `${s.ja}（${ja}）の覚えるジョブとレベル、消費MP${s.mp_cost}、詠唱${s.cast_time}秒、再詠唱${s.recast}秒、属性、対象${sc ? '、スクロール' : ''}。`, `${ORIGIN}/spell/${s.id}.html`)
         + `<main class="item">${crumb(`<a href="${BASE}magic/${key}.html">${ja}</a>`, esc(s.ja))}
 <section class="ihead"><div class="nm"><h1>${esc(s.ja)}</h1><small>${esc(s.en)}</small></div>
-<div class="badges"><a class="bd cat" href="${BASE}magic/${key}.html">${ja}</a>${skills.get(s.skill) ? `<span class="bd">${esc(skills.get(s.skill).ja)}</span>` : ''}<span class="bd">MP ${s.mp_cost}</span><span class="bd">詠唱 ${s.cast_time}秒</span><span class="bd">再詠唱 ${s.recast}秒</span><span class="bd el${s.element}">${ELEMENT_JA[s.element] ?? ''}</span><span class="bd">対象：${tgt(s.targets || 0)}</span></div>
+<div class="badges"><a class="bd cat" href="${BASE}magic/${key}.html">${ja}</a>${skills.get(s.skill) ? `<span class="bd">${esc(skills.get(s.skill).ja)}</span>` : ''}<span class="bd">MP ${s.mp_cost}</span><span class="bd">詠唱 ${s.cast_time}秒</span><span class="bd">再詠唱 ${s.recast}秒</span><span class="bd el${s.element}">${ELEMENT_JA[s.element] ?? ''}</span><span class="bd">対象：${tgt(s.targets || 0)}</span>${blueOf(s) ? `<span class="bd il">セット ${blueOf(s).sp}</span>${blueTrait(blueOf(s)) ? `<span class="bd">特性：${esc(blueTrait(blueOf(s)))}</span>` : ''}${blueSc(blueOf(s))}` : ''}</div>
 <div class="jobsrow"><span class="lbl">覚えるジョブとLv</span><span class="lvs">${lvText(s) || '<span class="nl">—</span>'}</span></div></section>
 <div class="extl"><a href="${ffo(s.ja)}" rel="noopener" target="_blank">FF11用語辞典で見る（効果・入手）</a><a href="https://www.bg-wiki.com/ffxi/${encodeURIComponent((s.en || '').replace(/ /g, '_'))}" rel="noopener" target="_blank">BG-Wiki（英語）</a></div>
 ${sc ? `<h2>スクロール</h2><p><a class="bd cat" href="${BASE}item/${sc}.html">${esc(iname(sc))}</a></p>` : ''}
