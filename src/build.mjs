@@ -186,11 +186,14 @@ fs.writeFileSync(path.join(SITE, 'style.css'), css);
 fs.copyFileSync(path.join(ROOT, 'src', 'app.js'), path.join(SITE, 'app.js'));
 fs.copyFileSync(path.join(ROOT, 'src', 'list.js'), path.join(SITE, 'list.js'));
 fs.copyFileSync(path.join(ROOT, 'src', 'food.js'), path.join(SITE, 'food.js'));
+// サイトのアイコン（スピードダイヤル・ブックマーク・タブ）。元は src/icons/icon.svg・favicon.svg（PNGは Chrome で書き出し済み）
+for (const f of fs.readdirSync(path.join(ROOT, 'src', 'icons'))) if (f !== 'icon.svg') fs.copyFileSync(path.join(ROOT, 'src', 'icons', f), path.join(SITE, f));
 
 const head = (title, description, canonical) => `<!DOCTYPE html>
 <html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(title)}</title><meta name="description" content="${esc(description)}">${canonical ? `<link rel="canonical" href="${canonical}">` : ''}
 <link rel="stylesheet" href="${BASE}style.css?v=${VER}">
+<link rel="icon" href="${BASE}favicon.ico" sizes="48x48"><link rel="icon" href="${BASE}favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="${BASE}apple-touch-icon.png"><link rel="manifest" href="${BASE}site.webmanifest"><meta name="theme-color" content="#14254a">
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE}" crossorigin="anonymous"></script><script src="${BASE}find.js?v=${VER}" defer></script></head><body>
 <header class="top"><div class="in"><a class="brand" href="${BASE}">ヴァナDB<small>FF11 データベース</small></a><span class="asof">データ ${esc(asof.date)} 時点（${esc(asof.note)}）</span><form class="hfind" action="${BASE}find.html" method="get" role="search"><input name="q" type="search" placeholder="名前で探す（装備・アイテム・魔法・クエスト…）" autocomplete="off" aria-label="名前で探す"><button type="submit">探す</button></form></div>
 <nav class="gnav"><a class="new" href="${BASE}new.html">新装備・新アイテム</a><a href="${BASE}#armor">防具</a><a href="${BASE}#weapon">武器</a><a href="${BASE}#items">アイテム</a><a href="${BASE}#magic">魔法</a><a href="${BASE}#synth">合成</a><a href="${BASE}ws/index.html">WS</a><a href="${BASE}ability/index.html">アビリティ</a><a href="${BASE}#ki">だいじなもの</a><a href="${BASE}quest/index.html">クエスト</a><a href="${BASE}mission/index.html">ミッション</a><a href="${BASE}titles.html">称号</a><a href="${BASE}#more">そのほか</a><a href="${BASE}#job">ジョブ別</a><a href="${BASE}search.html">性能で探す</a><a href="${BASE}food.html">食事で探す</a></nav></header>`;
