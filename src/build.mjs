@@ -14,6 +14,7 @@ const SITE_NAME = 'ヴァナDB（FF11 装備データベース）';
 const SITE_SHORT = 'FF11 ヴァナDB';
 const ORIGIN = 'https://vanadb.com';
 const BASE = '/'; // 独自ドメインの直下に置く前提
+const ADSENSE = 'ca-pub-4200741999536694'; // ブログと同じAdSense（ikou1000s）
 
 const items = readLua(path.join(DATA, 'items.lua'));
 const desc = readLua(path.join(DATA, 'item_descriptions.lua'));
@@ -110,10 +111,12 @@ fs.copyFileSync(path.join(ROOT, 'src', 'app.js'), path.join(SITE, 'app.js'));
 const head = (title, description, canonical) => `<!DOCTYPE html>
 <html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(title)}</title><meta name="description" content="${esc(description)}">${canonical ? `<link rel="canonical" href="${canonical}">` : ''}
-<link rel="stylesheet" href="${BASE}style.css"></head><body>
+<link rel="stylesheet" href="${BASE}style.css">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE}" crossorigin="anonymous"></script></head><body>
 <header class="top"><a class="brand" href="${BASE}">${SITE_NAME}</a><span class="asof">データ ${esc(asof.date)} 時点（${esc(asof.note)}）</span></header>`;
 const foot = `<footer class="foot"><p>装備の名前と性能の文はゲーム内の表記（データの出典：<a href="https://github.com/Windower/Resources" rel="noopener">Windower Resources</a>）。誤りに気づいたら教えてください。</p>
 <p>姉妹サイト：<a href="https://ff11ikou.blog.fc2.com/">【 FF11 】いこう！ の実験＆実用メモ帳</a>（ジョブ別の装備セットと選んだ理由）</p>
+<p><a href="${BASE}about.html">このサイトについて・プライバシーポリシー・お問い合わせ</a></p>
 <p class="cr">FINAL FANTASY XI © SQUARE ENIX CO., LTD. All Rights Reserved. このサイトは個人のファンサイトで、株式会社スクウェア・エニックスとは関係ありません。</p></footer></body></html>`;
 
 // 1装備1ページ
@@ -171,10 +174,27 @@ fs.writeFileSync(path.join(SITE, 'index.html'), head(`${SITE_NAME}｜ジョブ�
 <noscript><p>絞り込みにはJavaScriptが要ります。</p></noscript>
 </main><script src="${BASE}app.js"></script>` + foot);
 
+// このサイトについて（運営者・データ・プライバシーポリシー・お問い合わせ）
+fs.writeFileSync(path.join(SITE, 'about.html'), head(`このサイトについて｜${SITE_SHORT}`, 'ヴァナDB（FF11 装備データベース）の運営者・データの出典・プライバシーポリシー・お問い合わせ。', `${ORIGIN}/about.html`)
+  + `<main class="item"><h1>このサイトについて</h1>
+<p>ヴァナDBは、ファイナルファンタジーXI（FF11）の装備を、ジョブ・部位・性能で絞り込んで比べられる日本語のデータベースです。毎日、最新のデータを取り込んで作り直しています（今は${esc(asof.note)}）。</p>
+<h2>運営者</h2><p>FF11のブログ「<a href="https://ff11ikou.blog.fc2.com/">【 FF11 】いこう！ の実験＆実用メモ帳</a>」の運営者が、個人で運営しています。株式会社スクウェア・エニックスとは関係ありません。</p>
+<h2>データについて</h2><p>装備の名前・性能の文は、ゲーム内の表記を有志が公開しているデータ（<a href="https://github.com/Windower/Resources" rel="noopener">Windower Resources</a>）から取り込んでいます。性能の内訳と絞り込みは、その文を機械で分けた物です。条件付きの性能（潜在能力など）とオーグメントは、絞り込みに含めていません。ドロップ率や使い心地のように、遊んで確かめる情報は載せていません。誤りがあれば、下のお問い合わせから教えてください。</p>
+<h2>プライバシーポリシー</h2>
+<p>当サイトは、第三者配信の広告サービス「Google アドセンス」を利用しています。広告配信事業者は、ユーザーの興味に応じた広告を表示するために Cookie を使用することがあります。Cookie を無効にする方法や Google アドセンスについては、<a href="https://policies.google.com/technologies/ads?hl=ja" rel="noopener">広告 – ポリシーと規約 – Google</a> をご覧ください。パーソナライズ広告は <a href="https://adssettings.google.com/" rel="noopener">広告設定</a> で無効にできます。</p>
+<p>当サイトは、アクセスの傾向を知るために Google のサービス（Search Console など）を利用することがあります。これらは個人を特定する情報を含みません。</p>
+<p>当サイトは、Amazon.co.jp を宣伝しリンクすることによってサイトが紹介料を獲得できる手段を提供することを目的に設定されたアフィリエイトプログラムである、Amazon アソシエイト・プログラムの参加者です（姉妹ブログを含みます）。</p>
+<h2>免責事項</h2><p>掲載している情報はできる限り正確にしていますが、正しさを保証するものではありません。当サイトの情報で生じた損害について、責任を負いかねます。</p>
+<h2>お問い合わせ</h2><p>姉妹ブログ「<a href="https://ff11ikou.blog.fc2.com/">【 FF11 】いこう！ の実験＆実用メモ帳</a>」の上のメニューにある「Contact」からご連絡ください。</p>
+<h2>著作権</h2><p>FINAL FANTASY XI © SQUARE ENIX CO., LTD. All Rights Reserved. 記載されている会社名・製品名・システム名などは、各社の商標または登録商標です。</p>
+</main>` + foot);
+fs.writeFileSync(path.join(SITE, 'ads.txt'), `google.com, ${ADSENSE.replace('ca-', '')}, DIRECT, f08c47fec0942fa0
+`);
+
 // 検索エンジン向け
 fs.writeFileSync(path.join(SITE, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${ORIGIN}/sitemap.xml\n`);
 fs.writeFileSync(path.join(SITE, 'sitemap.xml'), '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-  + [`${ORIGIN}/`, ...equip.map(e => `${ORIGIN}/item/${e.id}.html`)].map(u => `<url><loc>${u}</loc></url>`).join('\n') + '\n</urlset>\n');
+  + [`${ORIGIN}/`, `${ORIGIN}/about.html`, ...equip.map(e => `${ORIGIN}/item/${e.id}.html`)].map(u => `<url><loc>${u}</loc></url>`).join('\n') + '\n</urlset>\n');
 fs.writeFileSync(path.join(SITE, '.nojekyll'), '');
 
 console.log(`装備 ${equip.length}件 / 性能の種類 ${STATS.length}（ペット ${petCount.size}） / データ ${asof.date}`);
