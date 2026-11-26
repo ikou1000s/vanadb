@@ -333,3 +333,24 @@ main.wide h2 .cnt{font-size:12.5px;color:var(--sub);font-weight:normal;margin-le
 .looks1 .look{padding:4px 10px}.looks1 .look h3{font-size:13px}
 .bd.cover{border-color:var(--gold2);color:var(--gold)}
 #lq{width:min(360px,100%);padding:6px 8px;background:var(--win2);color:var(--ink);border:1px solid var(--edge);border-radius:6px;margin:6px 0 4px}
+
+/* 名前で探す（上の検索窓・find.html） */
+.top .hfind{margin-left:auto;position:relative;display:flex;align-self:center;width:min(380px,100%)}
+.hfind input{flex:1;min-width:0;background:#0a1428;border:1px solid var(--edge);border-right:0;border-radius:8px 0 0 8px;color:#fff;padding:7px 10px;font-size:14px;font-family:inherit}
+.hfind input:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 2px rgba(229,196,107,.25)}
+.hfind button,.findbig button{background:linear-gradient(180deg,#f0d27e,var(--gold2));color:#1b1405;border:1px solid var(--gold2);border-radius:0 8px 8px 0;padding:0 14px;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit}
+.hsug{position:absolute;top:100%;left:0;right:0;margin-top:4px;z-index:50;background:#0f1d3b;border:1px solid var(--edge2);border-radius:8px;box-shadow:0 10px 24px rgba(0,0,0,.55);max-height:70vh;overflow-y:auto}
+.hsug a{display:grid;grid-template-columns:1fr auto auto;gap:0 6px;align-items:center;padding:7px 10px;color:#dbe6fb;border-top:1px solid rgba(95,130,192,.2)}
+.hsug a:first-child{border-top:0}
+.hsug a b{font-size:14px;color:#fff}
+.hsug a small{grid-column:1;grid-row:2;font-size:11px;color:var(--dim)}
+.hsug a .fk,.hsug a .fl{grid-row:1/3;font-size:11.5px;color:var(--sub);border:1px solid var(--edge);border-radius:5px;padding:1px 6px;white-space:nowrap}
+.hsug a .fl{color:var(--gold);border-color:rgba(229,196,107,.4)}
+.hsug a:hover,.hsug a.on{background:var(--hover);text-decoration:none}
+.hsug a.hs-all{display:block;text-align:center;font-size:13px;color:var(--gold);background:rgba(229,196,107,.07)}
+.hsug .hs-msg{padding:10px;font-size:13px;color:var(--sub)}
+.findbig{display:flex;max-width:640px;margin:0 0 10px}
+.findbig input{flex:1;min-width:0;background:#0a1428;border:1px solid var(--edge);border-right:0;border-radius:8px 0 0 8px;color:#fff;padding:10px 12px;font-size:16px;font-family:inherit}
+.findbig input:focus{outline:none;border-color:var(--gold)}
+.tbl.find .r{grid-template-columns:minmax(240px,3fr) minmax(120px,1fr) 90px}
+@media (max-width:720px){.top .hfind{margin:8px 0 2px;width:100%}.tbl.find .r{grid-template-columns:1fr auto auto}.tbl.find .r.h{display:none}}
