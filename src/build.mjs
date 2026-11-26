@@ -10,6 +10,7 @@ import { writeMore } from './more.mjs';
 import { writeQuests } from './quests.mjs';
 import { writeExtra } from './extra.mjs';
 import { writeSynth } from './synth.mjs';
+import { writeFishing } from './fishing.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DATA = path.join(ROOT, 'data');
@@ -30,6 +31,8 @@ const BLOG_SRC = path.join(ROOT, '..', 'fc2-updater', 'gear_index.html');
 const BLOG_COPY = path.join(DATA, 'blog_gear_index.html');
 if (fs.existsSync(BLOG_SRC)) fs.copyFileSync(BLOG_SRC, BLOG_COPY);
 const blogUses = loadBlogUses(BLOG_COPY);
+const lsb = fs.existsSync(path.join(DATA, 'lsb.json')) ? JSON.parse(fs.readFileSync(path.join(DATA, 'lsb.json'), 'utf8')) : { sell: {}, flags: {}, fish: [], rods: [] };
+const rxTags = id => { const f = lsb.flags[id] || ''; return (f.includes('R') ? '<span class="rx rare">Rare</span>' : '') + (f.includes('E') ? '<span class="rx exc">Ex</span>' : ''); };
 const asof = JSON.parse(fs.readFileSync(path.join(DATA, 'asof.json'), 'utf8'));
 
 // 部位（Windower の slots のビット）→ 日本語。左右は1つにまとめる
@@ -168,6 +171,8 @@ const foot = `<footer class="foot"><p>装備の名前と性能の文はゲーム
 <p><a href="${BASE}about.html">このサイトについて・プライバシーポリシー・お問い合わせ</a></p>
 <p class="cr">FINAL FANTASY XI © SQUARE ENIX CO., LTD. All Rights Reserved. このサイトは個人のファンサイトで、株式会社スクウェア・エニックスとは関係ありません。</p></footer></body></html>`;
 
+// Rare/Ex/競売不可・NPCへの売値のバッジ（LandSandBoat の item_basic）
+function rxBadges(id) { const f = lsb.flags[id] || ''; return (f.includes('R') ? '<span class="bd rx rare">Rare</span>' : '') + (f.includes('E') ? '<span class="bd rx exc">Ex</span>' : '') + (f.includes('N') ? '<span class="bd">競売不可</span>' : '') + (lsb.sell[id] ? `<span class="bd">NPC売値 ${lsb.sell[id].toLocaleString()}ギル</span>` : ''); }
 // 1装備1ページ（一覧の表の部品を使うので、ファイルの最後で呼ぶ）
 function writeItemPages() {
   // 合成のレシピ（有志のサーバー再現データ LandSandBoat の synth_recipes。fetch で data/synth.json）
@@ -230,7 +235,7 @@ function writeItemPages() {
     const html = head(`${it.ja}｜${kind}の性能｜${SITE_SHORT}`, descText, `${ORIGIN}/item/${id}.html`)
       + `<main class="item"><p class="crumb"><a href="${BASE}">トップ</a> › ${cat ? `<a href="${BASE}list/${cat[0]}.html">${esc(cat[1])}の一覧</a>` : esc(slot)} › ${esc(it.ja)}</p>
 <section class="ihead"><div class="nm"><h1>${esc(it.ja)}</h1><small>${esc(it.en)}</small></div>
-<div class="badges">${cat ? `<a class="bd cat" href="${BASE}list/${cat[0]}.html">${esc(cat[1])}</a>` : ''}<span class="bd">Lv${it.level}</span>${it.item_level ? `<span class="bd il">IL${it.item_level}</span>` : ''}${it.superior_level ? `<span class="bd">Su${it.superior_level}</span>` : ''}${it.damage ? `<span class="bd">D${it.damage}／隔${it.delay}</span>` : ''}${raceNames(it.races) ? `<span class="bd">${esc(raceNames(it.races))}</span>` : ''}</div>
+<div class="badges">${cat ? `<a class="bd cat" href="${BASE}list/${cat[0]}.html">${esc(cat[1])}</a>` : ''}<span class="bd">Lv${it.level}</span>${it.item_level ? `<span class="bd il">IL${it.item_level}</span>` : ''}${it.superior_level ? `<span class="bd">Su${it.superior_level}</span>` : ''}${it.damage ? `<span class="bd">D${it.damage}／隔${it.delay}</span>` : ''}${raceNames(it.races) ? `<span class="bd">${esc(raceNames(it.races))}</span>` : ''}${rxBadges(id)}</div>
 <div class="jobsrow"><span class="lbl">装備できるジョブ</span>${jobCells(it.jobs || 0)}</div></section>
 <div class="ingame">${lines || '（性能の文なし）'}</div>
 <div class="extl"><a href="${ffo(it.ja)}" rel="noopener" target="_blank">FF11用語辞典で見る（入手方法・オーグメント）</a><a href="${bg(it.en)}" rel="noopener" target="_blank">BG-Wiki（英語）</a><a href="https://jp.ffxiah.com/item/${id}" rel="noopener" target="_blank">FFXIAH（競売の相場）</a></div>
@@ -273,7 +278,7 @@ const fxText = text => esc(text.replace(/\n+/g, '　'));
 const rowHtml = e => {
   const it = e.it;
   const df = it.category === 'Weapon' && it.damage ? `D${it.damage}<br>隔${it.delay}` : (e.st.main['防'] != null ? `防${e.st.main['防']}` : '');
-  return `<div class="r" data-id="${e.id}" data-j="${it.jobs || 0}"><div class="c-n"><a href="${BASE}item/${e.id}.html">${esc(it.ja)}</a><small>${esc(it.en)}</small></div>`
+  return `<div class="r" data-id="${e.id}" data-j="${it.jobs || 0}"><div class="c-n"><a href="${BASE}item/${e.id}.html">${esc(it.ja)}</a>${rxTags(e.id)}<small>${esc(it.en)}</small></div>`
     + `<div class="c-lv">${it.level}</div><div class="c-il">${it.item_level || ''}</div><div class="c-df">${df}</div>`
     + `<div class="c-jb">${jobCells(it.jobs || 0)}</div><div class="c-fx">${fxText(e.text) || '<span class="nl">（性能の文なし）</span>'}</div></div>`;
 };
@@ -390,7 +395,7 @@ fs.writeFileSync(path.join(SITE, 'search.html'), head(`性能で探す（ヘイ�
 const ICON = { head: '頭', body: '胴', hands: '手', legs: '脚', feet: '足', neck: '首', waist: '腰', back: '背', ear: '耳', ring: '指', shield: '盾', h2h: '拳', dagger: '短', sword: '剣', gsword: '大', axe: '斧', gaxe: '鉞', scythe: '鎌', polearm: '槍', katana: '刀', gkatana: '太', club: '棍', staff: '杖', archery: '弓', marksmanship: '銃', throwing: '投', wind: '笛', string: '琴', handbell: '鈴', fishing: '竿', ammo: '矢', grip: '握' };
 const tile = (href, label, n, ic, cls = '') => `<a class="tile ${cls}" href="${href}"><span class="ic">${esc(ic)}</span><span><b>${esc(label)}</b><span class="n">${n.toLocaleString()}件</span></span></a>`;
 const synthAll = fs.existsSync(path.join(DATA, 'synth.json')) ? JSON.parse(fs.readFileSync(path.join(DATA, 'synth.json'), 'utf8')) : [];
-const more = writeMore({ items, desc, JOB_LIST, skills, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE_SHORT, equipById, synth: synthAll, tile, VER });
+const more = writeMore({ items, desc, JOB_LIST, skills, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE_SHORT, equipById, synth: synthAll, tile, VER, rxBadges, rxTags });
 console.log('装備以外', JSON.stringify(more.counts));
 const qs2 = writeQuests({ items, JOB_LIST, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE_SHORT, VER, tile });
 console.log('クエスト・ミッション', JSON.stringify(qs2.counts));
@@ -398,6 +403,8 @@ const ex = writeExtra({ JOB_LIST, head, foot, esc, BASE, ORIGIN, SITE, DATA, SIT
 console.log('そのほか', JSON.stringify(ex.counts));
 const sy = writeSynth({ items, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE_SHORT, VER, tile, hasPage: id => equipById.has(id) || more.itemCatOf.has(id) });
 console.log('合成レシピ', sy.count);
+const fi = writeFishing({ items, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE_SHORT, VER, tile, lsb, hasPage: id => equipById.has(id) || more.itemCatOf.has(id) });
+console.log('釣り', fi.count);
 fs.writeFileSync(path.join(SITE, 'index.html'), head(`${SITE_NAME}｜部位・武器・ジョブごとの一覧と性能で探す（最新のバージョンアップまで）`,
   `FF11の装備${equip.length.toLocaleString()}件を、部位・武器の種類・ジョブごとの一覧で見比べ、ヘイストやファストキャストなどの性能でも探せるデータベース。バージョンアップごとの新装備も毎日自動で更新（${asof.note}）。`, `${ORIGIN}/`)
   + `<main class="wide home">
@@ -410,7 +417,7 @@ ${updates.slice(0, 2).map(u => updateBlock(u, false)).join('')}</section>
 ${more.home}
 ${sy.home}
 ${qs2.home}
-${ex.home}
+${ex.home.replace('</div></section>', fi.home + '</div></section>')}
 <section class="box" id="job"><h2>ジョブ別</h2><div class="tiles small">${JOB_LIST.map(j => tile(`${BASE}job/${j.ens.toLowerCase()}.html`, j.ja, equip.filter(e => (e.it.jobs || 0) & (1 << j.id)).length, j.jas, 'j')).join('')}</div></section>
 <section class="box" id="search"><h2>性能で探す</h2><p>ヘイスト・ファストキャスト・マジックバースト・被ダメージなど、性能の数値で絞り込んで大きい順に並べられます。 <a class="btn" href="${BASE}search.html">性能で探す</a></p>
 <div class="quick">${QUICK.map(([label, q]) => `<a href="${BASE}search.html?${q}">${esc(label)}</a>`).join('')}</div></section>
@@ -439,7 +446,7 @@ writeItemPages();
 // 検索エンジン向け
 fs.writeFileSync(path.join(SITE, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${ORIGIN}/sitemap.xml\n`);
 fs.writeFileSync(path.join(SITE, 'sitemap.xml'), '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-  + [`${ORIGIN}/`, `${ORIGIN}/new.html`, `${ORIGIN}/search.html`, `${ORIGIN}/about.html`, ...listPages, ...jobPages, ...more.urls, ...qs2.urls, ...ex.urls, ...sy.urls, ...equip.map(e => `${ORIGIN}/item/${e.id}.html`)].map(u => `<url><loc>${u}</loc></url>`).join('\n') + '\n</urlset>\n');
+  + [`${ORIGIN}/`, `${ORIGIN}/new.html`, `${ORIGIN}/search.html`, `${ORIGIN}/about.html`, ...listPages, ...jobPages, ...more.urls, ...qs2.urls, ...ex.urls, ...sy.urls, ...fi.urls, ...equip.map(e => `${ORIGIN}/item/${e.id}.html`)].map(u => `<url><loc>${u}</loc></url>`).join('\n') + '\n</urlset>\n');
 fs.writeFileSync(path.join(SITE, '.nojekyll'), '');
 
 console.log(`装備 ${equip.length}件 / 性能の種類 ${STATS.length}（ペット ${petCount.size}） / データ ${asof.date}`);

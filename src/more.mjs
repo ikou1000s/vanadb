@@ -14,7 +14,7 @@ const JA_TYPES = [['JobAbility', 'job', 'ジョブアビリティ'], ['PetComman
   ['Scholar', 'stratagem', '戦術魔道書'], ['Rune', 'rune', 'ルーン'], ['Ward', 'ward', 'ワード'], ['Effusion', 'effusion', 'エフューズ'], ['BloodPactRage', 'bp-rage', '契約の履行：神獣'], ['BloodPactWard', 'bp-ward', '契約の履行：験術'], ['Monster', 'monster', 'モンストロス']];
 
 export function writeMore(ctx) {
-  const { items, desc, JOB_LIST, skills, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE_SHORT, equipById, synth, tile, VER } = ctx;
+  const { items, desc, JOB_LIST, skills, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE_SHORT, equipById, synth, tile, VER, rxBadges, rxTags } = ctx;
   const urls = [];
   const write = (rel, html) => { const f = path.join(SITE, rel); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, html); urls.push(`${ORIGIN}/${rel}`); };
   const load = f => (fs.existsSync(path.join(DATA, f)) ? readLua(path.join(DATA, f)) : new Map());
@@ -57,7 +57,7 @@ export function writeMore(ctx) {
   }
   const itemRow = id => {
     const it = items.get(id), d = ((desc.get(id) || {}).ja || '').trim();
-    return `<div class="r" data-id="${id}"><div class="c-n"><a href="${BASE}item/${id}.html">${esc(it.ja)}</a><small>${esc(it.en)}</small></div><div class="c-st">${it.stack > 1 ? `×${it.stack}` : ''}</div>`
+    return `<div class="r" data-id="${id}"><div class="c-n"><a href="${BASE}item/${id}.html">${esc(it.ja)}</a>${rxTags(id)}<small>${esc(it.en)}</small></div><div class="c-st">${it.stack > 1 ? `×${it.stack}` : ''}</div>`
       + `<div class="c-fx">${esc(d.replace(/\n+/g, '　')) || '<span class="nl">（説明なし）</span>'}${madeBy.has(id) ? ' <b class="tag">合成で作れる</b>' : ''}${usedIn.has(id) ? ` <b class="tag">素材（${usedIn.get(id).size}品）</b>` : ''}</div></div>`;
   };
   const itemHead = '<div class="r h"><div class="c-n">名前</div><div class="c-st">スタック</div><div class="c-fx">説明（ゲーム内の表記）</div></div>';
@@ -132,7 +132,7 @@ ${catNavItems(key)}${pager(pages, p, `items/${key}`)}
       `${it.ja}（${cj[1]}）の説明${made.length ? '・作り方' : ''}${uses.length ? '・使い道（作れる物）' : ''}。` + d.replace(/\n/g, ' ').slice(0, 80), `${ORIGIN}/item/${id}.html`)
       + `<main class="item">${crumb(`<a href="${BASE}items/${c}.html">${esc(cj[1])}</a>`, esc(it.ja))}
 <section class="ihead"><div class="nm"><h1>${esc(it.ja)}</h1><small>${esc(it.en)}</small></div>
-<div class="badges"><a class="bd cat" href="${BASE}items/${c}.html">${esc(cj[1])}</a>${it.stack > 1 ? `<span class="bd">スタック ${it.stack}</span>` : '<span class="bd">スタックなし</span>'}</div></section>
+<div class="badges"><a class="bd cat" href="${BASE}items/${c}.html">${esc(cj[1])}</a>${it.stack > 1 ? `<span class="bd">スタック ${it.stack}</span>` : '<span class="bd">スタックなし</span>'}${rxBadges(id)}</div></section>
 <div class="ingame">${esc(d).replace(/\n/g, '<br>') || '（説明なし）'}</div>
 <div class="extl"><a href="${ffo(it.ja)}" rel="noopener" target="_blank">FF11用語辞典で見る（入手方法など）</a><a href="https://www.bg-wiki.com/ffxi/${encodeURIComponent((it.en || '').replace(/ /g, '_'))}" rel="noopener" target="_blank">BG-Wiki（英語）</a><a href="https://jp.ffxiah.com/item/${id}" rel="noopener" target="_blank">FFXIAH（競売の相場）</a></div>
 ${foodById.has(id) ? `<h2>食事の効果</h2><ul class="stats">${Object.entries(foodById.get(id).s).map(([k, a]) => `<li><a href="${BASE}food.html?stat=${encodeURIComponent(k)}">${esc(k.replace(/%$/, ''))}</a> <b>${a[0] > 0 ? '+' : ''}${a[0]}${/%$/.test(k) ? '%' : ''}${a[1] != null ? `（最大${a[1]}）` : ''}</b></li>`).join('')}</ul>${Object.keys(foodById.get(id).p).length ? `<h2>ペットへの効果</h2><ul class="stats">${Object.entries(foodById.get(id).p).map(([k, a]) => `<li>${esc(k.replace(/%$/, ''))} <b>${a[0] > 0 ? '+' : ''}${a[0]}${/%$/.test(k) ? '%' : ''}${a[1] != null ? `（最大${a[1]}）` : ''}</b></li>`).join('')}</ul>` : ''}<p class="note">効果の名前を押すと、その効果の大きい順に食事が並びます（<a href="${BASE}food.html">食事の効果で探す</a>）。</p>` : ''}

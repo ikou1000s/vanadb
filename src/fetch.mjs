@@ -62,3 +62,6 @@ console.log('取り込み完了', asof);
 
 // クエスト・ミッションの一覧（Journal-FFXI-JP・GPL-3.0）
 await import('./fetch_quests.mjs');
+
+// 売値・Rare/Ex・釣り（LandSandBoat・GPLv3）
+await import('./fetch_lsb.mjs');
