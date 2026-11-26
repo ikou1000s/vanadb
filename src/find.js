@@ -11,7 +11,7 @@
     .replace(/[ぁ-ゖ]/g, c => String.fromCharCode(c.charCodeAt(0) + 0x60))
     .replace(/[\s・'’\-]/g, '');
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
-  const url = r => BASE + (r[0] === 1 ? 'spell/' : 'item/') + r[1] + '.html';
+  const url = r => BASE + (r[0] === 2 ? r[1] : (r[0] === 1 ? 'spell/' : 'item/') + r[1] + '.html');
   // 空白で区切った語をすべて含む物。分類の名前（「胴」「白魔法」など）にも当たる
   const search = (q, kindFilter) => {
     const words = q.split(/[\s　]+/).map(norm).filter(Boolean);
@@ -68,6 +68,18 @@
     });
   }
 
+  // ── 一覧のページで #r-… の行へ飛んで光らせる（検索から来た時）
+  const jump = () => {
+    const m = location.hash.match(/^#r-(.+)$/); if (!m) return;
+    let id; try { id = decodeURIComponent(m[1]); } catch (e) { return; }
+    const row = document.querySelector('.r[data-id="' + CSS.escape(id) + '"]'); if (!row) return;
+    document.querySelectorAll('.r.me').forEach(x => x.classList.remove('me'));
+    row.hidden = false; row.classList.add('me');
+    setTimeout(() => row.scrollIntoView({ block: 'center' }), 50);
+  };
+  window.addEventListener('hashchange', jump);
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', jump); else jump();
+
   // ── find.html（結果をすべて）
   const res = document.getElementById('fres');
   if (res) {
@@ -85,7 +97,7 @@
         + [...per].sort((a, b) => b[1] - a[1]).map(([k, n]) => `<button class="chip${kind === k ? ' on' : ''}" data-k="${k}">${esc(data.kinds[k])} ${n}</button>`).join('') : '';
       const list = kind == null ? all : all.filter(r => r[4] === kind);
       cnt.innerHTML = `「${esc(q)}」<b>${list.length.toLocaleString()}</b>件${list.length > shown ? `（上から${shown}件）` : ''}`;
-      res.innerHTML = list.length ? '<div class="r h"><div class="c-n">名前</div><div>分類</div><div>Lv／IL</div></div>'
+      res.innerHTML = list.length ? '<div class="r h"><div class="c-n">名前</div><div>分類</div><div>Lv・場所など</div></div>'
         + list.slice(0, shown).map(r => `<div class="r"><div class="c-n"><a href="${url(r)}">${esc(r[2])}</a><small>${esc(r[3])}</small></div><div>${esc(data.kinds[r[4]])}</div><div>${esc(r[5] || '')}</div></div>`).join('')
         + (list.length > shown ? '<p class="more"><button id="fmore">もっと見る</button></p>' : '')
         : '<p class="nl" style="padding:12px">見つかりません。ひらがな・英語・短い語でも試せます。</p>';
