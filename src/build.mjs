@@ -6,14 +6,16 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readLua } from './lua.mjs';
 import { loadBlogUses } from './blog.mjs';
+import { writeMore } from './more.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DATA = path.join(ROOT, 'data');
 const SITE = path.join(ROOT, 'site');
-const SITE_NAME = 'ヴァナDB（FF11 装備データベース）';
+const SITE_NAME = 'ヴァナDB（FF11 データベース）';
 const SITE_SHORT = 'FF11 ヴァナDB';
 const ORIGIN = 'https://vanadb.com';
 const BASE = '/'; // 独自ドメインの直下に置く前提
+const VER = Date.now().toString(36); // 更新のたびに css・js を読み直させる印
 const ADSENSE = 'ca-pub-4200741999536694'; // ブログと同じAdSense（ikou1000s）
 
 const items = readLua(path.join(DATA, 'items.lua'));
@@ -153,10 +155,10 @@ fs.copyFileSync(path.join(ROOT, 'src', 'list.js'), path.join(SITE, 'list.js'));
 const head = (title, description, canonical) => `<!DOCTYPE html>
 <html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(title)}</title><meta name="description" content="${esc(description)}">${canonical ? `<link rel="canonical" href="${canonical}">` : ''}
-<link rel="stylesheet" href="${BASE}style.css">
+<link rel="stylesheet" href="${BASE}style.css?v=${VER}">
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE}" crossorigin="anonymous"></script></head><body>
-<header class="top"><div class="in"><a class="brand" href="${BASE}">ヴァナDB<small>FF11 装備データベース</small></a><span class="asof">データ ${esc(asof.date)} 時点（${esc(asof.note)}）</span></div>
-<nav class="gnav"><a class="new" href="${BASE}new.html">新装備</a><a href="${BASE}#armor">防具</a><a href="${BASE}#weapon">武器</a><a href="${BASE}#job">ジョブ別</a><a href="${BASE}search.html">性能で探す</a><a href="${BASE}about.html">このサイトについて</a></nav></header>`;
+<header class="top"><div class="in"><a class="brand" href="${BASE}">ヴァナDB<small>FF11 データベース</small></a><span class="asof">データ ${esc(asof.date)} 時点（${esc(asof.note)}）</span></div>
+<nav class="gnav"><a class="new" href="${BASE}new.html">新装備・新アイテム</a><a href="${BASE}#armor">防具</a><a href="${BASE}#weapon">武器</a><a href="${BASE}#items">アイテム</a><a href="${BASE}#magic">魔法</a><a href="${BASE}ws/index.html">WS</a><a href="${BASE}ability/index.html">アビリティ</a><a href="${BASE}#ki">だいじなもの</a><a href="${BASE}#job">ジョブ別</a><a href="${BASE}search.html">性能で探す</a></nav></header>`;
 const foot = `<footer class="foot"><p>装備の名前と性能の文はゲーム内の表記（データの出典：<a href="https://github.com/Windower/Resources" rel="noopener">Windower Resources</a>）。誤りに気づいたら教えてください。</p>
 <p>姉妹サイト：<a href="https://ff11ikou.blog.fc2.com/">【 FF11 】いこう！ の実験＆実用メモ帳</a>（ジョブ別の装備セットと選んだ理由）</p>
 <p><a href="${BASE}about.html">このサイトについて・プライバシーポリシー・お問い合わせ</a></p>
@@ -267,7 +269,7 @@ const fxText = text => esc(text.replace(/\n+/g, '　'));
 const rowHtml = e => {
   const it = e.it;
   const df = it.category === 'Weapon' && it.damage ? `D${it.damage}<br>隔${it.delay}` : (e.st.main['防'] != null ? `防${e.st.main['防']}` : '');
-  return `<div class="r" data-j="${it.jobs || 0}"><div class="c-n"><a href="${BASE}item/${e.id}.html">${esc(it.ja)}</a><small>${esc(it.en)}</small></div>`
+  return `<div class="r" data-id="${e.id}" data-j="${it.jobs || 0}"><div class="c-n"><a href="${BASE}item/${e.id}.html">${esc(it.ja)}</a><small>${esc(it.en)}</small></div>`
     + `<div class="c-lv">${it.level}</div><div class="c-il">${it.item_level || ''}</div><div class="c-df">${df}</div>`
     + `<div class="c-jb">${jobCells(it.jobs || 0)}</div><div class="c-fx">${fxText(e.text) || '<span class="nl">（性能の文なし）</span>'}</div></div>`;
 };
@@ -296,9 +298,9 @@ for (const [key, ja, , kind] of ALL_CATS) {
 ${catNav(key)}
 ${jobChips}
 <nav class="bands">${groups.map(([label, l]) => `<a href="#${encodeURIComponent(label)}" data-band="${esc(label)}">${esc(label)}<span>${l.length}</span></a>`).join('')}</nav>
-<div class="tbl">${tableHead}${groups.map(([label, l]) => `<div class="band" id="${esc(label)}" data-band="${esc(label)}">${esc(label)} <span>${l.length}件</span></div>${l.map(rowHtml).join('')}`).join('')}</div>
+<div class="tbl" data-ck="eq">${tableHead}${groups.map(([label, l]) => `<div class="band" id="${esc(label)}" data-band="${esc(label)}">${esc(label)} <span>${l.length}件</span></div>${l.map(rowHtml).join('')}`).join('')}</div>
 <p class="none" hidden>このジョブが装備できる物はありません。</p>
-</main><script src="${BASE}list.js"></script>` + foot);
+</main><script src="${BASE}list.js?v=${VER}"></script>` + foot);
 }
 function catNav(current) {
   const a = ([key, ja]) => key === current ? `<b>${esc(ja)}</b>` : `<a href="${BASE}list/${key}.html">${esc(ja)}</a>`;
@@ -314,16 +316,16 @@ for (const u of (fs.existsSync(path.join(DATA, 'updates.json')) ? JSON.parse(fs.
 const equipById = new Map(equip.map(e => [e.id, e]));
 const updateBlock = (u, full) => {
   const eqs = u.ids.map(id => equipById.get(id)).filter(Boolean);
-  const others = u.ids.filter(id => !equipById.has(id)).map(id => items.get(id)).filter(it => it && it.ja && it.ja !== '.');
+  const others = u.ids.filter(id => !equipById.has(id)).filter(id => { const it = items.get(id); return it && it.ja && it.ja !== '.'; });
   return `<section class="vu-block"><h3>${esc(u.label)} のバージョンアップ</h3>
-<h4>新装備 <span>${eqs.length}件</span></h4>${eqs.length ? `<div class="tbl">${tableHead}${eqs.map(rowHtml).join('')}</div>` : '<p class="nl">新しい装備はありません。</p>'}
-<h4>新アイテム（装備以外） <span>${others.length}件</span></h4>${others.length ? `<ul class="newitems">${others.slice(0, full ? 999 : 12).map(it => `<li>${esc(it.ja)}</li>`).join('')}${!full && others.length > 12 ? `<li class="more"><a href="${BASE}new.html">ほか${others.length - 12}件</a></li>` : ''}</ul>` : '<p class="nl">新しいアイテムはありません。</p>'}</section>`;
+<h4>新装備 <span>${eqs.length}件</span></h4>${eqs.length ? `<div class="tbl" data-ck="eq">${tableHead}${eqs.map(rowHtml).join('')}</div>` : '<p class="nl">新しい装備はありません。</p>'}
+<h4>新アイテム（装備以外） <span>${others.length}件</span></h4>${others.length ? `<ul class="newitems">${others.slice(0, full ? 999 : 12).map(id => `<li><a href="${BASE}item/${id}.html">${esc(items.get(id).ja)}</a></li>`).join('')}${!full && others.length > 12 ? `<li class="more"><a href="${BASE}new.html">ほか${others.length - 12}件</a></li>` : ''}</ul>` : '<p class="nl">新しいアイテムはありません。</p>'}</section>`;
 };
 fs.writeFileSync(path.join(SITE, 'new.html'), head(`FF11の新装備・新アイテム（バージョンアップごと）｜${SITE_SHORT}`,
   `FF11のバージョンアップごとに増えた装備とアイテムの一覧（${updates.map(u => u.label).slice(0, 3).join('・')}など）。毎日自動で更新しています。`, `${ORIGIN}/new.html`)
   + `<main class="wide"><p class="crumb"><a href="${BASE}">トップ</a> › 新装備・新アイテム</p><h1>新装備・新アイテム</h1>
 <p class="lead">バージョンアップごとに、ゲームのデータに増えた物を「装備」と「アイテム（装備以外）」に分けて並べています。データは毎日自動で取り込んでいます（${esc(asof.note)}）。</p>
-${updates.map(u => updateBlock(u, true)).join('')}</main><script src="${BASE}list.js"></script>` + foot);
+${updates.map(u => updateBlock(u, true)).join('')}</main><script src="${BASE}list.js?v=${VER}"></script>` + foot);
 
 // ── ジョブ別のページ：部位ごとの一覧（そのジョブで絞った一覧へ）と、部位×性能の件数
 const ROLE = {
@@ -378,24 +380,28 @@ fs.writeFileSync(path.join(SITE, 'search.html'), head(`性能で探す（ヘイ�
 <div id="list" class="tbl"></div>
 <p class="more"><button id="more" hidden>もっと見る</button></p>
 <noscript><p>絞り込みにはJavaScriptが要ります。</p></noscript>
-</main><script src="${BASE}app.js"></script>` + foot);
+</main><script src="${BASE}app.js?v=${VER}"></script>` + foot);
 
 // ── トップ：最新の枠 → 防具 → 武器 → ジョブ別 → 性能で探す
 const ICON = { head: '頭', body: '胴', hands: '手', legs: '脚', feet: '足', neck: '首', waist: '腰', back: '背', ear: '耳', ring: '指', shield: '盾', h2h: '拳', dagger: '短', sword: '剣', gsword: '大', axe: '斧', gaxe: '鉞', scythe: '鎌', polearm: '槍', katana: '刀', gkatana: '太', club: '棍', staff: '杖', archery: '弓', marksmanship: '銃', throwing: '投', wind: '笛', string: '琴', handbell: '鈴', fishing: '竿', ammo: '矢', grip: '握' };
 const tile = (href, label, n, ic, cls = '') => `<a class="tile ${cls}" href="${href}"><span class="ic">${esc(ic)}</span><span><b>${esc(label)}</b><span class="n">${n.toLocaleString()}件</span></span></a>`;
+const synthAll = fs.existsSync(path.join(DATA, 'synth.json')) ? JSON.parse(fs.readFileSync(path.join(DATA, 'synth.json'), 'utf8')) : [];
+const more = writeMore({ items, desc, JOB_LIST, skills, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE_SHORT, equipById, synth: synthAll, tile, VER });
+console.log('装備以外', JSON.stringify(more.counts));
 fs.writeFileSync(path.join(SITE, 'index.html'), head(`${SITE_NAME}｜部位・武器・ジョブごとの一覧と性能で探す（最新のバージョンアップまで）`,
   `FF11の装備${equip.length.toLocaleString()}件を、部位・武器の種類・ジョブごとの一覧で見比べ、ヘイストやファストキャストなどの性能でも探せるデータベース。バージョンアップごとの新装備も毎日自動で更新（${asof.note}）。`, `${ORIGIN}/`)
   + `<main class="wide home">
-<section class="hero"><h1>FF11の装備を、一覧でざっと見比べる</h1>
-<p>装備${equip.length.toLocaleString()}件を、部位・武器の種類・ジョブごとに、IL・Lvの帯で並べています。装備できるジョブは22ジョブを1行で、性能はゲーム内の表記のまま。毎日、最新のデータを取り込んでいます（<b>${esc(asof.note)}</b>）。</p></section>
+<section class="hero"><h1>FF11の装備・アイテム・魔法を、一覧でざっと見比べる</h1>
+<p>装備${equip.length.toLocaleString()}件・アイテム${more.counts.items.toLocaleString()}件・だいじなもの${more.counts.ki.toLocaleString()}件・魔法${more.counts.spells}件・WS${more.counts.ws}件・アビリティ${more.counts.ab}件。装備は部位・武器の種類・ジョブごとに、IL・Lvの帯で並べています。装備できるジョブは22ジョブを1行で、性能はゲーム内の表記のまま。毎日、最新のデータを取り込んでいます（<b>${esc(asof.note)}</b>）。</p></section>
 <section class="box latest"><h2>最新の新装備・新アイテム <a class="all" href="${BASE}new.html">バージョンアップごとの一覧へ</a></h2>
 ${updates.slice(0, 2).map(u => updateBlock(u, false)).join('')}</section>
 <section class="box" id="armor"><h2>防具（部位ごと）</h2><div class="tiles">${ARMOR_CATS.map(([k, ja]) => tile(`${BASE}list/${k}.html`, ja, catCount.get(k) || 0, ICON[k])).join('')}</div></section>
 <section class="box" id="weapon"><h2>武器（種類ごと）</h2><div class="tiles">${WEAPON_CATS.filter(([k]) => catCount.get(k)).map(([k, ja]) => tile(`${BASE}list/${k}.html`, ja, catCount.get(k), ICON[k], 'w')).join('')}</div></section>
+${more.home}
 <section class="box" id="job"><h2>ジョブ別</h2><div class="tiles small">${JOB_LIST.map(j => tile(`${BASE}job/${j.ens.toLowerCase()}.html`, j.ja, equip.filter(e => (e.it.jobs || 0) & (1 << j.id)).length, j.jas, 'j')).join('')}</div></section>
 <section class="box" id="search"><h2>性能で探す</h2><p>ヘイスト・ファストキャスト・マジックバースト・被ダメージなど、性能の数値で絞り込んで大きい順に並べられます。 <a class="btn" href="${BASE}search.html">性能で探す</a></p>
 <div class="quick">${QUICK.map(([label, q]) => `<a href="${BASE}search.html?${q}">${esc(label)}</a>`).join('')}</div></section>
-</main><script src="${BASE}list.js"></script>` + foot);
+</main><script src="${BASE}list.js?v=${VER}"></script>` + foot);
 
 
 // このサイトについて（運営者・データ・プライバシーポリシー・お問い合わせ）
@@ -420,7 +426,7 @@ writeItemPages();
 // 検索エンジン向け
 fs.writeFileSync(path.join(SITE, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${ORIGIN}/sitemap.xml\n`);
 fs.writeFileSync(path.join(SITE, 'sitemap.xml'), '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-  + [`${ORIGIN}/`, `${ORIGIN}/new.html`, `${ORIGIN}/search.html`, `${ORIGIN}/about.html`, ...listPages, ...jobPages, ...equip.map(e => `${ORIGIN}/item/${e.id}.html`)].map(u => `<url><loc>${u}</loc></url>`).join('\n') + '\n</urlset>\n');
+  + [`${ORIGIN}/`, `${ORIGIN}/new.html`, `${ORIGIN}/search.html`, `${ORIGIN}/about.html`, ...listPages, ...jobPages, ...more.urls, ...equip.map(e => `${ORIGIN}/item/${e.id}.html`)].map(u => `<url><loc>${u}</loc></url>`).join('\n') + '\n</urlset>\n');
 fs.writeFileSync(path.join(SITE, '.nojekyll'), '');
 
 console.log(`装備 ${equip.length}件 / 性能の種類 ${STATS.length}（ペット ${petCount.size}） / データ ${asof.date}`);

@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DATA = path.join(ROOT, 'data');
-const FILES = ['items', 'item_descriptions', 'jobs', 'slots', 'skills'];
+const FILES = ['items', 'item_descriptions', 'jobs', 'slots', 'skills', 'key_items', 'spells', 'weapon_skills', 'job_abilities'];
 const RAW = 'https://raw.githubusercontent.com/Windower/Resources/master/resources_data/';
 
 fs.mkdirSync(DATA, { recursive: true });
