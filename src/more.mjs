@@ -154,8 +154,14 @@ ${catNavItems(key)}${key === 'other' ? otherNav(list, grp, pages) : ''}${pager(p
   // 同じ名前のアイテムは、題名に品番を足して区別する
   const jaCount = new Map();
   for (const [id] of itemCatOf) { const j = (items.get(id) || {}).ja; jaCount.set(j, (jaCount.get(j) || 0) + 1); }
+  // 同じ分類で品番の近いアイテム（中身の少ないページにつながりを足す。品番が近い物は同じ時期・同じ系統のことが多い）
+  const catIds = new Map();
+  for (const [id, c] of itemCatOf) { if (!(items.get(id) || {}).ja) continue; if (!catIds.has(c)) catIds.set(c, []); catIds.get(c).push(id); }
+  for (const l of catIds.values()) l.sort((a, b) => a - b);
+  const nearOf = (id, c) => { const l = catIds.get(c) || [], i = l.indexOf(id); if (i < 0) return []; return l.slice(Math.max(0, i - 6), i).concat(l.slice(i + 1, i + 7)); };
   for (const [id, c] of itemCatOf) {
     const it = items.get(id), d = ((desc.get(id) || {}).ja || '').trim();
+    const near = nearOf(id, c);
     const tTag = jaCount.get(it.ja) > 1 ? `（No.${id}）` : '';
     const cj = ITEM_CATS.find(x => x[0] === c);
     const made = madeBy.get(id) || [];
@@ -173,6 +179,7 @@ ${sp ? `<h2>この巻物で覚える魔法</h2><p><a class="bd cat" href="${BASE
 ${acqHtml(id) ? `<h2>入手方法</h2>${acqHtml(id)}` : ''}
 ${made.length ? `<h2>作り方（合成）</h2><p class="note">数値は参考。</p>${made.slice(0, 6).map(r => `<div class="recipe"><div class="rq">${SK(r)}<span class="bd">${esc(iname(r.crystal))}</span></div><div class="ri">${r.ings.map(([i, n]) => `${ilink(i)}${n > 1 ? ` ×${n}` : ''}`).join('　')}</div><div class="ro">→ NQ：${ilink(r.result)}${r.hq.filter(Boolean).length ? `　HQ：${[...new Set(r.hq.filter(Boolean))].map(ilink).join('・')}` : ''}</div></div>`).join('')}` : ''}
 ${uses.length ? `<h2>使い道（この素材で作れる物 ${uses.length}品）</h2><p class="same">${uses.sort((a, b) => iname(a).localeCompare(iname(b), 'ja')).slice(0, 120).map(x => (equipById.has(x) || itemCatOf.has(x)) ? `<a href="${BASE}item/${x}.html">${esc(iname(x))}</a>` : `<b>${esc(iname(x))}</b>`).join('')}</p>` : ''}
+${near.length ? `<h2>同じ分類の近いアイテム（${esc(cj[1])}・品番の前後）</h2><p class="same">${near.map(x => `<a href="${BASE}item/${x}.html">${esc(iname(x))}</a>`).join('')}</p>` : ''}
 <p class="note">ドロップ・お店・報酬などの入手方法は、<a href="${ffo(it.ja)}" rel="noopener" target="_blank">FF11用語辞典の「${esc(it.ja)}」</a>を見てください。</p>
 </main>` + foot);
   }
