@@ -265,6 +265,9 @@ ${list.map(s => `<div class="r" data-id="${s.id}" data-j="${parseLv(s.levels).re
       const sc = scrollOf.get((s.en || '').toLowerCase());
       const fam = famOf(s);
       const nj = nearJobOf(s, fam);
+      // フェイス：同じ戦闘タイプのフェイス（品番の近い順に12件）
+      const tt = key === 'trust' ? trustType(s) : '';
+      const sameT = tt ? list.filter(o => o !== s && trustType(o) === tt).sort((a, b) => Math.abs(a.id - s.id) - Math.abs(b.id - s.id)).slice(0, 12).sort((a, b) => a.id - b.id) : [];
       write(`spell/${s.id}.html`, head(`${s.ja}｜${ja}｜${SITE_SHORT}`, `${s.ja}（${ja}）の覚えるジョブとレベル、消費MP${s.mp_cost}、詠唱${s.cast_time}秒、再詠唱${s.recast}秒、属性、対象${sc ? '、スクロール' : ''}。`, `${ORIGIN}/spell/${s.id}.html`)
         + `<main class="item">${crumb(`<a href="${BASE}magic/${key}.html">${ja}</a>`, esc(s.ja))}
 <section class="ihead"><div class="nm"><h1>${esc(s.ja)}</h1><small>${esc(s.en)}</small></div>
@@ -274,6 +277,7 @@ ${s.type === 'Trust' ? `<div class="jobsrow"><span class="lbl">戦闘タイプ</
 ${sc ? `<h2>スクロール</h2><p><a class="bd cat" href="${BASE}item/${sc}.html">${esc(iname(sc))}</a></p>` : ''}
 ${fam.length ? `<h2>同じ系統の${ja} <span class="cnt">${fam.length}件</span></h2><div class="tbl spells fam"><div class="r h"><div class="c-n">名前</div><div class="c-jl">覚えるジョブとLv</div><div class="c-m">MP</div><div class="c-m">属性</div></div>${fam.sort((a, b) => minLv(a) - minLv(b) || a.id - b.id).map(o => `<div class="r"><div class="c-n"><a href="${BASE}spell/${o.id}.html">${esc(o.ja)}</a><small>${esc(o.en)}</small></div><div class="c-jl">${lvText(o) || '<span class="nl">—</span>'}</div><div class="c-m">${o.mp_cost ?? ''}</div><div class="c-m el el${o.element}">${ELEMENT_JA[o.element] ?? ''}</div></div>`).join('')}</div>` : ''}
 ${nj ? `<h2>${esc(nj.job.ja)}がLv${nj.lv}前後で覚える${ja} <span class="cnt">${nj.near.length}件</span></h2><div class="tbl spells fam"><div class="r h"><div class="c-n">名前</div><div class="c-jl">${esc(nj.job.jas || nj.job.ja)}のLv</div><div class="c-m">MP</div><div class="c-m">属性</div></div>${nj.near.map(([o, l]) => `<div class="r"><div class="c-n"><a href="${BASE}spell/${o.id}.html">${esc(o.ja)}</a><small>${esc(o.en)}</small></div><div class="c-jl">${l}</div><div class="c-m">${o.mp_cost ?? ''}</div><div class="c-m el el${o.element}">${ELEMENT_JA[o.element] ?? ''}</div></div>`).join('')}</div><p class="note"><a href="${BASE}magic/${key}.html">${ja}の一覧</a>で、ジョブを絞って全部を見られます。</p>` : ''}
+${sameT.length ? `<h2>同じ戦闘タイプ（${esc(tt)}）のフェイス <span class="cnt">${sameT.length}件</span></h2><div class="tbl trust fam"><div class="r h"><div class="c-n">名前</div><div class="c-tj">ジョブ</div></div>${sameT.map(o => `<div class="r"><div class="c-n"><a href="${BASE}spell/${o.id}.html">${esc(o.ja)}</a><small>${esc(o.en)}</small></div><div class="c-tj">${jobTxt(o)}</div></div>`).join('')}</div><p class="note"><a href="${BASE}magic/trust.html">フェイスの一覧</a>で、戦闘タイプごとに全部を見られます。</p>` : ''}
 </main>` + foot);
     }
   }
