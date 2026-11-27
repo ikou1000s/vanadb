@@ -490,12 +490,12 @@ fs.writeFileSync(path.join(SITE, 'search.html'), head(`性能で探す（ヘイ�
   + `<main class="finder"><p class="crumb"><a href="${BASE}">トップ</a> › 性能で探す</p><h1>性能で探す</h1>
 <div class="quick"><b>よく使う：</b>${QUICK.map(([label, q]) => `<a href="${BASE}search.html?${q}">${esc(label)}</a>`).join('')}</div>
 <div class="ctl">
- <div class="row"><label>ジョブ</label><div id="jobs" class="chips"></div></div>
- <div class="row"><label>防具</label><div id="cats-armor" class="chips"></div></div>
+ <div class="row"><label>ジョブ<details class="qh"><summary title="説明">？</summary><p>押したジョブが装備できる物に絞ります。2つ以上押すと「どれかのジョブが装備できる物」になります（全部のジョブが装備できる物だけにしたい時は下の「全ジョブ装備できる物だけ」）。もう一度押すと外れます。</p></details></label><div id="jobs" class="chips"></div></div>
+ <div class="row"><label>防具<details class="qh"><summary title="説明">？</summary><p>部位（頭・胴・指輪など）で絞ります。防具と武器を合わせて2つ以上押すと「どれかの部位」になります。何も押さなければ全部の部位です。</p></details></label><div id="cats-armor" class="chips"></div></div>
  <div class="row"><label>武器</label><div id="cats-weapon" class="chips"></div></div>
- <div class="row"><label>性能</label><div class="statpick" id="statpick"></div></div>
+ <div class="row"><label>性能<details class="qh"><summary title="説明">？</summary><p>選べるのは1つです。その性能が付いている装備だけになり、値の大きい順に並びます（被ダメージなど小さい方が良い性能は、自動で小さい順）。押し直すと外れます。ボタンに無い性能は「そのほか」から。表の数字は装備そのものの値で、オーグメント・セット効果・条件付き（○○時）は入りません。</p></details></label><div class="statpick" id="statpick"></div></div>
  <div class="row"><label>並び</label><select id="dir"><option value="desc">大きい順</option><option value="asc">小さい順</option></select></div>
- <div class="row"><label>装備Lv</label><input id="lvmin" type="number" min="1" max="99" value="1">〜<input id="lvmax" type="number" min="1" max="99" value="99">
+ <div class="row"><label>装備Lv<details class="qh"><summary title="説明">？</summary><p>装備できるレベルの範囲です。99と打てばLv99の装備だけになります。「IL装備だけ」はアイテムレベル（IL）の付いた物だけに絞ります。</p></details></label><input id="lvmin" type="number" min="1" max="99" value="1">〜<input id="lvmax" type="number" min="1" max="99" value="99">
   <label class="ck"><input id="il" type="checkbox">IL装備だけ</label><label class="ck"><input id="alljob" type="checkbox">全ジョブ装備できる物だけ</label></div>
  <div class="row"><label>名前</label><input id="q" type="search" placeholder="名前の一部（日本語・英語）"></div>
 </div>

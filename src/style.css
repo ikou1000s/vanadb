@@ -124,7 +124,7 @@ h1 .cnt{font-size:14px;color:var(--sub);font-weight:normal;margin-left:10px}
 /* 性能で探す */
 .finder .ctl{padding:12px 14px}
 .row{display:flex;flex-wrap:wrap;align-items:flex-start;gap:6px;margin:8px 0}
-.row>label{width:4em;font-size:12.5px;color:var(--gold);flex:none;padding-top:4px;font-weight:700}
+.row>label{width:5.5em;font-size:12.5px;color:var(--gold);flex:none;padding-top:4px;font-weight:700}
 .chips{display:flex;flex-wrap:wrap;gap:4px;flex:1}
 .statpick{flex:1;display:grid;gap:6px}
 .sg{display:flex;flex-wrap:wrap;gap:4px;align-items:center;padding:6px 8px;border:1px solid rgba(95,130,192,.35);border-radius:8px;background:rgba(0,0,0,.12)}
@@ -532,3 +532,9 @@ h3.tsub{font-size:13.5px;color:var(--gold);margin:12px 0 6px}
 .rgz>b{min-width:7.5em;font-size:14px}
 .rgz .chip{font-size:12.5px;padding:2px 8px;text-decoration:none}
 @media (min-width:900px){.rgw>figure{position:sticky;top:8px}}
+.qh{display:inline-block;position:relative;margin-left:4px;vertical-align:middle}
+.qh>summary{list-style:none;cursor:pointer;width:18px;height:18px;line-height:18px;text-align:center;border-radius:50%;border:1px solid var(--edge2);font-size:11px;color:#cfe0ff;background:rgba(143,193,255,.08)}
+.qh>summary::-webkit-details-marker{display:none}
+.qh[open]>summary{background:#5a8be0;color:#fff}
+.qh>p{position:absolute;z-index:20;left:0;top:24px;width:min(320px,80vw);margin:0;padding:8px 10px;border:1px solid var(--edge2);border-radius:6px;background:#13213f;color:#dbe6fb;font-size:13px;font-weight:normal;line-height:1.6;box-shadow:0 4px 14px rgba(0,0,0,.5);white-space:normal}
+@media (max-width:700px){.qh>p{position:static;width:auto;margin-top:6px}.qh[open]{display:block}}
