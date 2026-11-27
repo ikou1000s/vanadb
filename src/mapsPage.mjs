@@ -18,7 +18,7 @@ export function writeMaps(ctx) {
   fs.mkdirSync(path.join(SITE, 'maps', 'img'), { recursive: true });
   for (const [n] of list) fs.copyFileSync(path.join(ROOT, 'src', 'maps', n + '.webp'), path.join(SITE, 'maps', 'img', n + '.webp'));
   const urls = [];
-  const note = '<p class="note">地図は、ゲーム内の地図をそのまま載せています（手は加えていません）。© SQUARE ENIX CO., LTD.</p>';
+  const note = '<p class="note">© SQUARE ENIX CO., LTD.</p>';
   const crumb = (...p) => `<p class="crumb"><a href="${BASE}">トップ</a> › ${p.join(' › ')}</p>`;
   // 一覧（あいうえお順・名前で絞る）
   const kana = z => { const c = zname(z).normalize('NFKC')[0] || ''; const h = c.charCodeAt(0); return h >= 0x30a1 && h <= 0x30f6 ? String.fromCharCode(h - 0x60) : c; };
@@ -44,6 +44,6 @@ ${note}</main><script src="${BASE}list.js?v=${VER}"></script>` + foot);
 ${note}</main>` + foot);
     urls.push(`${ORIGIN}/${r2}`);
   }
-  const home = `<section class="box" id="map"><h2>地図（${zones.length}エリア・${list.length}枚）<a class="all" href="${BASE}maps/index.html">一覧へ</a></h2><p class="note" style="margin:0 0 10px">ゲーム内の地図を、手を加えずにエリアごとに。</p><div class="tiles">${tile(`${BASE}maps/index.html`, '地図の一覧', zones.length, '地', 'ex hot')}${['バストゥーク港', '南サンドリア', '西アドゥリン', 'アトルガン白門', 'ジュノ上層'].map(ja => zones.find(z => zname(z) === ja)).filter(Boolean).map(z => tile(`${BASE}maps/${z}.html`, zname(z), byZone.get(z).length, '地', 'ex')).join('')}</div></section>`;
+  const home = `<section class="box" id="map"><h2>地図（${zones.length}エリア・${list.length}枚）<a class="all" href="${BASE}maps/index.html">一覧へ</a></h2><div class="tiles">${tile(`${BASE}maps/index.html`, '地図の一覧', zones.length, '地', 'ex hot')}${['バストゥーク港', '南サンドリア', '西アドゥリン', 'アトルガン白門', 'ジュノ上層'].map(ja => zones.find(z => zname(z) === ja)).filter(Boolean).map(z => tile(`${BASE}maps/${z}.html`, zname(z), byZone.get(z).length, '地', 'ex')).join('')}</div></section>`;
   return { home, urls, count: list.length, zones: new Set(zones), zname };
 }

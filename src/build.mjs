@@ -17,6 +17,7 @@ import { writeFind } from './find.mjs';
 import { writeMaps } from './mapsPage.mjs';
 import { writeCommands } from './commands.mjs';
 import { writeAscend } from './ascend.mjs';
+import { writeSynergy } from './synergy.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DATA = path.join(ROOT, 'data');
@@ -518,6 +519,7 @@ const asc = writeAscend({ items, desc, SITE, head, foot, esc, BASE, ORIGIN, SITE
 const cm = writeCommands({ SITE, DATA, head, foot, esc, BASE, ORIGIN, SITE_SHORT, VER, readLua, fs, path });
 writeJobPages(more, ex);
 console.log('そのほか', JSON.stringify(ex.counts));
+const syn = writeSynergy({ items, SITE, DATA, head, foot, esc, BASE, ORIGIN, SITE_SHORT, VER, tile, lsb, hasPage: id => equipById.has(id) || more.itemCatOf.has(id) });
 const sy = writeSynth({ items, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE_SHORT, VER, tile, hasPage: id => equipById.has(id) || more.itemCatOf.has(id) });
 console.log('合成レシピ', sy.count);
 const fi = writeFishing({ items, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE_SHORT, VER, tile, lsb, hasPage: id => equipById.has(id) || more.itemCatOf.has(id) });
@@ -542,7 +544,7 @@ ${updates.slice(0, 2).map(u => updateBlock(u, false)).join('')}</section>
 <section class="box" id="armor"><h2>防具（部位ごと）</h2><div class="tiles">${tile(`${BASE}search.html?cat=${ARMOR_CATS.map(([k]) => k).join(',')}`, '性能で探す', ARMOR_CATS.reduce((a, [k]) => a + (catCount.get(k) || 0), 0), '探', 'hot')}${ARMOR_CATS.map(([k, ja]) => tile(`${BASE}list/${k}.html`, ja, catCount.get(k) || 0, ICON[k])).join('')}</div>
 <div class="quick"><b>性能で探す・よく使う：</b>${QUICK.map(([label, q]) => `<a href="${BASE}search.html?${q}">${esc(label)}</a>`).join('')}</div></section>
 ${homeSec(more.home, 'items')}
-${sy.home.replace(/<\/div><\/section>\s*$/, fi.home + gu.home + '</div></section>')}
+${sy.home.replace(/<\/div><\/section>\s*$/, syn.home + fi.home + gu.home + '</div></section>')}
 ${homeSec(more.home, 'ki')}
 ${homeSec(more.home, 'magic')}
 <section class="box" id="ws"><h2>スキル・成長性</h2><div class="tiles">${[
@@ -579,7 +581,7 @@ console.log('名前で探す', fd.count);
 // 検索エンジン向け
 fs.writeFileSync(path.join(SITE, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${ORIGIN}/sitemap.xml\n`);
 fs.writeFileSync(path.join(SITE, 'sitemap.xml'), '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-  + [`${ORIGIN}/`, `${ORIGIN}/new.html`, `${ORIGIN}/search.html`, `${ORIGIN}/about.html`, ...listPages, ...jobPages, ...more.urls, ...qs2.urls, ...ex.urls, ...mp.urls, ...cm.urls, ...asc.urls, ...sy.urls, ...fi.urls, ...au.urls, ...gu.urls, ...lk.urls, ...fd.urls, ...equip.map(e => `${ORIGIN}/item/${e.id}.html`)].map(u => `<url><loc>${u}</loc></url>`).join('\n') + '\n</urlset>\n');
+  + [`${ORIGIN}/`, `${ORIGIN}/new.html`, `${ORIGIN}/search.html`, `${ORIGIN}/about.html`, ...listPages, ...jobPages, ...more.urls, ...qs2.urls, ...ex.urls, ...mp.urls, ...cm.urls, ...asc.urls, ...syn.urls, ...sy.urls, ...fi.urls, ...au.urls, ...gu.urls, ...lk.urls, ...fd.urls, ...equip.map(e => `${ORIGIN}/item/${e.id}.html`)].map(u => `<url><loc>${u}</loc></url>`).join('\n') + '\n</urlset>\n');
 fs.writeFileSync(path.join(SITE, '.nojekyll'), '');
 
 console.log(`装備 ${equip.length}件 / 性能の種類 ${STATS.length}（ペット ${petCount.size}） / データ ${asof.date}`);

@@ -92,6 +92,8 @@ for (const r of rows(await get('abilities'))) out.abil[Number(r[0])] = [Number(r
   for (const r of rows(await get('traits'))) { const k = [r[0], r[2], r[3], r[4]].join(':'); if (seen.has(k)) continue; seen.add(k); out.traits.push([Number(r[0]), Number(r[2]), Number(r[3]), Number(r[4]), Number(r[8])]); }
 }
 // フェイスのジョブ：mob_pools の呼び出し用の型（小文字の名前）→ [メイン, サポート]
+// 錬成：素材・フュエル（火氷風土雷水光闇）・できる物
+out.synergy = rows(await get('synergy_recipes')).map(r => ({ fe: r.slice(7, 15).map(Number), ings: r.slice(15, 23).map(Number).filter(Boolean), result: Number(r[23]), hq: r.slice(24, 27).map(Number) }));
 out.trustJob = {};
 for (const r of rows(await get('mob_pools'))) { const id = Number(r[0]), k = String(r[1]).toLowerCase(); if (id < 5800 || !/^[a-z0-9_-]+$/.test(k)) continue; if (!out.trustJob[k] || r[1] === k) out.trustJob[k] = [Number(r[5]), Number(r[6])]; }
 console.log('アビリティ', Object.keys(out.abil).length, 'WS', Object.keys(out.ws).length);

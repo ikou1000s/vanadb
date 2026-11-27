@@ -487,3 +487,11 @@ h3.tsub{font-size:13.5px;color:var(--gold);margin:12px 0 6px}
 .tbl.cmd .c-ex code{color:#9fc4ff;font-size:12.5px}
 .tbl.cmd .cnote{color:var(--sub);font-size:12.5px;padding:5px 12px;border-top:1px solid rgba(95,130,192,.25)}
 @media (max-width:860px){ .tbl.cmd .r{display:flex;flex-wrap:wrap;gap:0 8px} .tbl.cmd .r>div{padding:4px 8px} .tbl.cmd .c-n{flex:1 1 100%} .tbl.cmd .r.h{display:none} }
+
+/* 錬成 */
+@media (min-width:861px){ .tbl.syn .r{grid-template-columns:260px 380px minmax(140px,1fr)} }
+@media (max-width:860px){ .tbl.syn .r{display:flex;flex-wrap:wrap;gap:0 8px} .tbl.syn .r>div{padding:4px 8px} .tbl.syn .c-n{flex:1 1 100%} .tbl.syn .r.h{display:none} }
+@media (min-width:861px){ .tbl.syn .r{grid-template-columns:56px 220px 330px 150px 170px minmax(120px,1fr)} }
+.tbl.syn .c-lv{color:var(--gold);font-weight:800;text-align:center}
+.fw{display:inline-block;font-size:11.5px;border-radius:4px;padding:0 4px;margin:1px 2px;border:1px solid #3b5f8c;color:#cfe6ff}
+.fw0{color:#ffb3a0;border-color:#a5483a}.fw1{color:#bfe6ff;border-color:#4a8ab5}.fw2{color:#b8f0c0;border-color:#3f9c55}.fw3{color:#f0d9a0;border-color:#9c7a3f}.fw4{color:#e6c3ff;border-color:#7a4ab5}.fw5{color:#a8d0ff;border-color:#3f6fb5}.fw6{color:#fff6c8;border-color:#b5a54a}.fw7{color:#c8b8d8;border-color:#5a4a6a}

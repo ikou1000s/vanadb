@@ -67,6 +67,8 @@ await import('./fetch_quests.mjs');
 
 // 売値・Rare/Ex・釣り（LandSandBoat・GPLv3）
 await import('./fetch_lsb.mjs');
+// 錬成のレシピ（失敗しても止めない）
+try { await import('./fetch_synergy.mjs'); } catch (e) { console.log('錬成の取り込みに失敗', e.message); }
 await import('./fetch_aug.mjs');
 
 // ドロップ・ぬすむ（LandSandBoat・GPLv3）
