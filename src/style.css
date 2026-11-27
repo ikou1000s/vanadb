@@ -433,3 +433,30 @@ p.src{color:var(--sub);font-size:12px;margin-top:18px}
  .tbl.jsp .c-n,.tbl.jws .c-n,.tbl.jtr .c-n{flex:1 1 calc(100% - 60px);min-width:0}
  .tbl.jsp .r.h,.tbl.jws .r.h,.tbl.jtr .r.h{display:none}
 }
+
+/* 表の変な隙間をなくす：短い列は決まった幅、伸び縮みは最後の長い列だけ（表は中身の幅で左寄せ） */
+@media (min-width:861px){
+ .tbl.items .r{grid-template-columns:240px 70px minmax(300px,1fr)}
+ .tbl.ki .r{grid-template-columns:260px minmax(200px,1fr) 80px}
+ .tbl.spells .r{grid-template-columns:210px 56px 64px 72px 54px 64px minmax(170px,1fr)}
+ .tbl.spells .c-jl{order:9}
+ .tbl.spells.blue .r{grid-template-columns:190px 50px 56px 64px 46px 60px 50px 130px 150px minmax(80px,1fr)}
+ .tbl.quests .r{grid-template-columns:240px 150px 140px 180px minmax(180px,1fr) 70px}
+ .tbl.missions .r{grid-template-columns:60px 360px 80px}
+ .tbl.simple .r{grid-template-columns:280px 360px 80px}
+ .tbl.simple2 .r{grid-template-columns:260px minmax(320px,1fr)}
+ .tbl.simple3 .r{grid-template-columns:260px 260px}
+ .tbl.synth .r{grid-template-columns:56px 220px 150px 64px 360px 140px}
+ .tbl.fishing .r{grid-template-columns:56px 200px 60px 360px minmax(200px,1fr)}
+ .tbl.guild .r{grid-template-columns:90px 260px 80px 90px 160px}
+ .tbl.find .r{grid-template-columns:320px 160px 90px}
+ .tbl.aug .r{grid-template-columns:200px 64px 360px minmax(200px,1fr)}
+ .tbl.foods .r{grid-template-columns:240px minmax(300px,1fr)}
+}
+@media (max-width:860px){ .tbl.spells .c-jl{flex:1 1 100%} }
+.home section.box{scroll-margin-top:8px}
+
+/* フェイス：戦闘タイプとジョブ */
+@media (min-width:861px){ .tbl.trust .r{grid-template-columns:240px 130px 240px} }
+@media (max-width:860px){ .tbl.trust .r{display:flex;flex-wrap:wrap;gap:0 8px} .tbl.trust .r>div{padding:4px 8px} .tbl.trust .c-n{flex:1 1 100%} .tbl.trust .r.h{display:none} }
+.c-tj{font-size:13px}

@@ -61,9 +61,29 @@ export function writeMore(ctx) {
       + `<div class="c-fx">${esc(d.replace(/\n+/g, '　')) || '<span class="nl">（説明なし）</span>'}${madeBy.has(id) ? ' <b class="tag">合成で作れる</b>' : ''}${usedIn.has(id) ? ` <b class="tag">素材（${usedIn.get(id).size}品）</b>` : ''}</div></div>`;
   };
   const itemHead = '<div class="r h"><div class="c-n">名前</div><div class="c-st">スタック</div><div class="c-fx">説明（ゲーム内の表記）</div></div>';
+  const OTHER_GROUPS = [
+    ['trust', 'フェイスの巻物（盟）', (n) => /^盟-/.test(n)],
+    ['unid', '識別前の装備（？？？）', (n) => /^？？？/.test(n)],
+    ['gearmat', '装備の強化・解呪・修理の素材', (n, d) => /免罪符|破片：|^闇の.+：|^劣化|^損壊|^呪われた|^祟られた|－\d$|-\d$/.test(n) || /装備することができない|装備不可能|何人も装備できない|解呪に必要/.test(d)],
+    ['coupon', '引換券・クーポン・券', (n, d) => /クーポン|交換券|引換|券$|トークン/.test(n) || /引換券|交換券/.test(d)],
+    ['coin', '貨幣・コイン・通貨', (n, d) => /古銭|硬貨|コイン|貨幣|通貨|^.+貨$/.test(n) || /硬貨|コイン|貨幣|古銭/.test(d)],
+    ['kit', '合成キット・合成セット', (n) => /(セット|キット)\d+$/.test(n)],
+    ['key', 'カギ・鍵', (n) => /カギ|鍵$|キー$/.test(n)],
+    ['att', 'オートマトンのアタッチメント', (n, d) => /オートマトンのアタッチメント/.test(d)],
+    ['card', 'カード', (n) => /カード$/.test(n)],
+    ['note', 'アストラルノート（♪）', (n) => /^♪/.test(n)],
+    ['garden', '栽培（種・腐葉土・植木鉢）', (n, d) => /種袋|の種$|腐葉土|植木鉢|挿木|子株|肥料/.test(n)],
+    ['chocobo', 'チョコボ・チョコボレース', (n, d) => /チョコボ|競走鳥|勝鳥/.test(n) || /VCS/.test(d)],
+    ['fish', '釣り（エサ・竿）', (n, d) => /撒き餌|ルアー|竿/.test(n) || /釣り|魚をおびき寄せ/.test(d)],
+    ['book', '本・図譜・記録', (n) => /図譜|【\d+頁】|雑記|戦記|探検記|探訪記|旅行記|グリモア|の書$|日記|手記/.test(n)],
+    ['body', 'モンスターの部位・魂など（交換・クエスト用）', (n, d) => /(肉|羽根|牙|爪|皮|鱗|つる|殻|角|骨|魂|心臓|器官|尾|翼|毛|糸|卵|胆|血|涙|舌|眼|目玉)$/.test(n)],
+    ['etc', 'そのほか', () => true],
+  ];
+  const otherGroupOf = id => { const it = items.get(id), n = it.ja || '', d = ((desc.get(id) || {}).ja || ''); return OTHER_GROUPS.findIndex(([, , t]) => t(n, d)); };
   const itemCount = new Map();
   for (const [key, ja] of ITEM_CATS) {
     const list = [...itemCatOf].filter(([, c]) => c === key).map(([id]) => id).sort((a, b) => iname(a).localeCompare(iname(b), 'ja'));
+    const grp = new Map(); if (key === 'other') { for (const id of list) grp.set(id, otherGroupOf(id)); list.sort((a, b) => (grp.get(a) - grp.get(b)) || iname(a).localeCompare(iname(b), 'ja')); }
     itemCount.set(key, list.length);
     const pages = Math.ceil(list.length / PAGE);
     for (let p = 0; p < pages; p++) {
@@ -71,9 +91,18 @@ export function writeMore(ctx) {
       write(`items/${key}${p ? '-' + (p + 1) : ''}.html`, head(`${ja}の一覧（${list.length.toLocaleString()}件${pages > 1 ? `・${p + 1}/${pages}` : ''}）｜${SITE_SHORT}`,
         `FF11の${ja}${list.length.toLocaleString()}件の一覧。名前・説明（ゲーム内の表記）・スタック数と、合成で作れるか・素材として使えるか。`, `${ORIGIN}/items/${key}${p ? '-' + (p + 1) : ''}.html`)
         + `<main class="wide">${crumb('アイテム', esc(ja))}<h1>${esc(ja)} <span class="cnt">${list.length.toLocaleString()}件</span></h1>
-${catNavItems(key)}${pager(pages, p, `items/${key}`)}
-<div class="tbl items" data-ck="it">${itemHead}${part.map(itemRow).join('')}</div>${pager(pages, p, `items/${key}`)}</main><script src="${BASE}list.js?v=${VER}"></script>` + foot);
+${catNavItems(key)}${key === 'other' ? otherNav(list, grp, pages) : ''}${pager(pages, p, `items/${key}`)}
+<div class="tbl items" data-ck="it">${itemHead}${key === 'other' ? part.map((id, i) => (i === 0 || grp.get(part[i - 1]) !== grp.get(id) ? otherBand(grp.get(id), list, grp, i === 0 && p > 0 && grp.get(list[p * PAGE - 1]) === grp.get(id)) : '') + itemRow(id)).join('') : part.map(itemRow).join('')}</div>${pager(pages, p, `items/${key}`)}</main><script src="${BASE}list.js?v=${VER}"></script>` + foot);
     }
+  }
+  function otherNav(list, grp, pages) {
+    const first = new Map(), cnt = new Map();
+    list.forEach((id, i) => { const g = grp.get(id); if (!first.has(g)) first.set(g, i); cnt.set(g, (cnt.get(g) || 0) + 1); });
+    return `<p class="lead">名前と説明文から、大まかな組に分けています（機械で分けているので、ずれる物もあります）。</p><nav class="catnav"><div><span class="lbl">組</span>${[...first].map(([g, i]) => { const pg = Math.floor(i / PAGE); return `<a href="${BASE}items/other${pg ? '-' + (pg + 1) : ''}.html#og-${OTHER_GROUPS[g][0]}">${OTHER_GROUPS[g][1]}<span class="cnt">${cnt.get(g)}</span></a>`; }).join('')}</div></nav>`;
+  }
+  function otherBand(g, list, grp, cont) {
+    const n = list.filter(id => grp.get(id) === g).length;
+    return `<div class="band"${cont ? '' : ` id="og-${OTHER_GROUPS[g][0]}"`} data-band="${OTHER_GROUPS[g][1]}">${OTHER_GROUPS[g][1]}${cont ? '（続き）' : ''} <span>${n}件</span></div>`;
   }
   function catNavItems(cur) { return `<nav class="catnav"><div><span class="lbl">アイテム</span>${ITEM_CATS.map(([k, ja]) => k === cur ? `<b>${esc(ja)}</b>` : `<a href="${BASE}items/${k}.html">${esc(ja)}</a>`).join('')}</div></nav>`; }
 
@@ -173,11 +202,32 @@ ${uses.length ? `<h2>使い道（この素材で作れる物 ${uses.length}品�
   const blueOf = s => (lsb && lsb.blue ? lsb.blue[s.id] : null);
   const blueTrait = b => { const t = b && lsb.blueTraits[b.cat]; return t && t[0] ? ((traitsW.get(t[0][1]) || {}).ja || '') : ''; };
   const blueSc = b => (b ? b.sc.map(n => SC_NO[n]).filter(Boolean).map(x => `<span class="sc sc-${x}">${esc(SC_JA[x] || x)}</span>`).join('') : '');
+  // ── フェイス：戦闘タイプ（公式フォーラムの一覧・src/trust_types.json）とジョブ（メイン / サポート）
+  const TT = (() => { try { return JSON.parse(fs.readFileSync(new URL('./trust_types.json', import.meta.url), 'utf8')); } catch (e) { return { types: {} }; } })();
+  const tn = s => String(s || '').normalize('NFKC').replace(/[\s・.．]/g, '').replace(/\(UC\)$/, '');
+  const TALIAS = { 'レイランガヴォ': 'レイ', 'ウルゴア': '魔王ウルゴア' }; // ゲーム内の名前と一覧の書き方が違う物
+  const ttype = new Map(Object.entries(TT.types).map(([k, v]) => [tn(k), v]));
+  const trustType = s => { const k = tn(s.ja); return ttype.get(k) || ttype.get(tn(TALIAS[k] || '-')) || ''; };
+  const tkey = e => String(e || '').toLowerCase().replace(/\(uc\)/, '_uc').replace(/'/g, '').replace(/[^a-z0-9-]+/g, '_').replace(/^_|_$/g, '');
+  const trustJob = s => { const tj = (lsb && lsb.trustJob) || {}; return tj[tkey(s.en)] || tj[tkey(String(s.en || '').replace(/[-']/g, ''))] || null; };
+  const jobJa = id => (JOB_LIST.find(j => j.id === id) || {}).ja || '';
+  const jobTxt = s => { const x = trustJob(s); return x && jobJa(x[0]) ? esc(jobJa(x[0])) + (jobJa(x[1]) ? ' / ' + esc(jobJa(x[1])) : '') : '<span class="nl">—</span>'; };
+  const TT_ORDER = ['盾', '回復', '支援', '近接物理', '遠隔物理攻撃', '魔法攻撃'];
+  const writeTrust = (list, ja) => {
+    const groups = TT_ORDER.map(t => [t, list.filter(s => trustType(s) === t)]).concat([['戦闘タイプ未確認', list.filter(s => !trustType(s))]]).filter(([, l]) => l.length);
+    const gid = t => 'tt-' + (TT_ORDER.indexOf(t) + 1 || 9);
+    write('magic/trust.html', head(`フェイスの一覧（${list.length}体）｜戦闘タイプ（ロール）とジョブ｜${SITE_SHORT}`, `FF11のフェイス${list.length}体を、戦闘タイプ（盾・回復・支援・近接物理・遠隔物理攻撃・魔法攻撃）ごとに、メインジョブ・サポートジョブつきで一覧。持っているフェイスにチェックも付けられます。`, `${ORIGIN}/magic/trust.html`)
+      + `<main class="wide">${crumb('魔法', ja)}<h1>${ja} <span class="cnt">${list.length}体</span></h1>${spNav('trust')}
+<p class="lead">戦闘タイプ（ロール）ごとに並べています。戦闘タイプは公式フォーラムの「習得できるフェイス」の一覧（2021年7月時点）から（今後変わる場合があると公式の注記があります）。ジョブは メイン / サポート。持っているフェイスにチェックを付けると、まだの物が分かります。</p>
+<nav class="catnav"><div><span class="lbl">戦闘タイプ</span>${groups.map(([t, l]) => `<a href="#${gid(t)}">${t}<span class="cnt">${l.length}</span></a>`).join('')}</div></nav>
+${groups.map(([t, l]) => `<h2 id="${gid(t)}">${t} <span class="cnt">${l.length}体</span></h2>${t === '戦闘タイプ未確認' ? '<p class="note">公式の一覧に載っていないフェイス（ユニティのフェイスや、2021年7月より後に増えた物）です。</p>' : ''}<div class="tbl trust" data-ck="sp"><div class="r h"><div class="c-n">名前</div><div class="c-ty">戦闘タイプ</div><div class="c-tj">ジョブ</div></div>${l.sort((a, b) => a.id - b.id).map(s => `<div class="r" data-id="${s.id}"><div class="c-n"><a href="${BASE}spell/${s.id}.html">${esc(s.ja)}</a><small>${esc(s.en)}</small></div><div class="c-ty">${esc(trustType(s) || '—')}</div><div class="c-tj">${jobTxt(s)}</div></div>`).join('')}</div>`).join('')}
+</main><script src="${BASE}list.js?v=${VER}"></script>` + foot);
+  };
   for (const [type, key, ja] of SPELL_TYPES) {
     const list = [...spells.values()].filter(s => s.type === type && s.ja && s.ja !== '.')
       .sort((a, b) => (Math.min(...parseLv(a.levels).map(x => x[1]), 999) - Math.min(...parseLv(b.levels).map(x => x[1]), 999)) || a.id - b.id);
     spCount.set(key, list.length);
-    write(`magic/${key}.html`, head(`${ja}の一覧（${list.length}件）｜覚えるジョブとLv・MP・詠唱｜${SITE_SHORT}`,
+    if (key === 'trust') writeTrust(list, ja); else write(`magic/${key}.html`, head(`${ja}の一覧（${list.length}件）｜覚えるジョブとLv・MP・詠唱｜${SITE_SHORT}`,
       `FF11の${ja}${list.length}件。覚えるジョブとレベル、消費MP、詠唱時間、再詠唱、属性、対象${key === 'blue' ? '、セットポイント、付く特性、連携属性' : ''}を一覧で。`, `${ORIGIN}/magic/${key}.html`)
       + `<main class="wide">${crumb('魔法', ja)}<h1>${ja} <span class="cnt">${list.length}件</span></h1>${spNav(key)}${jobChipsFor(list)}
 <div class="tbl spells${key === 'blue' ? ' blue' : ''}" data-ck="sp"><div class="r h"><div class="c-n">名前</div><div class="c-jl">覚えるジョブとLv</div><div class="c-m">MP</div><div class="c-m">詠唱</div><div class="c-m">再詠唱</div><div class="c-m">属性</div><div class="c-m">対象</div>${key === 'blue' ? '<div class="c-m">セット</div><div class="c-tr">特性</div><div class="c-sc">連携属性</div>' : ''}</div>
@@ -189,7 +239,7 @@ ${list.map(s => `<div class="r" data-id="${s.id}" data-j="${parseLv(s.levels).re
         + `<main class="item">${crumb(`<a href="${BASE}magic/${key}.html">${ja}</a>`, esc(s.ja))}
 <section class="ihead"><div class="nm"><h1>${esc(s.ja)}</h1><small>${esc(s.en)}</small></div>
 <div class="badges"><a class="bd cat" href="${BASE}magic/${key}.html">${ja}</a>${skills.get(s.skill) ? `<span class="bd">${esc(skills.get(s.skill).ja)}</span>` : ''}<span class="bd">MP ${s.mp_cost}</span><span class="bd">詠唱 ${s.cast_time}秒</span><span class="bd">再詠唱 ${s.recast}秒</span><span class="bd el${s.element}">${ELEMENT_JA[s.element] ?? ''}</span><span class="bd">対象：${tgt(s.targets || 0)}</span>${blueOf(s) ? `<span class="bd il">セット ${blueOf(s).sp}</span>${blueTrait(blueOf(s)) ? `<span class="bd">特性：${esc(blueTrait(blueOf(s)))}</span>` : ''}${blueSc(blueOf(s))}` : ''}</div>
-<div class="jobsrow"><span class="lbl">覚えるジョブとLv</span><span class="lvs">${lvText(s) || '<span class="nl">—</span>'}</span></div></section>
+${s.type === 'Trust' ? `<div class="jobsrow"><span class="lbl">戦闘タイプ</span><span class="lvs">${esc(trustType(s) || '—')}</span><span class="lbl">ジョブ</span><span class="lvs">${jobTxt(s)}</span></div>` : `<div class="jobsrow"><span class="lbl">覚えるジョブとLv</span><span class="lvs">${lvText(s) || '<span class="nl">—</span>'}</span></div>`}</section>
 <div class="extl"><a href="${ffo(s.ja)}" rel="noopener" target="_blank">FF11用語辞典で見る（効果・入手）</a><a href="https://www.bg-wiki.com/ffxi/${encodeURIComponent((s.en || '').replace(/ /g, '_'))}" rel="noopener" target="_blank">BG-Wiki（英語）</a></div>
 ${sc ? `<h2>スクロール</h2><p><a class="bd cat" href="${BASE}item/${sc}.html">${esc(iname(sc))}</a></p>` : ''}
 </main>` + foot);
