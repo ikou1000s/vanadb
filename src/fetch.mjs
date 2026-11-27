@@ -8,7 +8,7 @@ const GH = { 'User-Agent': 'ff11-db', ...(process.env.GITHUB_TOKEN ? { Authoriza
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DATA = path.join(ROOT, 'data');
-const FILES = ['items', 'item_descriptions', 'jobs', 'slots', 'skills', 'key_items', 'spells', 'weapon_skills', 'job_abilities', 'zones', 'titles', 'mounts', 'merit_points', 'job_points', 'job_traits', 'monster_abilities', 'buffs', 'monstrosity', 'monster_skills'];
+const FILES = ['items', 'item_descriptions', 'jobs', 'slots', 'skills', 'key_items', 'spells', 'weapon_skills', 'job_abilities', 'zones', 'titles', 'mounts', 'merit_points', 'job_points', 'job_traits', 'monster_abilities', 'buffs', 'monstrosity', 'monster_skills', 'emotes'];
 const RAW = 'https://raw.githubusercontent.com/Windower/Resources/master/resources_data/';
 
 fs.mkdirSync(DATA, { recursive: true });
