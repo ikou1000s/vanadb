@@ -89,7 +89,7 @@ export function writeMore(ctx) {
     for (let p = 0; p < pages; p++) {
       const part = list.slice(p * PAGE, (p + 1) * PAGE);
       write(`items/${key}${p ? '-' + (p + 1) : ''}.html`, head(`${ja}の一覧（${list.length.toLocaleString()}件${pages > 1 ? `・${p + 1}/${pages}` : ''}）｜${SITE_SHORT}`,
-        `FF11の${ja}${list.length.toLocaleString()}件の一覧。名前・説明（ゲーム内の表記）・スタック数と、合成で作れるか・素材として使えるか。`, `${ORIGIN}/items/${key}${p ? '-' + (p + 1) : ''}.html`)
+        `FF11の${ja}${list.length.toLocaleString()}件の一覧。名前・説明（ゲーム内の表記）・スタック数と、合成で作れるか・素材として使えるか。` + (pages > 1 ? `${p + 1}/${pages}ページ：${iname(part[0])}〜${iname(part[part.length - 1])}。` : ''), `${ORIGIN}/items/${key}${p ? '-' + (p + 1) : ''}.html`)
         + `<main class="wide">${crumb('アイテム', esc(ja))}<h1>${esc(ja)} <span class="cnt">${list.length.toLocaleString()}件</span></h1>
 ${catNavItems(key)}${key === 'other' ? otherNav(list, grp, pages) : ''}${pager(pages, p, `items/${key}`)}
 <div class="tbl items" data-ck="it">${itemHead}${key === 'other' ? part.map((id, i) => (i === 0 || grp.get(part[i - 1]) !== grp.get(id) ? otherBand(grp.get(id), list, grp, i === 0 && p > 0 && grp.get(list[p * PAGE - 1]) === grp.get(id)) : '') + itemRow(id)).join('') : part.map(itemRow).join('')}</div>${pager(pages, p, `items/${key}`)}</main><script src="${BASE}list.js?v=${VER}"></script>` + foot);
@@ -162,7 +162,7 @@ ${catNavItems(key)}${key === 'other' ? otherNav(list, grp, pages) : ''}${pager(p
     const uses = [...(usedIn.get(id) || [])].filter(x => items.get(x));
     const sp = c === 'scroll' ? scrollSpell.get((it.en || '').replace(/^scroll of /i, '').toLowerCase()) : null;
     write(`item/${id}.html`, head(`${it.ja}${tTag}｜${cj[1]}｜${SITE_SHORT}`,
-      `${it.ja}（${cj[1]}）の説明${made.length ? '・作り方' : ''}${uses.length ? '・使い道（作れる物）' : ''}。` + d.replace(/\n/g, ' ').slice(0, 80), `${ORIGIN}/item/${id}.html`)
+      `${it.ja}${tTag}（${cj[1]}）の説明${made.length ? '・作り方' : ''}${uses.length ? '・使い道（作れる物）' : ''}。` + d.replace(/\n/g, ' ').slice(0, 80), `${ORIGIN}/item/${id}.html`)
       + `<main class="item">${crumb(`<a href="${BASE}items/${c}.html">${esc(cj[1])}</a>`, esc(it.ja))}
 <section class="ihead"><div class="nm"><h1>${esc(it.ja)}</h1><small>${esc(it.en)}</small></div>
 <div class="badges"><a class="bd cat" href="${BASE}items/${c}.html">${esc(cj[1])}</a>${it.stack > 1 ? `<span class="bd">スタック ${it.stack}</span>` : '<span class="bd">スタックなし</span>'}${rxBadges(id)}</div></section>
@@ -187,7 +187,7 @@ ${uses.length ? `<h2>使い道（この素材で作れる物 ${uses.length}品�
     const pages = Math.ceil(list.length / PAGE);
     for (let p = 0; p < pages; p++) {
       write(`ki/${key}${p ? '-' + (p + 1) : ''}.html`, head(`だいじなもの：${ja}（${list.length.toLocaleString()}件${pages > 1 ? `・${p + 1}/${pages}` : ''}）｜${SITE_SHORT}`,
-        `FF11のだいじなもの「${ja}」${list.length.toLocaleString()}件の一覧（日本語名・英語名）。`, `${ORIGIN}/ki/${key}${p ? '-' + (p + 1) : ''}.html`)
+        `FF11のだいじなもの「${ja}」${list.length.toLocaleString()}件の一覧（日本語名・英語名）。` + (pages > 1 ? (sl => `${p + 1}/${pages}ページ：${sl[0].ja}〜${sl[sl.length - 1].ja}。`)(list.slice(p * PAGE, (p + 1) * PAGE)) : ''),`${ORIGIN}/ki/${key}${p ? '-' + (p + 1) : ''}.html`)
         + `<main class="wide">${crumb('だいじなもの', esc(ja))}<h1>だいじなもの：${esc(ja)} <span class="cnt">${list.length.toLocaleString()}件</span></h1>${kiNav(c)}${pager(pages, p, `ki/${key}`)}
 <div class="tbl ki" data-ck="ki"><div class="r h"><div class="c-n">名前</div><div class="c-fx">英語名</div><div class="c-x">用語辞典</div></div>${list.slice(p * PAGE, (p + 1) * PAGE).map(k => `<div class="r" data-id="${k.id}"><div class="c-n"><b>${esc(k.ja)}</b></div><div class="c-fx">${esc(k.en)}</div><div class="c-x"><a href="${ffo(k.ja)}" rel="noopener" target="_blank">見る</a></div></div>`).join('')}</div>${pager(pages, p, `ki/${key}`)}</main><script src="${BASE}list.js?v=${VER}"></script>` + foot);
     }

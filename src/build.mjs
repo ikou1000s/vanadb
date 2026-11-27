@@ -335,7 +335,7 @@ function writeItemPages() {
       .map(k => `<a href="${BASE}search.html?cat=${cat[0]}&amp;stat=${encodeURIComponent(k)}">${esc(k.replace(/%$/, ''))}</a>`).join('') : '';
     const mark = o => (o.id === id ? ' me' : '');
     const tbl = list => `<div class="tbl">${tableHead}${list.map(o => rowHtml(o).replace('<div class="r"', `<div class="r${mark(o)}"`)).join('')}</div>`;
-    const descText = `${it.ja}（${kind}・Lv${it.level}${it.item_level ? '・IL' + it.item_level : ''}）の性能・装備できるジョブ・${recs.length ? '合成レシピ・' : ''}${variants.length > 1 ? '段階違い・' : ''}${sameLook.length > 1 ? '見た目が同じ装備・' : ''}性能が近い装備。` + text.replace(/\n/g, ' ').slice(0, 70);
+    const descText = `${it.ja}（${kind}・Lv${it.level}${it.item_level ? '・IL' + it.item_level : ''}${titleTag.has(id) ? `・No.${id}` : ''}）の性能・装備できるジョブ・${recs.length ? '合成レシピ・' : ''}${variants.length > 1 ? '段階違い・' : ''}${sameLook.length > 1 ? '見た目が同じ装備・' : ''}性能が近い装備。` + text.replace(/\n/g, ' ').slice(0, 70);
     const html = head(`${it.ja}${titleTag.has(id) ? `（${titleTag.get(id)}）` : ''}｜${kind}の性能｜${SITE_SHORT}`, descText, `${ORIGIN}/item/${id}.html`)
       + `<main class="item"><p class="crumb"><a href="${BASE}">トップ</a> › ${cat ? `<a href="${BASE}list/${cat[0]}.html">${esc(cat[1])}の一覧</a>` : esc(slot)} › ${esc(it.ja)}</p>
 <section class="ihead"><div class="nm"><h1>${esc(it.ja)}</h1><small>${esc(it.en)}</small></div>
