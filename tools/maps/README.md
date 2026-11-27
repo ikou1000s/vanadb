@@ -9,3 +9,16 @@
 5. webp/*.webp を src/maps/ に、keep.json から src/maps.json（[名前, エリア番号, 階]）を作る
 
 絵の中身は変えない（色・形・文字はそのまま。WebP にするのは大きさを小さくするためだけ）。
+
+## リージョンの地図（2026-11-28）
+
+ゲームのメニューのリージョンマップ（種類 menumap、512×512・256色）を、手を加えずに src/regions/*.webp に置く。maps/regions.html で使う。
+
+| ファイル | 中身 | 元（ROM/フォルダ/番号.DAT・名前） |
+| --- | --- | --- |
+| rg_middle | 中の国（コンクエストの地図） | ROM/17/23・conquest（ROM/195/94 の m_ex4_rg はほぼ同じ絵） |
+| rg_east | アトルガン | ROM/161/34・m_ex3_rg |
+| rg_west | ウルブカ | ROM/292/107・m_ex5_rg |
+| rg_san / rg_bas / rg_win / rg_jun | 国の全体図 | ROM/18/63・68・74・79（m_san_00 など。_01〜_03 は区画ごとに光る版） |
+
+書き出しは `node idx.mjs <DAT> out/rg_xxx.png` → 上の手順4と同じく WebP（0.86）。

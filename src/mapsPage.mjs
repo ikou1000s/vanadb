@@ -41,7 +41,7 @@ export function writeMaps(ctx) {
   const rel = 'maps/index.html';
   fs.writeFileSync(path.join(SITE, rel), head(`地図の一覧（${zones.length}エリア・${list.length}枚）｜${SITE_SHORT}`, `FF11のゲーム内の地図を、エリアごとに${list.length}枚。手を加えていない元の地図です。`, `${ORIGIN}/${rel}`)
     + `<main class="wide">${crumb('地図')}<h1>地図 <span class="cnt">${zones.length}エリア・${list.length}枚</span></h1>
-<p class="lead">ゲーム内の地図を、地方ごとに分けています。階や区画が分かれているエリアは、全部の地図が並びます。マウント・ペットが使えるかなどは <a href="${BASE}zones.html">エリアの一覧</a> で。</p>
+<p class="lead">ゲーム内の地図を、地方ごとに分けています。階や区画が分かれているエリアは、全部の地図が並びます。世界地図から地方をたどるなら <a href="${BASE}maps/regions.html">リージョンの地図</a>。マウント・ペットが使えるかなどは <a href="${BASE}zones.html">エリアの一覧</a> で。</p>
 <div class="row"><label>名前</label><input type="search" class="tfilter" data-for="mz" placeholder="エリアの名前の一部で絞る（日本語・英語）"></div>
 <nav class="catnav mreg">${REGIONS.filter(([e]) => [...groups.values()].some(([x]) => x === e)).map(([e]) => `<div><span class="lbl">${e}</span>${[...groups].filter(([, [x]]) => x === e).map(([k, [, ja, zs]]) => `<a href="#mg-${k}">${ja}<span class="cnt">${zs.length}</span></a>`).join('')}</div>`).join('')}</nav>
 <div class="tbl simple mz" id="mz"><div class="r h"><div class="c-n">エリア</div><div class="c-fx">英語名</div><div class="c-x">地図</div></div>${[...groups].map(([k, [era, ja, l]]) => `<div class="band" id="mg-${k}" data-band="${ja}">${ja}<small class="era">${era}</small> <span>${l.length}件</span></div>${l.map(z => `<div class="r"><div class="c-n"><a href="${BASE}maps/${z}.html">${esc(zname(z))}</a></div><div class="c-fx">${esc(zen(z))}</div><div class="c-x">${byZone.get(z).length}枚</div></div>`).join('')}`).join('')}</div>
@@ -84,8 +84,38 @@ ${comps.map((c, k) => `<h2 id="w${k}">${esc(nameOf2(c))} <span class="cnt">${c.l
 <p class="note">© SQUARE ENIX CO., LTD.</p></main>` + foot);
     urls.push(`${ORIGIN}/maps/world.html`);
   }
+  // リージョンの地図：ゲームのメニューにある世界地図（中の国・アトルガン・ウルブカ）と国の全体図（src/regions/*.webp・tools/maps/README.md の「リージョンの地図」）
+  const RG = [
+    ['rg_middle', '中の国（クォン大陸・ミンダルシア大陸）', 'ゲームのリージョンマップ（コンクエストの地図）。三国・ジュノ、プロマシア、アルタナ（過去）のエリアもこの地図の上にあります。', ['三国・ジュノ', '中の国', 'プロマシア', 'アルタナ（過去）']],
+    ['rg_east', 'アトルガン（東の大陸）', 'アトルガン皇国のあたりのリージョンマップ。', ['アトルガン']],
+    ['rg_west', 'ウルブカ（西の大陸）', 'アドゥリンとウルブカのリージョンマップ。', ['アドゥリン']],
+  ];
+  const NATION = [['rg_san', 'Sandoria'], ['rg_bas', 'Bastok'], ['rg_win', 'Windurst'], ['rg_jun', 'Jeuno']];
+  let rgN = 0;
+  if (fs.existsSync(path.join(ROOT, 'src', 'regions'))) {
+    const have = RG.concat(NATION.map(([n]) => [n])).filter(([n]) => fs.existsSync(path.join(ROOT, 'src', 'regions', n + '.webp')));
+    for (const [n] of have) fs.copyFileSync(path.join(ROOT, 'src', 'regions', n + '.webp'), path.join(SITE, 'maps', 'img', n + '.webp'));
+    const hv = new Set(have.map(([n]) => n));
+    const chips = k => { const g = groups.get(k); return g ? `<div class="rgz"><b><a href="${BASE}maps/index.html#mg-${k}">${g[1]}</a></b><span class="chips">${g[2].map(z => `<a class="chip" href="${BASE}maps/${z}.html">${esc(zname(z))}</a>`).join('')}</span></div>` : ''; };
+    const fig = (n, alt) => `<figure><a href="${BASE}maps/img/${n}.webp" target="_blank" rel="noopener"><img src="${BASE}maps/img/${n}.webp" width="512" height="512" loading="lazy" alt="${esc(alt)}"></a></figure>`;
+    const secs = RG.filter(([n]) => hv.has(n)).map(([n, ttl, lead, eras], i) => {
+      const ks = REGIONS.filter(([e]) => eras.includes(e)).flatMap(([e, l]) => l.map(([k]) => k)).filter(k => groups.has(k));
+      rgN += ks.length;
+      const nat = i === 0 ? NATION.filter(([m]) => hv.has(m)) : [];
+      return `<h2 id="${n}">${ttl}</h2><p class="lead">${lead}</p><div class="maps rgw">${fig(n, ttl + 'のリージョンマップ')}<div class="rgl">${ks.map(chips).join('')}</div></div>${nat.length ? `<h3>国の全体図</h3><div class="maps">${nat.map(([m, k]) => `<figure>${fig(m, (groups.get(k) || [, k])[1] + 'の全体図').replace(/^<figure>|<\/figure>$/g, '')}<figcaption><a href="${BASE}maps/index.html#mg-${k}">${(groups.get(k) || [, k])[1]}</a>の全体図</figcaption></figure>`).join('')}</div>` : ''}`;
+    });
+    if (secs.length) {
+      fs.writeFileSync(path.join(SITE, 'maps', 'regions.html'), head(`リージョンの地図｜中の国・アトルガン・ウルブカの世界地図｜${SITE_SHORT}`, 'FF11のゲーム内のリージョンマップ（中の国・アトルガン・ウルブカ）と三国・ジュノの全体図。地方ごとに、そのエリアの地図へ行けます。', `${ORIGIN}/maps/regions.html`)
+        + `<main class="wide">${crumb(`<a href="${BASE}maps/index.html">地図</a>`, 'リージョンの地図')}<h1>リージョンの地図 <span class="cnt">${rgN}地方</span></h1>
+<p class="lead">ゲームのメニューにあるリージョンマップ（世界地図）を、手を加えずに載せています。地図の横の地方の名前・エリアの名前を押すと、そのエリアの地図へ。エリア同士の出入り口のつながりは <a href="${BASE}maps/world.html">つながり地図</a> で。</p>
+<nav class="catnav"><div><span class="lbl">地図</span>${RG.filter(([n]) => hv.has(n)).map(([n, t]) => `<a href="#${n}">${t.replace(/（.*/, '')}</a>`).join('')}</div></nav>
+${secs.join('\n')}
+<p class="note">© SQUARE ENIX CO., LTD.</p></main>` + foot);
+      urls.push(`${ORIGIN}/maps/regions.html`);
+    }
+  }
   // トップの節：地図の一覧・つながり地図・時代や地方の括り
   const eraTiles = REGIONS.map(([era, l]) => { const ks = l.map(([k]) => k).filter(k => groups.has(k)); if (!ks.length) return ''; const n = ks.reduce((a, k) => a + groups.get(k)[2].length, 0); return tile(`${BASE}maps/index.html#mg-${ks[0]}`, era, n, era[0], 'ex'); }).join('');
-  const home = `<section class="box" id="map"><h2>地図（${zones.length}エリア・${list.length}枚）<a class="all" href="${BASE}maps/index.html">一覧へ</a></h2><div class="tiles">${tile(`${BASE}maps/index.html`, '地図の一覧', zones.length, '地', 'ex hot')}${worldN ? tile(`${BASE}maps/world.html`, 'つながり地図', worldN, '繋', 'ex hot') : ''}${eraTiles}</div></section>`;
+  const home = `<section class="box" id="map"><h2>地図（${zones.length}エリア・${list.length}枚）<a class="all" href="${BASE}maps/index.html">一覧へ</a></h2><div class="tiles">${tile(`${BASE}maps/index.html`, '地図の一覧', zones.length, '地', 'ex hot')}${rgN ? tile(`${BASE}maps/regions.html`, 'リージョンの地図', rgN, '世', 'ex hot') : ''}${worldN ? tile(`${BASE}maps/world.html`, 'つながり地図', worldN, '繋', 'ex hot') : ''}${eraTiles}</div></section>`;
   return { home, urls, count: list.length, zones: new Set(zones), zname };
 }

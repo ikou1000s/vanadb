@@ -526,3 +526,9 @@ h3.tsub{font-size:13.5px;color:var(--gold);margin:12px 0 6px}
 .wmap a:hover image{opacity:.8}
 .wmap .wt{fill:#fff;font-size:12px;font-weight:700;text-anchor:middle;paint-order:stroke;stroke:#0a1428;stroke-width:3.5px}
 .wmap .wc{fill:#ffd36b}
+.rgw{align-items:flex-start}
+.rgl{flex:1;min-width:260px;display:flex;flex-direction:column;gap:8px}
+.rgz{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.rgz>b{min-width:7.5em;font-size:14px}
+.rgz .chip{font-size:12.5px;padding:2px 8px;text-decoration:none}
+@media (min-width:900px){.rgw>figure{position:sticky;top:8px}}
