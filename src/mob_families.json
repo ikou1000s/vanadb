@@ -1,0 +1,25 @@
+{
+  "_": "モンスターの系統・大分類の日本語名（LandSandBoat の data/ecosystems.yaml の英語名 → 日本語）。自信の無い物は入れない＝英語のまま出る",
+  "eco": {
+    "amorph": "アモルフ", "aquan": "アクアン", "arcana": "アルカナ", "beast": "ビースト", "beastmen": "獣人", "bird": "鳥",
+    "demon": "デーモン", "dragon": "ドラゴン", "elemental": "エレメンタル", "humanoid": "人", "lizard": "リザード",
+    "plantoid": "プラントイド", "undead": "アンデッド", "vermin": "ヴァーミン"
+  },
+  "fam": {
+    "botuli": "ボトゥリ", "flan": "フラン", "hecteyes": "ヘクトアイズ", "leech": "リーチ", "sandworm": "サンドウォーム", "slime": "スライム", "slug": "スラッグ", "worm": "ワーム",
+    "crab": "クラブ", "orobon": "オロボン", "pugil": "プギル", "rockfin": "ロックフィン", "sea_monk": "シーモンク",
+    "bomb": "ボム", "cluster": "クラスター", "evil_weapon": "イビルウェポン", "golem": "ゴーレム", "khimaira": "キマイラ", "mimic": "ミミック", "spheroid": "スフィアロイド",
+    "chariot": "チャリオット", "gear": "ギア", "rampart": "ランパート",
+    "behemoth": "ベヒーモス", "buffalo": "バッファロー", "cerberus": "ケルベロス", "coeurl": "クァール", "dhalmel": "ダルメル", "manticore": "マンティコア", "marid": "マリド", "opo_opo": "オポオポ", "rabbit": "ラビット", "ram": "ラム", "sheep": "シープ", "tiger": "タイガー",
+    "gigas": "ギガース", "goblin": "ゴブリン", "lamiae": "ラミア", "mamool_ja": "マムージャ", "orc": "オーク", "poroggo": "ポロッゴ", "qiqirn": "キキルン", "quadav": "クゥダフ", "troll": "トロール", "yagudo": "ヤグード",
+    "amphiptere": "アンフィプテール", "apkallu": "アプカル", "bat": "バット", "bird": "バード", "cockatrice": "コカトリス", "colibri": "コリブリ", "harpeia": "ハルペイア", "hippogryph": "ヒポグリフ",
+    "ahriman": "アーリマン", "demon": "デーモン", "imp": "インプ", "soulflayer": "ソウルフレア",
+    "dragon": "ドラゴン", "hydra": "ヒドラ", "puk": "プーク", "wyrm": "ワイアーム", "wyvern": "ワイバーン", "wyvern_pet": "飛竜（ペット）", "zilant": "ジラント",
+    "avatar": "召喚獣", "elvaan": "エルヴァーン", "galka": "ガルカ", "hume": "ヒューム", "mithra": "ミスラ", "tarutaru": "タルタル",
+    "adamantoise": "アダマンタス", "bugard": "ブガード", "lizard": "リザード", "raptor": "ラプトル", "wivre": "ウィヴル",
+    "cactaur": "サボテンダー", "flytrap": "フライトラップ", "funguar": "フングール", "goobbue": "グゥーブー", "mandragora": "マンドラゴラ", "morbol": "モルボル", "sapling": "サプリング", "treant": "トレント",
+    "automaton": "オートマトン",
+    "corse": "コース", "dullahan": "デュラハン", "fomor": "フォモル", "ghost": "ゴースト", "hound": "ハウンド", "qutrub": "クトゥルブ", "shadow": "シャドウ", "skeleton": "スケルトン", "vampyr": "ヴァンピール",
+    "antlion": "アントリオン", "bee": "ビー", "beetle": "ビートル", "crawler": "クロウラー", "diremite": "ダイアマイト", "fly": "フライ", "ladybug": "レディバグ", "scorpion": "スコーピオン", "spider": "スパイダー", "wamoura": "ワモーラ"
+  }
+}

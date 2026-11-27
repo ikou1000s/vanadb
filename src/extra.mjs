@@ -85,8 +85,20 @@ ${bGroups ? '<p class="src">強化・弱体の分け方は、有志が公開し�
   // モンスターの技（検索できる一覧）
   const mab = load('monster_abilities').sort((a, b) => a.id - b.id);
   counts.mab = mab.length;
-  page('monster-abilities.html', `モンスターの技の一覧（${mab.length}件）`, `FF11のモンスターの技${mab.length}件（日本語名・英語名）。名前で絞り込めます。`, 'モンスターの技', `${mab.length}件`,
-    `${filterBox('ma')}<div class="tbl simple" id="ma"><div class="r h"><div class="c-n">技</div><div class="c-fx">英語名</div><div class="c-x">用語辞典</div></div>${mab.map(t => `<div class="r"><div class="c-n"><b>${esc(t.ja)}</b></div><div class="c-fx">${esc(t.en)}</div><div class="c-x"><a href="${ffo(t.ja)}" rel="noopener" target="_blank">見る</a></div></div>`).join('')}</div>`);
+  // 使うモンスターの系統（fetch_lsb.mjs の mabFam。日本語名は src/mob_families.json、無い物は英語のまま）
+  const lsbAll = fs.existsSync(lsbF) ? JSON.parse(fs.readFileSync(lsbF, 'utf8')) : {};
+  const mabFam = lsbAll.mabFam || null;
+  const FJ = JSON.parse(fs.readFileSync(new URL('./mob_families.json', import.meta.url), 'utf8'));
+  const enName = s => s.split('_').map(w => w[0].toUpperCase() + w.slice(1)).join(' ');
+  const famJa = f => { const k = (lsbAll.famName || {})[f] || ''; return FJ.fam[k] || enName(k); };
+  const ecoJa = f => { const k = (lsbAll.famEco || {})[f] || ''; return FJ.eco[k] || enName(k); };
+  const famsOf = t => (mabFam && mabFam[t.id] ? mabFam[t.id].slice().sort((a, b) => famJa(a).localeCompare(famJa(b), 'ja')) : []);
+  const famCount = new Map(); if (mabFam) for (const t of mab) for (const f of famsOf(t)) famCount.set(f, (famCount.get(f) || 0) + 1);
+  const ecoGroups = new Map(); for (const f of famCount.keys()) { const e = ecoJa(f); if (!ecoGroups.has(e)) ecoGroups.set(e, []); ecoGroups.get(e).push(f); }
+  const famPick = mabFam ? `<div class="row"><label>種族</label><select class="fampick" onchange="var i=document.querySelector('.tfilter[data-for=ma]');i.value=this.value;i.dispatchEvent(new Event('input'))"><option value="">すべて</option>${[...ecoGroups].sort((a, b) => a[0].localeCompare(b[0], 'ja')).map(([e, fs2]) => `<optgroup label="${esc(e)}">${fs2.sort((a, b) => famJa(a).localeCompare(famJa(b), 'ja')).map(f => `<option value="${esc(famJa(f))}">${esc(famJa(f))}（${famCount.get(f)}）</option>`).join('')}</optgroup>`).join('')}</select></div>` : '';
+  const withFam = mab.filter(t => famsOf(t).length).length;
+  page('monster-abilities.html', `モンスターの技の一覧（${mab.length}件）`, `FF11のモンスターの技${mab.length}件（日本語名・英語名${mabFam ? '・使うモンスターの種族' : ''}）。名前${mabFam ? 'と種族' : ''}で絞り込めます。`, 'モンスターの技', `${mab.length}件`,
+    `${mabFam ? `<p class="lead">「使う種族」は、その技を使うモンスターの系統です（2種類以上なら全部）。${withFam}件に付いています。NM専用・フェイス・ペット・イベントの技などは、たどれない物があり「—」です。</p>` : ''}${famPick}${filterBox('ma')}<div class="tbl simple${mabFam ? ' mab' : ''}" id="ma"><div class="r h"><div class="c-n">技</div><div class="c-fx">英語名</div>${mabFam ? '<div class="c-fam">使う種族</div>' : ''}<div class="c-x">用語辞典</div></div>${mab.map(t => `<div class="r"><div class="c-n"><b>${esc(t.ja)}</b></div><div class="c-fx">${esc(t.en)}</div>${mabFam ? `<div class="c-fam">${famsOf(t).map(f => `<span class="fam">${esc(famJa(f))}</span>`).join('') || '<span class="nl">—</span>'}</div>` : ''}<div class="c-x"><a href="${ffo(t.ja)}" rel="noopener" target="_blank">見る</a></div></div>`).join('')}</div>`);
 
   // モンストロス（種族とTP技）
   const fams = load('monstrosity').sort((a, b) => a.id - b.id);

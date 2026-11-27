@@ -173,8 +173,28 @@ out.synergy = rows(await get('synergy_recipes')).map(r => ({ fe: r.slice(7, 15).
     const r = /return xi::Region::(\w+);/.exec(l); if (r) { for (const z of pend) { const id = idOf[snake(z)] ?? idOf[z.toLowerCase()]; if (id != null) out.zoneRegion[id] = r[1]; } pend = []; }
   }
 }
+const mobPools = rows(await get('mob_pools'));
+// モンスターの技 → 使うモンスターの系統：技の組（mob_skill_lists）→ その組を持つモンスター（mob_pools の speciesid・skill_list_id）→ 系統（data/ecosystems.yaml）
+try {
+  const r = await fetch('https://raw.githubusercontent.com/LandSandBoat/server/base/data/ecosystems.yaml'); if (!r.ok) throw new Error('ecosystems.yaml: ' + r.status);
+  const spFam = {}; out.famName = {}; out.famEco = {};
+  let on = false, eco = '', fam = '', famId = 0;
+  for (const l of (await r.text()).split('\n')) {
+    if (/^ecosystems:/.test(l)) { on = true; continue; } if (!on) continue;
+    let m;
+    if ((m = /^  (\w[\w-]*):\s*$/.exec(l))) eco = m[1];
+    else if ((m = /^      (\w[\w-]*):\s*$/.exec(l))) fam = m[1];
+    else if ((m = /^        id:\s*(\d+)/.exec(l))) { famId = Number(m[1]); out.famName[famId] = fam; out.famEco[famId] = eco; }
+    else if ((m = /^            id:\s*(\d+)/.exec(l))) spFam[Number(m[1])] = famId;
+  }
+  const lists = {}; for (const x of rows(await get('mob_skill_lists'))) (lists[Number(x[1])] ||= []).push(Number(x[2]));
+  const mf = {};
+  for (const x of mobPools) { const f = spFam[Number(x[3])], L = Number(x[24]); if (f == null || !lists[L] || out.famName[f] === 'unclassified') continue; for (const s of lists[L]) (mf[s] ||= new Set()).add(f); }
+  out.mabFam = Object.fromEntries(Object.entries(mf).map(([s, set]) => [s, [...set]]));
+  console.log('モンスターの技の系統', Object.keys(out.mabFam).length, '件');
+} catch (e) { console.log('系統の取り込みに失敗（技の系統は出さない）', e.message); }
 out.trustJob = {};
-for (const r of rows(await get('mob_pools'))) { const id = Number(r[0]), k = String(r[1]).toLowerCase(); if (id < 5800 || !/^[a-z0-9_-]+$/.test(k)) continue; if (!out.trustJob[k] || r[1] === k) out.trustJob[k] = [Number(r[5]), Number(r[6])]; }
+for (const r of mobPools) { const id = Number(r[0]), k = String(r[1]).toLowerCase(); if (id < 5800 || !/^[a-z0-9_-]+$/.test(k)) continue; if (!out.trustJob[k] || r[1] === k) out.trustJob[k] = [Number(r[5]), Number(r[6])]; }
 console.log('アビリティ', Object.keys(out.abil).length, 'WS', Object.keys(out.ws).length);
 fs.writeFileSync(path.join(DATA, 'lsb.json'), JSON.stringify(out));
 console.log('見た目', Object.keys(out.look).length);

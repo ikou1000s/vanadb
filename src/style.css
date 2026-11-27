@@ -482,6 +482,11 @@ p.src{color:var(--sub);font-size:12px;margin-top:18px}
 @media (min-width:861px){ .tbl.aug.ip .r{grid-template-columns:110px 64px 360px minmax(200px,1fr)} }
 .tbl.aug .r.me{background:rgba(214,178,94,.10)}
 .tbl.augp .r{grid-template-columns:minmax(220px,max-content) minmax(160px,1fr)}
+/* モンスターの技：使う種族の列 */
+.tbl.simple.mab .r{grid-template-columns:minmax(200px,1.4fr) minmax(180px,1.6fr) minmax(200px,2fr) 80px}
+.fam{display:inline-block;font-size:12px;color:#cfe6ff;border:1px solid #3b5f8c;border-radius:4px;padding:0 5px;margin:1px 3px 1px 0;white-space:nowrap}
+.fampick{max-width:100%}
+@media (max-width:860px){ .tbl.simple.mab .c-fam{flex:1 1 100%;min-width:0} }
 @media (max-width:860px){ .tbl.augp .r{display:flex;flex-wrap:wrap;gap:0 8px} .tbl.augp .r>div{padding:4px 8px;min-width:0;white-space:normal} }
 
 /* 地図 */
