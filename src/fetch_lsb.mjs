@@ -193,6 +193,23 @@ try {
   out.mabFam = Object.fromEntries(Object.entries(mf).map(([s, set]) => [s, [...set]]));
   console.log('モンスターの技の系統', Object.keys(out.mabFam).length, '件');
 } catch (e) { console.log('系統の取り込みに失敗（技の系統は出さない）', e.message); }
+// 称号の分け方：ゲームの中で称号を変えるNPC（場所）ごとの組。2か所以上に出る組（HNMの討伐）は hnm
+try {
+  const y = await (await fetch('https://raw.githubusercontent.com/LandSandBoat/server/base/data/enums/title.yaml')).text();
+  const tid = {}; for (const m of y.matchAll(/^  ([a-z0-9_]+):\s+(\d+)/gm)) tid[m[1]] = Number(m[2]);
+  const NPC = [['Southern_San_dOria/npcs/Moozo-Koozo', 'sandoria'], ['Port_Bastok/npcs/Styi_Palneh', 'bastok'], ['Windurst_Walls/npcs/Burute-Sorute', 'windurst'],
+    ['Lower_Jeuno/npcs/Tuh_Almobankha', 'jeuno'], ['Port_Jeuno/npcs/Zuah_Lepahnyu', 'portjeuno'], ['Kazham/npcs/Eron-Tomaron', 'outpost'], ['Norg/npcs/Quntsu-Nointsu', 'outpost'],
+    ['Rabao/npcs/Shupah_Mujuuk', 'outpost'], ['Mhaura/npcs/Willah_Maratahya', 'outpost'], ['Selbina/npcs/Yulon-Polon', 'outpost'],
+    ['Tavnazian_Safehold/npcs/Aligi-Kufongi', 'cop'], ['Aht_Urhgan_Whitegate/npcs/Koyol-Futenol', 'toau']];
+  const where = {}; // 称号 → 出てくる場所の数
+  const first = {};
+  for (const [p, key] of NPC) {
+    const r = await fetch(`https://raw.githubusercontent.com/LandSandBoat/server/base/scripts/zones/${p}.lua`); if (!r.ok) throw new Error(p + ': ' + r.status);
+    for (const m of (await r.text()).matchAll(/xi\.title\.([A-Z0-9_]+)/g)) { const id = tid[m[1].toLowerCase()]; if (id == null) continue; (where[id] ||= new Set()).add(p); if (!(id in first)) first[id] = key; }
+  }
+  out.titleGroup = {}; for (const id in first) out.titleGroup[id] = where[id].size >= 2 ? 'hnm' : first[id];
+  console.log('称号の組', Object.keys(out.titleGroup).length);
+} catch (e) { console.log('称号の組の取り込みに失敗（分けずに出す）', e.message); }
 out.trustJob = {};
 for (const r of mobPools) { const id = Number(r[0]), k = String(r[1]).toLowerCase(); if (id < 5800 || !/^[a-z0-9_-]+$/.test(k)) continue; if (!out.trustJob[k] || r[1] === k) out.trustJob[k] = [Number(r[5]), Number(r[6])]; }
 console.log('アビリティ', Object.keys(out.abil).length, 'WS', Object.keys(out.ws).length);
