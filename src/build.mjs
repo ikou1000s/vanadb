@@ -14,6 +14,7 @@ import { writeFishing } from './fishing.mjs';
 import { writeAugment } from './augment.mjs';
 import { writeGuild } from './guild.mjs';
 import { writeFind } from './find.mjs';
+import { writeMaps } from './mapsPage.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DATA = path.join(ROOT, 'data');
@@ -197,7 +198,7 @@ const head = (title, description, canonical) => `<!DOCTYPE html>
 <link rel="icon" href="${BASE}favicon.ico" sizes="48x48"><link rel="icon" href="${BASE}favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="${BASE}apple-touch-icon.png"><link rel="manifest" href="${BASE}site.webmanifest"><meta name="theme-color" content="#14254a">
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE}" crossorigin="anonymous"></script><script src="${BASE}find.js?v=${VER}" defer></script></head><body>
 <header class="top"><div class="in"><a class="brand" href="${BASE}">ヴァナDB<small>FF11 データベース</small></a><span class="asof">データ ${esc(asof.date)} 時点（${esc(asof.note)}）</span><form class="hfind" action="${BASE}find.html" method="get" role="search"><span class="hf-ic" aria-hidden="true"></span><input name="q" type="search" placeholder="名前で探す（装備・アイテム・魔法・クエスト…）" autocomplete="off" aria-label="名前で探す"><button type="submit">探す</button></form></div>
-<nav class="gnav"><a class="new" href="${BASE}#new">新装備・新アイテム</a><a href="${BASE}#job">ジョブ別</a><a href="${BASE}#weapon">武器</a><a href="${BASE}#armor">防具</a><a href="${BASE}#items">アイテム</a><a href="${BASE}#synth">合成</a><a href="${BASE}#ki">だいじなもの</a><a href="${BASE}#magic">魔法</a><a href="${BASE}#ws">WS・アビリティ</a><a href="${BASE}#mission">ミッション</a><a href="${BASE}#quest">クエスト</a><a href="${BASE}#more">そのほか</a></nav></header>`;
+<nav class="gnav"><a class="new" href="${BASE}#new">新装備・新アイテム</a><a href="${BASE}#job">ジョブ別</a><a href="${BASE}#weapon">武器</a><a href="${BASE}#armor">防具</a><a href="${BASE}#items">アイテム</a><a href="${BASE}#synth">合成</a><a href="${BASE}#ki">だいじなもの</a><a href="${BASE}#magic">魔法</a><a href="${BASE}#ws">WS・アビリティ</a><a href="${BASE}#quest">ミッション・クエスト</a><a href="${BASE}#map">地図</a><a href="${BASE}#more">そのほか</a></nav></header>`;
 const foot = `<footer class="foot"><p>装備の名前と性能の文はゲーム内の表記です。誤りに気づいたら教えてください。</p>
 <p>姉妹サイト：<a href="https://ff11ikou.blog.fc2.com/">【 FF11 】いこう！ の実験＆実用メモ帳</a>（ジョブ別の装備セットと選んだ理由）</p>
 <p><a href="${BASE}about.html">このサイトについて・プライバシーポリシー・お問い合わせ</a></p>
@@ -509,6 +510,8 @@ console.log('装備以外', JSON.stringify(more.counts));
 const qs2 = writeQuests({ items, JOB_LIST, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE_SHORT, VER, tile });
 console.log('クエスト・ミッション', JSON.stringify(qs2.counts));
 const ex = writeExtra({ JOB_LIST, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE_SHORT, VER, tile });
+const mp = writeMaps({ ROOT, SITE, DATA, head, foot, esc, BASE, ORIGIN, SITE_SHORT, VER, tile });
+console.log('地図', mp.count);
 writeJobPages(more, ex);
 console.log('そのほか', JSON.stringify(ex.counts));
 const sy = writeSynth({ items, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE_SHORT, VER, tile, hasPage: id => equipById.has(id) || more.itemCatOf.has(id) });
@@ -540,6 +543,7 @@ ${homeSec(more.home, 'ki')}
 ${homeSec(more.home, 'magic')}
 ${homeSec(more.home, 'ws')}
 ${qs2.home}
+${mp.home}
 ${ex.home.replace('</div></section>', fi.home + gu.home + au.home + lk.home + '</div></section>')}
 </main><script src="${BASE}list.js?v=${VER}"></script>` + foot);
 
@@ -568,7 +572,7 @@ console.log('名前で探す', fd.count);
 // 検索エンジン向け
 fs.writeFileSync(path.join(SITE, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${ORIGIN}/sitemap.xml\n`);
 fs.writeFileSync(path.join(SITE, 'sitemap.xml'), '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-  + [`${ORIGIN}/`, `${ORIGIN}/new.html`, `${ORIGIN}/search.html`, `${ORIGIN}/about.html`, ...listPages, ...jobPages, ...more.urls, ...qs2.urls, ...ex.urls, ...sy.urls, ...fi.urls, ...au.urls, ...gu.urls, ...lk.urls, ...fd.urls, ...equip.map(e => `${ORIGIN}/item/${e.id}.html`)].map(u => `<url><loc>${u}</loc></url>`).join('\n') + '\n</urlset>\n');
+  + [`${ORIGIN}/`, `${ORIGIN}/new.html`, `${ORIGIN}/search.html`, `${ORIGIN}/about.html`, ...listPages, ...jobPages, ...more.urls, ...qs2.urls, ...ex.urls, ...mp.urls, ...sy.urls, ...fi.urls, ...au.urls, ...gu.urls, ...lk.urls, ...fd.urls, ...equip.map(e => `${ORIGIN}/item/${e.id}.html`)].map(u => `<url><loc>${u}</loc></url>`).join('\n') + '\n</urlset>\n');
 fs.writeFileSync(path.join(SITE, '.nojekyll'), '');
 
 console.log(`装備 ${equip.length}件 / 性能の種類 ${STATS.length}（ペット ${petCount.size}） / データ ${asof.date}`);

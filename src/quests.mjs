@@ -68,10 +68,9 @@ ${credit}</main><script src="${BASE}list.js?v=${VER}"></script>` + foot);
   write('quest/index.html', head(`クエストの一覧（${qTotal}件）｜エリアごとのチェックリスト｜${SITE_SHORT}`, `FF11のクエスト${qTotal}件をエリアごとに。やり忘れの確認に。`, `${ORIGIN}/quest/index.html`)
     + `<main class="wide">${crumb('クエスト')}<h1>クエスト <span class="cnt">${qTotal}件</span></h1><div class="tiles">${Q.quests.map(a => tile(`${BASE}quest/${a.key}.html`, a.ja, a.list.length, a.ja[0], 'qs')).join('')}${tile(`${BASE}mission/index.html`, 'ミッション', mTotal, '任', 'ms')}</div>${credit}</main>` + foot);
 
-  const ckNote = '<p class="note" style="margin:0 0 10px">やった物にチェックを付けて、やり忘れ・取り忘れを確認できます（チェックはこのブラウザに残ります）。</p>';
-  const home = `<section class="box" id="mission"><h2>ミッション（${mTotal}件・チェックリスト）<a class="all" href="${BASE}mission/index.html">一覧へ</a></h2>
-${ckNote}<div class="tiles">${Q.missions.map(m => tile(`${BASE}mission/${m.key}.html`, m.ja, m.list.length, m.ja[0], 'ms')).join('')}</div></section>
-<section class="box" id="quest"><h2>クエスト（${qTotal}件・チェックリスト）<a class="all" href="${BASE}quest/index.html">一覧へ</a></h2>
-${ckNote}<div class="tiles">${Q.quests.map(a => tile(`${BASE}quest/${a.key}.html`, a.ja, a.list.length, a.ja[0], 'qs')).join('')}</div></section>`;
+  const home = `<section class="box" id="quest"><h2>ミッション・クエスト（チェックリスト）<a class="all" href="${BASE}mission/index.html">ミッションの一覧へ</a><a class="all" href="${BASE}quest/index.html">クエストの一覧へ</a></h2>
+<p class="note" style="margin:0 0 10px">やった物にチェックを付けて、やり忘れ・取り忘れを確認できます（チェックはこのブラウザに残ります）。</p>
+<h3 class="tsub">ミッション（${mTotal}件）</h3><div class="tiles">${Q.missions.map(m => tile(`${BASE}mission/${m.key}.html`, m.ja, m.list.length, m.ja[0], 'ms')).join('')}</div>
+<h3 class="tsub">クエスト（${qTotal}件）</h3><div class="tiles">${Q.quests.map(a => tile(`${BASE}quest/${a.key}.html`, a.ja, a.list.length, a.ja[0], 'qs')).join('')}</div></section>`;
   return { home, urls, counts: { quests: qTotal, missions: mTotal } };
 }

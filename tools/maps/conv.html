@@ -1,0 +1,13 @@
+<!doctype html><meta charset="utf-8"><title>地図の変換</title><body><pre id="o">ready</pre><script>
+async function run(q) {
+  const names = (await (await fetch('keep.json')).json()).map(x => x[0]); let n = 0, bytes = 0;
+  for (const nm of names) {
+    const bm = await createImageBitmap(await (await fetch('out/' + nm + '.png')).blob());
+    const c = document.createElement('canvas'); c.width = bm.width; c.height = bm.height; c.getContext('2d').drawImage(bm, 0, 0);
+    const b = await new Promise(res => c.toBlob(res, 'image/webp', q)); bytes += b.size;
+    await fetch('save/' + nm, { method: 'POST', body: b }); n++;
+    document.getElementById('o').textContent = n + ' / ' + names.length + '  ' + Math.round(bytes / 1024) + 'KB';
+  }
+  return n + ' / ' + bytes;
+}
+</script>

@@ -92,10 +92,12 @@ export function writeExtra(ctx) {
 
   // エリア
   const zones = load('zones').sort((a, b) => a.id - b.id);
+  // 地図のあるエリア（src/maps.json）
+  const mapZ = new Set(fs.existsSync(path.join(DATA, '..', 'src', 'maps.json')) ? JSON.parse(fs.readFileSync(path.join(DATA, '..', 'src', 'maps.json'), 'utf8')).map(x => x[1]) : []);
   counts.zones = zones.length;
   const flag = (b, t) => b ? `<span class="tag">${t}</span>` : '';
   page('zones.html', `エリアの一覧（${zones.length}件）`, `FF11のエリア${zones.length}件（日本語名・英語名）と、マウント・ペット・ネクサスの可否。`, 'エリア', `${zones.length}件`,
-    `${filterBox('zn')}<div class="tbl simple" id="zn"><div class="r h"><div class="c-n">エリア</div><div class="c-fx">英語名・できること</div><div class="c-x">用語辞典</div></div>${zones.map(z => `<div class="r"><div class="c-n"><b>${esc(z.ja)}</b></div><div class="c-fx">${esc(z.en)} ${flag(z.can_mount, 'マウント')}${flag(z.can_pet, 'ペット')}${flag(z.can_nexus, 'ネクサス')}</div><div class="c-x"><a href="${ffo(z.ja)}" rel="noopener" target="_blank">見る</a></div></div>`).join('')}</div>`);
+    `${filterBox('zn')}<div class="tbl simple" id="zn"><div class="r h"><div class="c-n">エリア</div><div class="c-fx">英語名・できること</div><div class="c-x">用語辞典</div></div>${zones.map(z => `<div class="r"><div class="c-n">${mapZ.has(z.id) ? `<a href="${BASE}maps/${z.id}.html">${esc(z.ja)}</a> <span class="tag rep">地図</span>` : `<b>${esc(z.ja)}</b>`}</div><div class="c-fx">${esc(z.en)} ${flag(z.can_mount, 'マウント')}${flag(z.can_pet, 'ペット')}${flag(z.can_nexus, 'ネクサス')}</div><div class="c-x"><a href="${ffo(z.ja)}" rel="noopener" target="_blank">見る</a></div></div>`).join('')}</div>`);
 
   const home = `<section class="box" id="more"><h2>そのほかの一覧</h2><div class="tiles">${[
     ['titles.html', '称号', counts.titles, '称'], ['mounts.html', 'マウント', counts.mounts, '騎'], ['merits.html', 'メリットポイント', counts.merits, 'メ'], ['jobpoints.html', 'ジョブポイント', counts.jp, 'JP'],
