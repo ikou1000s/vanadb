@@ -209,6 +209,23 @@ try {
   }
   out.titleGroup = {}; for (const id in first) out.titleGroup[id] = where[id].size >= 2 ? 'hnm' : first[id];
   console.log('称号の組', Object.keys(out.titleGroup).length);
+  // 変えるNPCに出ない称号：アルタナ・アドゥリン・星唄のクエスト／ミッションの中で付く物を、その組に（2026-11-28）
+  try {
+    const GH = { 'User-Agent': 'ff11-db', ...(process.env.GITHUB_TOKEN ? { Authorization: 'Bearer ' + process.env.GITHUB_TOKEN } : {}) };
+    const tree = await (await fetch('https://api.github.com/repos/LandSandBoat/server/git/trees/base?recursive=1', { headers: GH })).json();
+    const SRC = [['scripts/missions/wotg/', 'wotg'], ['scripts/quests/crystalWar/', 'wotg'], ['scripts/missions/soa/', 'soa'], ['scripts/quests/adoulin/', 'soa'], ['scripts/missions/rov/', 'rov']];
+    const files = (tree.tree || []).filter(x => x.type === 'blob' && x.path.endsWith('.lua')).map(x => [x.path, (SRC.find(([p]) => x.path.startsWith(p)) || [])[1]]).filter(x => x[1]);
+    if (!files.length) throw new Error('ファイル一覧が取れない');
+    const src = {}; let i = 0;
+    await Promise.all(Array.from({ length: 8 }, async () => {
+      while (i < files.length) {
+        const [p, key] = files[i++]; const r = await fetch('https://raw.githubusercontent.com/LandSandBoat/server/base/' + p); if (!r.ok) continue;
+        for (const m of (await r.text()).matchAll(/xi\.title\.([A-Z0-9_]+)/g)) { const id = tid[m[1].toLowerCase()]; if (id != null && !(id in out.titleGroup) && !(id in src)) src[id] = key; }
+      }
+    }));
+    Object.assign(out.titleGroup, src);
+    console.log('称号の組（クエスト・ミッションから）', Object.keys(src).length, '件・', files.length, 'ファイル');
+  } catch (e) { console.log('クエスト・ミッションからの称号の組は取れず（名前の型で分ける）', e.message); }
 } catch (e) { console.log('称号の組の取り込みに失敗（分けずに出す）', e.message); }
 out.trustJob = {};
 for (const r of mobPools) { const id = Number(r[0]), k = String(r[1]).toLowerCase(); if (id < 5800 || !/^[a-z0-9_-]+$/.test(k)) continue; if (!out.trustJob[k] || r[1] === k) out.trustJob[k] = [Number(r[5]), Number(r[6])]; }

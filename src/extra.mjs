@@ -25,12 +25,13 @@ export function writeExtra(ctx) {
   const TG = [['sandoria', 'サンドリア（南サンドリアで変える）'], ['bastok', 'バストゥーク（バストゥーク港で変える）'], ['windurst', 'ウィンダス（ウィンダス石の区で変える）'],
     ['jeuno', 'ジュノ（ジュノ下層で変える）'], ['outpost', '辺境の町（カザム・ノーグ・ラバオ・マウラ・セルビナで変える）'], ['hnm', '討伐：HNM（カザム・ラバオ・マウラ・セルビナで変える）'],
     ['portjeuno', '討伐：アビセア（ジュノ港で変える）'], ['cop', 'プロマシア（タブナジア地下壕で変える）'], ['toau', 'アトルガン（アトルガン白門で変える）'],
+    ['wotg', 'アルタナ（過去のクエスト・ミッションで付く）'], ['soa', 'アドゥリン（クエスト・ミッションで付く）'], ['rov', '星唄（ミッションで付く）'],
     ['nm', '討伐：アドゥリン以降など（NMの名前の称号）'], ['other', 'そのほか（アドゥリン以降のクエスト・ミッションなど）']];
   const tKey = t => (tg && tg[t.id]) || (/^[ァ-ヴー・　\s]+$/.test(t.ja) ? 'nm' : 'other');
   const tGroups = tg ? TG.map(([k, ja], i) => [ja, `tt${i + 1}`, titles.filter(t => tKey(t) === k)]).filter(g => g[2].length) : null;
   const tRow = t => `<div class="r" data-id="${t.id}"><div class="c-n"><b>${esc(t.ja)}</b></div><div class="c-fx">${esc(t.en)}</div><div class="c-x"><a href="${ffo(t.ja)}" rel="noopener" target="_blank">見る</a></div></div>`;
   page('titles.html', `称号の一覧（${titles.length}件）・チェックリスト`, `FF11の称号${titles.length}件の一覧（日本語名・英語名）。持っている称号にチェックを付けて、取り忘れを確認できます。`, '称号', `${titles.length}件`,
-    `<p class="lead">持っている称号にチェックを付けると、「まだの物だけ」で取り忘れが分かります（チェックはこのブラウザに残ります）。${tGroups ? '分け方は、ゲームの中で称号を変えるNPCの場所ごとの組です（アドゥリン以降は、名前の型で討伐とそのほかに分けた目安）。' : ''}</p>${tGroups ? `<nav class="bands">${tGroups.map(([ja, id, l]) => `<a href="#${id}" data-band="${esc(ja)}">${esc(ja.replace(/（.*/, ''))}<span>${l.length}</span></a>`).join('')}</nav>` : ''}${filterBox('tt')}
+    `<p class="lead">持っている称号にチェックを付けると、「まだの物だけ」で取り忘れが分かります（チェックはこのブラウザに残ります）。${tGroups ? '分け方は、ゲームの中で称号を変えるNPCの場所ごとの組です。変えるNPCに出ない物は、付くクエスト・ミッションが分かる物をアルタナ・アドゥリン・星唄に、残りは名前の型で討伐とそのほかに分けた目安です。' : ''}</p>${tGroups ? `<nav class="bands">${tGroups.map(([ja, id, l]) => `<a href="#${id}" data-band="${esc(ja)}">${esc(ja.replace(/（.*/, ''))}<span>${l.length}</span></a>`).join('')}</nav>` : ''}${filterBox('tt')}
 <div class="tbl simple" id="tt" data-ck="tt"><div class="r h"><div class="c-n">称号</div><div class="c-fx">英語名</div><div class="c-x">用語辞典</div></div>${tGroups ? tGroups.map(([ja, id, l]) => `<div class="band" id="${id}" data-band="${esc(ja)}">${esc(ja)} <span>${l.length}件</span></div>${l.map(tRow).join('')}`).join('') : titles.map(tRow).join('')}</div>`);
 
   // マウント（チェックリスト・説明つき）
