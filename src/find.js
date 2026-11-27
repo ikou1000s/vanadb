@@ -112,3 +112,16 @@
     load().then(draw);
   }
 })();
+
+// 縦に長いページで、下に進むと右下に「上へ」ボタンを出す
+(function () {
+  var b = document.createElement('button');
+  b.type = 'button'; b.className = 'totop'; b.title = 'ページの一番上へ'; b.setAttribute('aria-label', 'ページの一番上へ戻る');
+  b.innerHTML = '&#9650;<span>上へ</span>';
+  b.addEventListener('click', function () { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+  var on = false;
+  function chk() { var s = window.scrollY > 600; if (s !== on) { on = s; b.classList.toggle('on', s); } }
+  function add() { document.body.appendChild(b); chk(); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', add); else add();
+  window.addEventListener('scroll', chk, { passive: true });
+})();
