@@ -527,6 +527,8 @@ h3.tsub{font-size:13.5px;color:var(--gold);margin:12px 0 6px}
 .wmap .wt{fill:#fff;font-size:12px;font-weight:700;text-anchor:middle;paint-order:stroke;stroke:#0a1428;stroke-width:3.5px}
 .wmap .wc{fill:#ffd36b}
 .rgw{align-items:flex-start}
+.rgnb{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:-4px 0 10px;font-size:14px}
+.rgnb a{display:inline-block;padding:4px 12px;border:1px solid currentColor;border-radius:999px;text-decoration:none;font-weight:700}
 .rgl{flex:1;min-width:260px;display:flex;flex-direction:column;gap:8px}
 .rgz{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
 .rgz>b{min-width:7.5em;font-size:14px}

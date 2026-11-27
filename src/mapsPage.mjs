@@ -90,6 +90,8 @@ ${comps.map((c, k) => `<h2 id="w${k}">${esc(nameOf2(c))} <span class="cnt">${c.l
     ['rg_east', 'アトルガン（東の大陸）', 'アトルガン皇国のあたりのリージョンマップ。', ['アトルガン']],
     ['rg_west', 'ウルブカ（西の大陸）', 'アドゥリンとウルブカのリージョンマップ。', ['アドゥリン']],
   ];
+  // 世界地図同士の並び（西のウルブカ・中の国・東のアトルガン）。行き方は書かず、方角だけ
+  const NB = { rg_middle: [['W', 'rg_west'], ['E', 'rg_east']], rg_east: [['W', 'rg_middle']], rg_west: [['E', 'rg_middle']] };
   const NATION = [['rg_san', 'Sandoria'], ['rg_bas', 'Bastok'], ['rg_win', 'Windurst'], ['rg_jun', 'Jeuno']];
   let rgN = 0;
   if (fs.existsSync(path.join(ROOT, 'src', 'regions'))) {
@@ -102,7 +104,8 @@ ${comps.map((c, k) => `<h2 id="w${k}">${esc(nameOf2(c))} <span class="cnt">${c.l
       const ks = REGIONS.filter(([e]) => eras.includes(e)).flatMap(([e, l]) => l.map(([k]) => k)).filter(k => groups.has(k));
       rgN += ks.length;
       const nat = i === 0 ? NATION.filter(([m]) => hv.has(m)) : [];
-      return `<h2 id="${n}">${ttl}</h2><p class="lead">${lead}</p><div class="maps rgw">${fig(n, ttl + 'のリージョンマップ')}<div class="rgl">${ks.map(chips).join('')}</div></div>${nat.length ? `<h3>国の全体図</h3><div class="maps">${nat.map(([m, k]) => `<figure>${fig(m, (groups.get(k) || [, k])[1] + 'の全体図').replace(/^<figure>|<\/figure>$/g, '')}<figcaption><a href="${BASE}maps/index.html#mg-${k}">${(groups.get(k) || [, k])[1]}</a>の全体図</figcaption></figure>`).join('')}</div>` : ''}`;
+      const nb = (NB[n] || []).filter(([, m]) => hv.has(m));
+      return `<h2 id="${n}">${ttl}</h2><p class="lead">${lead}</p>${nb.length ? `<p class="rgnb">隣の大陸：${nb.map(([d, m]) => `<a href="#${m}">${d === 'W' ? '← 西の' : '東の'}${RG.find(r => r[0] === m)[1].replace(/（.*/, '')}${d === 'E' ? ' →' : ''}</a>`).join('　')}</p>` : ''}<div class="maps rgw">${fig(n, ttl + 'のリージョンマップ')}<div class="rgl">${ks.map(chips).join('')}</div></div>${nat.length ? `<h3>国の全体図</h3><div class="maps">${nat.map(([m, k]) => `<figure>${fig(m, (groups.get(k) || [, k])[1] + 'の全体図').replace(/^<figure>|<\/figure>$/g, '')}<figcaption><a href="${BASE}maps/index.html#mg-${k}">${(groups.get(k) || [, k])[1]}</a>の全体図</figcaption></figure>`).join('')}</div>` : ''}`;
     });
     if (secs.length) {
       fs.writeFileSync(path.join(SITE, 'maps', 'regions.html'), head(`リージョンの地図｜中の国・アトルガン・ウルブカの世界地図｜${SITE_SHORT}`, 'FF11のゲーム内のリージョンマップ（中の国・アトルガン・ウルブカ）と三国・ジュノの全体図。地方ごとに、そのエリアの地図へ行けます。', `${ORIGIN}/maps/regions.html`)
