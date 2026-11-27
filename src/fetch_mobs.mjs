@@ -20,7 +20,9 @@ for (const m of basic.matchAll(/^INSERT INTO `item_basic` VALUES \((\d+),\d+,'((
 // エリアのフォルダ名 → エリア番号（zone_settings の名前と同じ）
 const zoneIdByDir = new Map();
 for (const m of (await get('sql/zone_settings.sql')).matchAll(/^INSERT INTO `zone_settings` VALUES \((\d+),'[^']*',\d+,'([^']+)'\)/gm)) zoneIdByDir.set(m[2].toLowerCase().replace(/[^a-z0-9]/g, ''), Number(m[1]));
-const list = await fetch('https://api.github.com/repos/LandSandBoat/server/contents/data/zones', { headers: GH }).then(r => r.json());
+// フォルダの一覧（api.github.com）も接続待ちで切れることがある（2026-11-28 run 46077948358）ので取り直す
+let list = [];
+for (let i = 0; i < 4; i++) { try { list = await fetch('https://api.github.com/repos/LandSandBoat/server/contents/data/zones', { headers: GH }).then(r => r.json()); break; } catch (e) { if (i >= 3) throw e; await new Promise(s => setTimeout(s, 3000 * (i + 1))); } }
 const zonesDirs = Array.isArray(list) ? list.filter(x => x.type === 'dir').map(x => x.name) : [];
 const out = { drops: {}, steal: {}, zones: 0, mobs: 0 };
 const push = (map, id, v) => { (map[id] = map[id] || []).push(v); };
