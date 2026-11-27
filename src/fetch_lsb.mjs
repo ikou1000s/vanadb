@@ -74,6 +74,18 @@ for (const r of rows(await get('abilities'))) out.abil[Number(r[0])] = [Number(r
   }
   for (const k of Object.keys(out.ws)) { const w = out.ws[k]; out.ws[k] = [w.lv, w.jobs, w.main, w.un]; }
 }
+// ジョブごとのスキルの段位（data/skills.yaml の ranks）：ranks[スキル名][ジョブ番号] = 'A+' など
+{
+  const JOBS = ['', 'war', 'mnk', 'whm', 'blm', 'rdm', 'thf', 'pld', 'drk', 'bst', 'brd', 'rng', 'sam', 'nin', 'drg', 'smn', 'blu', 'cor', 'pup', 'dnc', 'sch', 'geo', 'run'];
+  const r = await fetch('https://raw.githubusercontent.com/LandSandBoat/server/base/data/skills.yaml'); if (!r.ok) throw new Error('skills.yaml: ' + r.status);
+  out.ranks = {};
+  for (const l of (await r.text()).split(/\r?\n/)) {
+    const m = l.match(/^    ([a-z_]+):\s*\{(.*)\}\s*$/); if (!m) continue;
+    const o = {};
+    for (const p of m[2].split(',')) { const [j, v] = p.split(':').map(x => x.trim()); const id = JOBS.indexOf(j); if (id > 0 && v) o[id] = v.replace('_plus', '+').replace('_minus', '-').toUpperCase(); }
+    out.ranks[m[1]] = o;
+  }
+}
 console.log('アビリティ', Object.keys(out.abil).length, 'WS', Object.keys(out.ws).length);
 fs.writeFileSync(path.join(DATA, 'lsb.json'), JSON.stringify(out));
 console.log('見た目', Object.keys(out.look).length);

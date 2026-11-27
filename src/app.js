@@ -10,6 +10,7 @@
     if (r[9]) for (const p of r[9].split(',')) { const [k, v] = p.split(':'); st[k] = Number(v); order.push(k); }
     return { id: r[0], name: r[1], lv: r[2], il: r[3], jobs: r[4], dmg: r[7], delay: r[8], st, order, pet: r[10], cond: r[11], en: r[12], cat: r[13] >= 0 ? CATS[r[13]][0] : '' };
   });
+  const ALLJ = meta.jobs.reduce((a, [id]) => a | (1 << id), 0); // 全ジョブ装備できる物の印
   const catJa = new Map(CATS.map(([k, ja]) => [k, ja]));
   // 古いリンク（slot=頭 / skill=片手剣）も読めるように
   const params = new URLSearchParams(location.search);
@@ -19,7 +20,7 @@
     jobs: new Set((params.get('job') || '').split(',').filter(Boolean)),
     cats: new Set([...(params.get('cat') || '').split(',').filter(Boolean), ...fromOld]),
     stat: params.get('stat') || '', dir: params.get('dir') || '',
-    lvmin: Number(params.get('lvmin') || 1), lvmax: Number(params.get('lvmax') || 99), il: params.get('il') === '1', q: params.get('q') || '',
+    lvmin: Number(params.get('lvmin') || 1), lvmax: Number(params.get('lvmax') || 99), il: params.get('il') === '1', all: params.get('all') === '1', q: params.get('q') || '',
   };
 
   // 選択肢（ジョブ・防具・武器はボタン）
@@ -73,7 +74,7 @@
   statBtns.forEach((b, k) => b.classList.toggle('on', k === state.stat));
   if (!statBtns.has(state.stat)) sel.value = state.stat;
   $('dir').value = state.dir || (state.stat && STATS[state.stat][2] ? 'asc' : 'desc');
-  $('lvmin').value = state.lvmin; $('lvmax').value = state.lvmax; $('il').checked = state.il; $('q').value = state.q;
+  $('lvmin').value = state.lvmin; $('lvmax').value = state.lvmax; $('il').checked = state.il; $('alljob').checked = state.all; $('q').value = state.q;
 
   function chip(box, label, title, set, val) {
     const b = document.createElement('button');
@@ -81,7 +82,7 @@
     b.onclick = () => { set.has(val) ? set.delete(val) : set.add(val); b.classList.toggle('on'); render(true); };
     box.append(b);
   }
-  for (const id of ['dir', 'lvmin', 'lvmax', 'il', 'q']) $(id).addEventListener(id === 'q' ? 'input' : 'change', () => render(true));
+  for (const id of ['dir', 'lvmin', 'lvmax', 'il', 'alljob', 'q']) $(id).addEventListener(id === 'q' ? 'input' : 'change', () => render(true));
 
   let shown = 0, result = [];
   const jobCells = m => {
@@ -91,14 +92,14 @@
   };
 
   function render(reset) {
-    state.dir = $('dir').value; state.il = $('il').checked; state.q = $('q').value.trim();
+    state.dir = $('dir').value; state.il = $('il').checked; state.all = $('alljob').checked; state.q = $('q').value.trim();
     state.lvmin = Number($('lvmin').value) || 1; state.lvmax = Number($('lvmax').value) || 99;
     const jm = [...state.jobs].reduce((a, j) => a | (1 << Number(j)), 0);
     const q = state.q.toLowerCase();
     const sk = state.stat;
     result = items.filter(it =>
       (!jm || it.jobs & jm) && (!state.cats.size || state.cats.has(it.cat)) &&
-      it.lv >= state.lvmin && it.lv <= state.lvmax && (!state.il || it.il) &&
+      it.lv >= state.lvmin && it.lv <= state.lvmax && (!state.il || it.il) && (!state.all || (it.jobs & ALLJ) === ALLJ) &&
       (!q || it.name.includes(state.q) || it.en.toLowerCase().includes(q)) && (sk === '' || sk in it.st));
     const asc = state.dir === 'asc';
     result.sort(sk === '' ? (a, b) => b.il - a.il || b.lv - a.lv || b.id - a.id
@@ -138,6 +139,7 @@
     if (state.lvmin !== 1) p.set('lvmin', state.lvmin);
     if (state.lvmax !== 99) p.set('lvmax', state.lvmax);
     if (state.il) p.set('il', '1');
+    if (state.all) p.set('all', '1');
     if (state.q) p.set('q', state.q);
     history.replaceState(null, '', p.toString() ? '?' + p : location.pathname);
   }

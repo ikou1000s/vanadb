@@ -342,7 +342,7 @@ const QUICK = [
   ['忍者・頭のヘイスト', qs({ job: jobId('NIN'), cat: 'head', stat: 'ヘイスト%' })],
   ['赤魔・胴のファストキャスト', qs({ job: jobId('RDM'), cat: 'body', stat: 'ファストキャスト%' })],
   ['黒魔・MBダメージ', qs({ job: jobId('BLM'), stat: 'マジックバーストダメージ' })],
-  ['全ジョブ・被ダメージ', qs({ stat: '被ダメージ%' })],
+  ['全ジョブ装備・被ダメージ', qs({ stat: '被ダメージ%', all: 1 })],
   ['戦士・WSダメージ', qs({ job: jobId('WAR'), stat: 'ウェポンスキルのダメージ%' })],
   ['白魔・ケアル回復量', qs({ job: jobId('WHM'), stat: 'ケアル回復量%' })],
   ['ストアTP', qs({ stat: 'ストアTP' })],
@@ -423,6 +423,7 @@ const ROLE = {
   mage: ['ファストキャスト%', '魔攻', '魔命', 'マジックバーストダメージ', 'ケアル回復量%', 'リフレシュ', '被ダメージ%'],
   tank: ['被ダメージ%', '敵対心', 'HP', '魔回避', 'ヘイスト%', 'ファストキャスト%', '物理ダメージ上限%'],
 };
+const RANK_SKILL = { h2h: 'hand_to_hand', dagger: 'dagger', sword: 'sword', gsword: 'great_sword', axe: 'axe', gaxe: 'great_axe', scythe: 'scythe', polearm: 'polearm', katana: 'katana', gkatana: 'great_katana', club: 'club', staff: 'staff', archery: 'archery', marksmanship: 'marksmanship', throwing: 'throwing', wind: 'wind_instrument', string: 'string_instrument', handbell: 'handbell' };
 const JOB_ROLE = { WHM: 'mage', BLM: 'mage', RDM: 'mage', SMN: 'mage', SCH: 'mage', GEO: 'mage', BRD: 'mage', PLD: 'tank', RUN: 'tank' };
 const BLOG_JOB = { MNK: 89, RDM: 73, THF: 124, BST: 168, BRD: 154, NIN: 113, DRG: 60, SMN: 68, BLU: 169, COR: 54, PUP: 131, SCH: 67, GEO: 104, RUN: 71 };
 fs.mkdirSync(path.join(SITE, 'job'), { recursive: true });
@@ -431,7 +432,9 @@ for (const j of JOB_LIST) {
   const mine = equip.filter(e => (e.it.jobs || 0) & (1 << j.id));
   const il119 = mine.filter(e => e.it.item_level === 119).length;
   const stats = ROLE[JOB_ROLE[j.ens] || 'melee'].filter(k => statIdx.has(k));
-  const cats = ALL_CATS.map(c => [c, mine.filter(e => catOf.get(e.id) === c)]).filter(([, l]) => l.length);
+  // 武器はそのジョブがスキルを持つ種類だけ（全ジョブ装備できる物しか無い種類は出さない）
+  const rk = key => { const s = RANK_SKILL[key]; return s && lsb.ranks && lsb.ranks[s] ? lsb.ranks[s][j.id] || '' : null; };
+  const cats = ALL_CATS.map(c => [c, mine.filter(e => catOf.get(e.id) === c)]).filter(([c, l]) => l.length && c[0] !== 'fishing' && rk(c[0]) !== '');
   const cell = (key, l, k) => {
     const n = l.filter(e => k in e.st.main).length;
     const p = { job: j.id, cat: key, stat: k };
@@ -445,8 +448,8 @@ for (const j of JOB_LIST) {
     + `<main class="wide"><p class="crumb"><a href="${BASE}">トップ</a> › ジョブ別 › ${esc(j.ja)}</p><h1>${esc(j.ja)}の装備 <span class="cnt">${mine.length.toLocaleString()}件（IL119 ${il119}件）</span></h1>
 ${blog}
 <div class="tw"><table class="grid"><tr><th>一覧</th><th>件数</th>${stats.map(k => `<th>${esc(k.replace(/%$/, ''))}</th>`).join('')}</tr>
-${cats.map(([[key, ja], l]) => `<tr><th><a href="${BASE}list/${key}.html?job=${j.id}">${esc(ja)}</a></th><td>${l.length}</td>${stats.map(k => `<td>${cell(key, l, k)}</td>`).join('')}</tr>`).join('\n')}</table></div>
-<p class="note">部位・武器の名前を押すと、${esc(j.ja)}が装備できる物だけの一覧になります。性能の列の数字は、その性能が付いている装備の件数で、押すと大きい順に並びます（潜在能力などの条件付きの性能とオーグメントは数えていません）。</p>
+${cats.map(([[key, ja], l]) => `<tr><th><a href="${BASE}list/${key}.html?job=${j.id}">${esc(ja)}</a>${rk(key) ? `<span class="rk" title="${esc(j.ja)}の${esc(ja)}スキルの段位">${rk(key)}</span>` : ''}</th><td>${l.length}</td>${stats.map(k => `<td>${cell(key, l, k)}</td>`).join('')}</tr>`).join('\n')}</table></div>
+<p class="note">武器は${esc(j.ja)}がスキルを持つ種類だけを出しています（右の A+〜F はスキルの段位）。部位・武器の名前を押すと、${esc(j.ja)}が装備できる物だけの一覧になります（全ジョブ装備できる物も入ります）。性能の列の数字は、その性能が付いている装備の件数で、押すと大きい順に並びます（潜在能力などの条件付きの性能とオーグメントは数えていません）。</p>
 <h2>ほかのジョブ</h2><p class="same">${JOB_LIST.map(o => o.id === j.id ? `<b>${esc(o.ja)}</b>` : `<a href="${BASE}job/${o.ens.toLowerCase()}.html">${esc(o.ja)}</a>`).join('　')}</p>
 </main>` + foot);
 }
@@ -463,7 +466,7 @@ fs.writeFileSync(path.join(SITE, 'search.html'), head(`性能で探す（ヘイ�
  <div class="row"><label>性能</label><div class="statpick" id="statpick"></div></div>
  <div class="row"><label>並び</label><select id="dir"><option value="desc">大きい順</option><option value="asc">小さい順</option></select></div>
  <div class="row"><label>装備Lv</label><input id="lvmin" type="number" min="1" max="99" value="1">〜<input id="lvmax" type="number" min="1" max="99" value="99">
-  <label class="ck"><input id="il" type="checkbox">IL装備だけ</label></div>
+  <label class="ck"><input id="il" type="checkbox">IL装備だけ</label><label class="ck"><input id="alljob" type="checkbox">全ジョブ装備できる物だけ</label></div>
  <div class="row"><label>名前</label><input id="q" type="search" placeholder="名前の一部（日本語・英語）"></div>
 </div>
 <p id="count" class="count"></p>
