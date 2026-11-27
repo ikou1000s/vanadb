@@ -3,6 +3,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+// GitHub の API は鍵なしだと1時間60回まで。Actions では GITHUB_TOKEN を付けて回数制限に当たらないように
+const GH = { 'User-Agent': 'ff11-db', ...(process.env.GITHUB_TOKEN ? { Authorization: 'Bearer ' + process.env.GITHUB_TOKEN } : {}) };
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DATA = path.join(ROOT, 'data');
@@ -18,7 +20,7 @@ for (const f of FILES) {
   fs.writeFileSync(path.join(DATA, f + '.lua'), t);
 }
 // いつのバージョンアップまで入っているか（最後の更新の日付と内容）
-const c = await fetch('https://api.github.com/repos/Windower/Resources/commits?per_page=100', { headers: { 'User-Agent': 'ff11-db' } }).then(r => r.json());
+const c = await fetch('https://api.github.com/repos/Windower/Resources/commits?per_page=100', { headers: GH }).then(r => r.json());
 const last = c[0].commit;
 // 「November 10, 2026 FFXI Update」の形の物＝バージョンアップの取り込み
 const vu = c.map(x => x.commit.message.split('\n')[0]).map(m => /^([A-Z][a-z]+) (\d{1,2}), (\d{4}) FFXI Update/.exec(m)).find(Boolean);

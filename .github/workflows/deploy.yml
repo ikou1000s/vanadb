@@ -22,6 +22,8 @@ jobs:
         with:
           node-version: 22
       - run: node src/fetch.mjs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: node src/build.mjs
       - uses: actions/upload-pages-artifact@v3
         with:

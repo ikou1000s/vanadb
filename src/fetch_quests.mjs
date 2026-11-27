@@ -4,6 +4,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+// GitHub の API は鍵なしだと1時間60回まで。Actions では GITHUB_TOKEN を付けて回数制限に当たらないように
+const GH = { 'User-Agent': 'ff11-db', ...(process.env.GITHUB_TOKEN ? { Authorization: 'Bearer ' + process.env.GITHUB_TOKEN } : {}) };
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DATA = path.join(ROOT, 'data');
@@ -42,7 +44,7 @@ for (const [key, ja] of MISSION_LINES) {
     .map(m => { const en = unq(m[2] ?? m[3]); return { no: Number(m[1]), en, ja: tr.get(en) || '' }; }).filter(x => x.no > 0);
   if (list.length) missions.push({ key, ja, list });
 }
-const commit = await fetch(`https://api.github.com/repos/${REPO}/commits?per_page=1`, { headers: { 'User-Agent': 'ff11-db' } }).then(r => r.json()).then(c => c[0] && c[0].sha).catch(() => '');
+const commit = await fetch(`https://api.github.com/repos/${REPO}/commits?per_page=1`, { headers: GH }).then(r => r.json()).then(c => c[0] && c[0].sha).catch(() => '');
 fs.writeFileSync(path.join(DATA, 'quests.json'), JSON.stringify({ source: `https://github.com/${REPO}`, commit, license: 'GPL-3.0', quests, missions }));
 console.log('クエスト', quests.map(a => `${a.ja}${a.list.length}`).join(' '), '／ミッション', missions.map(a => `${a.ja}${a.list.length}`).join(' '));
 console.log('日本語名なし：クエスト', quests.flatMap(a => a.list).filter(q => !q.ja).length, 'ミッション', missions.flatMap(a => a.list).filter(q => !q.ja).length);

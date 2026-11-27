@@ -3,6 +3,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+// GitHub の API は鍵なしだと1時間60回まで。Actions では GITHUB_TOKEN を付けて回数制限に当たらないように
+const GH = { 'User-Agent': 'ff11-db', ...(process.env.GITHUB_TOKEN ? { Authorization: 'Bearer ' + process.env.GITHUB_TOKEN } : {}) };
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DATA = path.join(ROOT, 'data');
@@ -17,7 +19,7 @@ for (const m of basic.matchAll(/^INSERT INTO `item_basic` VALUES \((\d+),\d+,'((
 // エリアのフォルダ名 → エリア番号（zone_settings の名前と同じ）
 const zoneIdByDir = new Map();
 for (const m of (await get('sql/zone_settings.sql')).matchAll(/^INSERT INTO `zone_settings` VALUES \((\d+),'[^']*',\d+,'([^']+)'\)/gm)) zoneIdByDir.set(m[2].toLowerCase().replace(/[^a-z0-9]/g, ''), Number(m[1]));
-const list = await fetch('https://api.github.com/repos/LandSandBoat/server/contents/data/zones', { headers: { 'User-Agent': 'ff11-db' } }).then(r => r.json());
+const list = await fetch('https://api.github.com/repos/LandSandBoat/server/contents/data/zones', { headers: GH }).then(r => r.json());
 const zonesDirs = Array.isArray(list) ? list.filter(x => x.type === 'dir').map(x => x.name) : [];
 const out = { drops: {}, steal: {}, zones: 0, mobs: 0 };
 const push = (map, id, v) => { (map[id] = map[id] || []).push(v); };
