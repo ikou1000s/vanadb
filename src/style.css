@@ -540,3 +540,4 @@ h3.tsub{font-size:13.5px;color:var(--gold);margin:12px 0 6px}
 .qh[open]>summary{background:#5a8be0;color:#fff}
 .qh>p{position:absolute;z-index:20;left:0;top:24px;width:min(320px,80vw);margin:0;padding:8px 10px;border:1px solid var(--edge2);border-radius:6px;background:#13213f;color:#dbe6fb;font-size:13px;font-weight:normal;line-height:1.6;box-shadow:0 4px 14px rgba(0,0,0,.5);white-space:normal}
 @media (max-width:700px){.qh>p{position:static;width:auto;margin-top:6px}.qh[open]{display:block}}
+.mabout{margin:18px 0}.mabout ul.chips{list-style:none;margin:0 0 10px;padding:0}.mabout ul.chips li{background:rgba(255,255,255,.04);border:1px solid rgba(95,130,192,.35);border-radius:6px;padding:2px 9px;font-size:13px}.mabout .acq small{color:#b9cbea;font-size:12px}

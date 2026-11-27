@@ -47,6 +47,35 @@ export function writeMaps(ctx) {
 <div class="tbl simple mz" id="mz"><div class="r h"><div class="c-n">エリア</div><div class="c-fx">英語名</div><div class="c-x">地図</div></div>${[...groups].map(([k, [era, ja, l]]) => `<div class="band" id="mg-${k}" data-band="${ja}">${ja}<small class="era">${era}</small> <span>${l.length}件</span></div>${l.map(z => `<div class="r"><div class="c-n"><a href="${BASE}maps/${z}.html">${esc(zname(z))}</a></div><div class="c-fx">${esc(zen(z))}</div><div class="c-x">${byZone.get(z).length}枚</div></div>`).join('')}`).join('')}</div>
 ${note}</main><script src="${BASE}list.js?v=${VER}"></script>` + foot);
   urls.push(`${ORIGIN}/${rel}`);
+  // エリアごとの地図ページに足す文：地方・隣のエリア（src/world.json の出入り口）・落とすアイテム（data/mobs.json）・釣れる物（lsb.fish）
+  const zoneSet = new Set(zones);
+  const nbOf = new Map();
+  { const wF = path.join(ROOT, 'src', 'world.json'); if (fs.existsSync(wF)) for (const [a, b] of JSON.parse(fs.readFileSync(wF, 'utf8')).links || []) if (a !== b) for (const [x, y] of [[a, b], [b, a]]) { if (!nbOf.has(x)) nbOf.set(x, new Set()); nbOf.get(x).add(y); } }
+  const dropZ = new Map(), mobZ = new Map();
+  { const { items, mobsData, mobName, hasPage } = ctx;
+    if (items && mobsData && mobsData.drops) for (const [id, l] of Object.entries(mobsData.drops)) {
+      const it = items.get(+id); if (!it || !it.ja || it.ja === '.' || (hasPage && !hasPage(+id))) continue;
+      for (const [m, z, , nm] of l) {
+        const mn = mobName ? mobName(m) : m;
+        if (!mobZ.has(z)) mobZ.set(z, new Set()); mobZ.get(z).add(mn);
+        if (!dropZ.has(z)) dropZ.set(z, new Map()); const d = dropZ.get(z);
+        if (!d.has(+id)) d.set(+id, { ja: it.ja, mobs: new Set(), nm: true }); const e = d.get(+id); e.mobs.add(mn); if (!nm) e.nm = false;
+      }
+    } }
+  const fishZ = new Map();
+  { const { items, hasPage } = ctx; if (items && lsb && lsb.fish) for (const f of lsb.fish) for (const [z] of f.where || []) { const it = items.get(f.id); if (!it || !it.ja || it.ja === '.' || (hasPage && !hasPage(f.id))) continue; if (!fishZ.has(z)) fishZ.set(z, new Map()); fishZ.get(z).set(f.id, it.ja); } }
+  const aboutOf = z => {
+    const k = regOf(z), g = groups.get(k); let h = '';
+    const nb = [...(nbOf.get(z) || [])].filter(x => zoneSet.has(x)).sort((a, b) => zname(a).localeCompare(zname(b), 'ja'));
+    h += `<h2>このエリアについて</h2><p>${esc(zname(z))}${zen(z) ? `（${esc(zen(z))}）` : ''}は、${g ? `<a href="${BASE}maps/index.html#mg-${k}">${g[1]}</a>（${g[0]}）` : 'そのほか'}のエリアです。`
+      + `${nb.length ? `出入り口でつながる隣のエリアは${nb.length}か所です。` : ''}${(mobZ.get(z) || new Set()).size ? `アイテムを落とすモンスターが${mobZ.get(z).size}種類います。` : ''}</p>`;
+    if (nb.length) h += `<h3>隣のエリア <span class="cnt">${nb.length}件</span></h3><ul class="chips">${nb.map(x => `<li><a href="${BASE}maps/${x}.html">${esc(zname(x))}</a></li>`).join('')}</ul>`;
+    const d = [...(dropZ.get(z) || new Map())].sort((a, b) => (a[1].nm - b[1].nm) || (b[1].mobs.size - a[1].mobs.size) || a[0] - b[0]);
+    if (d.length) h += `<h3>このエリアで落とすアイテム <span class="cnt">${d.length}件</span></h3>${d.length > 40 ? `<p class="note">落とすモンスターの多い順に40件。</p>` : ''}<ul class="acq drops">${d.slice(0, 40).map(([id, e]) => `<li><a href="${BASE}item/${id}.html">${esc(e.ja)}</a> <small>${[...e.mobs].slice(0, 3).map(esc).join('・')}${e.mobs.size > 3 ? ` ほか${e.mobs.size - 3}` : ''}${e.nm ? '（NM）' : ''}</small></li>`).join('')}</ul>`;
+    const fi = [...(fishZ.get(z) || new Map())].sort((a, b) => a[0] - b[0]);
+    if (fi.length) h += `<h3>釣れる物 <span class="cnt">${fi.length}件</span></h3><ul class="chips">${fi.map(([id, ja]) => `<li><a href="${BASE}item/${id}.html">${esc(ja)}</a></li>`).join('')}</ul>`;
+    return `<section class="mabout">${h}</section>`;
+  };
   // エリアごと
   for (const z of zones) {
     const l = byZone.get(z).sort((a, b) => a[1] - b[1]);
@@ -54,6 +83,7 @@ ${note}</main><script src="${BASE}list.js?v=${VER}"></script>` + foot);
     fs.writeFileSync(path.join(SITE, r2), head(`${zname(z)}の地図｜${SITE_SHORT}`, `FF11 ${zname(z)}（${zen(z)}）のゲーム内の地図${l.length > 1 ? `${l.length}枚` : ''}。`, `${ORIGIN}/${r2}`)
       + `<main class="wide">${crumb(`<a href="${BASE}maps/index.html">地図</a>`, esc(zname(z)))}<h1>${esc(zname(z))} <span class="cnt">${esc(zen(z))}</span></h1>
 <div class="maps">${l.map(([n], i) => `<figure><a href="${BASE}maps/img/${n}.webp" target="_blank" rel="noopener"><img src="${BASE}maps/img/${n}.webp" width="512" height="512" loading="${i < 2 ? 'eager' : 'lazy'}" alt="${esc(zname(z))}の地図${l.length > 1 ? ' ' + (i + 1) : ''}"></a>${l.length > 1 ? `<figcaption>地図 ${i + 1} / ${l.length}</figcaption>` : ''}</figure>`).join('')}</div>
+${aboutOf(z)}
 ${note}</main>` + foot);
     urls.push(`${ORIGIN}/${r2}`);
   }

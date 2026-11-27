@@ -533,7 +533,7 @@ console.log('装備以外', JSON.stringify(more.counts));
 const qs2 = writeQuests({ items, JOB_LIST, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE_SHORT, VER, tile });
 console.log('クエスト・ミッション', JSON.stringify(qs2.counts));
 const ex = writeExtra({ JOB_LIST, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE_SHORT, VER, tile });
-const mp = writeMaps({ ROOT, SITE, DATA, head, foot, esc, BASE, ORIGIN, SITE_SHORT, VER, tile, lsb });
+const mp = writeMaps({ ROOT, SITE, DATA, head, foot, esc, BASE, ORIGIN, SITE_SHORT, VER, tile, lsb, items, mobsData, mobName, hasPage: id => equipById.has(id) || more.itemCatOf.has(id) });
 console.log('地図', mp.count);
 const asc = writeAscend({ items, desc, SITE, head, foot, esc, BASE, ORIGIN, SITE_SHORT, hasPage: id => equipById.has(id) || more.itemCatOf.has(id), trustCount: more.counts.trust });
 const cm = writeCommands({ SITE, DATA, head, foot, esc, BASE, ORIGIN, SITE_SHORT, VER, readLua, fs, path });
