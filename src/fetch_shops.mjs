@@ -30,7 +30,9 @@ const regionStock = entries(blockAfter(shopLua, 'local regionalStockTable'));
 const guildStock = entries(blockAfter(shopLua, 'xi.shop.generalGuildStock ='));
 const curioStock = entries(blockAfter(shopLua, 'xi.shop.curioVendorMoogleStock ='));
 const RANKS = ['AMATEUR', 'RECRUIT', 'INITIATE', 'NOVICE', 'APPRENTICE', 'JOURNEYMAN', 'CRAFTSMAN', 'ARTISAN', 'ADEPT', 'VETERAN'];
-const uniq = l => { const s = new Set(); return l.filter(x => !s.has(x[0]) && s.add(x[0])); };
+// shop.lua の関数の中の local stock = { ... } → [[番号, 値段], ...]
+const fnStock = name => { const i = shopLua.indexOf(name); return i < 0 ? [] : uniq(tuples(blockAfter(shopLua.slice(i), 'local stock'))).map(x => [x[0], x[1]]); };
+const uniq = l =>{ const s = new Set(); return l.filter(x => !s.has(x[0]) && s.add(x[0])); };
 
 const shops = [];
 const queue = [...files];
@@ -48,24 +50,39 @@ const work = async () => {
     if (gk && guildStock.get(gk[1])) { const l = uniq(tuples(guildStock.get(gk[1]))).map(x => { const i = RANKS.indexOf(x[2]); return i >= 0 ? [x[0], x[1], i] : [x[0], x[1]]; }); if (l.length) shops.push({ z, npc, nation: false, guild: gk[1], items: l }); continue; }
     // よろず屋モーグリ：全部の分類を1つの店にまとめる（品は大事な物「ラプソディ」で増える）
     if (/curioVendorMoogleStock/.test(src)) { const l = uniq([...curioStock.values()].flatMap(tuples)).map(x => [x[0], x[1]]); if (l.length) shops.push({ z, npc, nation: false, curio: true, items: l }); continue; }
+    // Valeriano 一座：その国が国の順位1位の時だけ来る旅の一座（品は shop.lua の handleValerianoShop の中）
+    if (/handleValerianoShop/.test(src)) { const l = fnStock('xi.shop.handleValerianoShop'); if (l.length) shops.push({ z, npc, nation: false, valeriano: true, items: l }); continue; }
+    // 祝いの箱（Celebratory Chest）：花火などのお祝いの品（品は shop.lua の xi.shop.celebratory の中）
+    if (/xi\.shop\.celebratory\s*\(/.test(src)) { const l = fnStock('xi.shop.celebratory ='); if (l.length) shops.push({ z, npc, nation: false, celebratory: true, items: l }); continue; }
     const nation = /xi\.shop\.nation\s*\(/.test(src);
-    const items = [], seen = new Set();
-    for (const r of src.matchAll(/\{\s*(xi\.item\.([A-Z0-9_]+)|\d+)\s*,\s*(\d+)\s*(?:,\s*(\d+)\s*)?,?\s*\}/g)) {
+    const items = [], seen = new Set(), jobLv = [];
+    // 3つ目は国の店の順位（数）か、買える条件の表 { job = xi.job.○○, level = ◯ }
+    for (const r of src.matchAll(/\{\s*(xi\.item\.([A-Z0-9_]+)|\d+)\s*,\s*(\d+)\s*(?:,\s*(\d+|\{[^{}]*\})\s*)?,?\s*\}/g)) {
       const id = r[2] ? idByName.get(r[2]) : Number(r[1]); const price = Number(r[3]);
       if (!id || !price || seen.has(id)) continue; seen.add(id);
-      items.push(nation && r[4] ? [id, price, Number(r[4])] : [id, price]);
+      const jr = r[4] && /job\s*=\s*xi\.job\.([A-Z]+)[^}]*level\s*=\s*(\d+)/.exec(r[4]); if (jr) jobLv.push([jr[1], Number(jr[2])]);
+      items.push(nation && r[4] && /^\d+$/.test(r[4]) ? [id, price, Number(r[4])] : [id, price]);
     }
-    if (items.length) shops.push({ z, npc, nation, items });
+    // 店を開く条件（getJobLevel(xi.job.○○) < ◯ なら閉じる）と、品ごとのジョブLv
+    const open = /getJobLevel\(\s*xi\.job\.([A-Z]+)\s*\)\s*<\s*(\d+)/.exec(src);
+    const job = open ? { job: open[1], open: Number(open[2]) } : null;
+    const j = job || (jobLv.length ? { job: jobLv[0][0] } : null);
+    if (j && jobLv.length) { const lv = jobLv.map(x => x[1]); j.min = Math.min(...lv); j.max = Math.max(...lv); }
+    if (items.length) shops.push(j ? { z, npc, nation, job: j, items } : { z, npc, nation, items });
   }
 };
 await Promise.all(Array.from({ length: 8 }, work));
 // 表示用の注記（日本語）。地方名は src/mapsPage.mjs の地方の表と同じ呼び方
 const REGION_JA = { RONFAURE: 'ロンフォール', ZULKHEIM: 'ザルクヘイム', NORVALLEN: 'ノルバレン', GUSTABERG: 'グスタベルグ', DERFLAND: 'デルフラント', SARUTABARUTA: 'サルタバルタ', KOLSHUSHU: 'コルシュシュ', ARAGONEU: 'アラゴーニュ', FAUREGANDI: 'フォルガンディ', VALDEAUNIA: 'ヴァルドニア', QUFIM_ISLAND: 'クフィム', LITELOR: 'リ・テロア', KUZOTZ: 'クゾッツ', VOLLBOW: 'ヴォルボー', ELSHIMO_LOWLANDS: 'エルシモ低地', ELSHIMO_UPLANDS: 'エルシモ高地', TULIA: 'トゥー・リア', MOVALPOLOS: 'ムバルポロス', TAVNAZIAN_ARCHIPELAGO: 'タブナジア群島' };
 const GUILD_JA = { WOODWORKING: '木工', SMITHING: '鍛冶', GOLDSMITHING: '彫金', CLOTHCRAFT: '裁縫', LEATHERCRAFT: '革細工', BONECRAFT: '骨細工', ALCHEMY: '錬金術', COOKING: '調理', FISHING: '釣り' };
+const JOB_JA = { WAR: '戦士', MNK: 'モンク', WHM: '白魔道士', BLM: '黒魔道士', RDM: '赤魔道士', THF: 'シーフ', PLD: 'ナイト', DRK: '暗黒騎士', BST: '獣使い', BRD: '吟遊詩人', RNG: '狩人', SAM: '侍', NIN: '忍者', DRG: '竜騎士', SMN: '召喚士', BLU: '青魔道士', COR: 'コルセア', PUP: 'からくり士', DNC: '踊り子', SCH: '学者', GEO: '風水士', RUN: '魔導剣士' };
 for (const s of shops) {
   if (s.region) s.note = (REGION_JA[s.region] || s.region) + '地方の店（その地方を自国が支配している時だけ）';
   else if (s.guild) s.note = (GUILD_JA[s.guild] || s.guild) + 'ギルドの店';
   else if (s.curio) s.note = 'よろず屋モーグリ（大事な物「ラプソディ」で品が増える）';
+  else if (s.valeriano) s.note = 'ヴァレリアーノ一座（その国が国の順位1位の時だけ来る）';
+  else if (s.celebratory) s.note = 'お祝いの品（花火など）の箱';
+  else if (s.job) { const jn = JOB_JA[s.job.job] || s.job.job; s.note = [s.job.open ? `${jn}Lv${s.job.open}以上で開く店` : '', s.job.min ? `品は${jn}Lv${s.job.min}${s.job.max > s.job.min ? '〜' + s.job.max : ''}から` : ''].filter(Boolean).join('・'); }
 }
 shops.sort((a, b) => a.z - b.z || a.npc.localeCompare(b.npc));
 if (shops.length > 50) fs.writeFileSync(path.join(DATA, 'shops.json'), JSON.stringify({ shops }));
