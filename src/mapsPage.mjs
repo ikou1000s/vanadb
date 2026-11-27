@@ -57,6 +57,35 @@ ${note}</main><script src="${BASE}list.js?v=${VER}"></script>` + foot);
 ${note}</main>` + foot);
     urls.push(`${ORIGIN}/${r2}`);
   }
-  const home = `<section class="box" id="map"><h2>地図（${zones.length}エリア・${list.length}枚）<a class="all" href="${BASE}maps/index.html">一覧へ</a></h2><div class="tiles">${tile(`${BASE}maps/index.html`, '地図の一覧', zones.length, '地', 'ex hot')}${['バストゥーク港', '南サンドリア', '西アドゥリン', 'アトルガン白門', 'ジュノ上層'].map(ja => zones.find(z => zname(z) === ja)).filter(Boolean).map(z => tile(`${BASE}maps/${z}.html`, zname(z), byZone.get(z).length, '地', 'ex')).join('')}</div></section>`;
+  // つながり地図（ネタ）：出入り口の座標から並べた、エリアの地図のつながり（src/world.json・tools/world で作る）
+  const worldF = path.join(ROOT, 'src', 'world.json');
+  let worldN = 0;
+  if (fs.existsSync(worldF)) {
+    const W = JSON.parse(fs.readFileSync(worldF, 'utf8'));
+    const firstMap = new Map(); for (const [n, z] of list) if (!firstMap.has(z)) firstMap.set(z, n);
+    const nameOfComp = c => { const ns = c.map(z => zname(z.id)); if (ns.some(n => /ジュノ港/.test(n))) return '中の国（三国・ジュノのまわり）'; if (ns.some(n => /〔Ｓ〕|〔S〕/.test(n))) return 'アルタナ（過去の中の国）'; if (ns.some(n => /アトルガン白門/.test(n))) return 'アトルガン'; if (ns.some(n => /西アドゥリン/.test(n))) return 'アドゥリン'; return ns.slice(0, 2).join('・') + 'のあたり'; };
+    const svg = c => {
+      const S = 0.2, pad = 70, sz = z => Math.min(150, Math.max(56, z.w * S * 0.55));
+      const minx = Math.min(...c.map(z => z.x)), maxx = Math.max(...c.map(z => z.x)), minz = Math.min(...c.map(z => z.z)), maxz = Math.max(...c.map(z => z.z));
+      const X = x => (x - minx) * S + pad, Y = z => (maxz - z) * S + pad;
+      const w = Math.round((maxx - minx) * S + pad * 2), h = Math.round((maxz - minz) * S + pad * 2 + 20);
+      const ids = new Set(c.map(z => z.id)), by = new Map(c.map(z => [z.id, z])), seen = new Set();
+      const ls = W.links.filter(([a, b]) => a !== b && ids.has(a) && ids.has(b)).filter(([a, b]) => { const k = Math.min(a, b) + '-' + Math.max(a, b); if (seen.has(k)) return false; seen.add(k); return true; });
+      return `<svg class="wmap" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">${ls.map(([a, b]) => `<line x1="${X(by.get(a).x).toFixed(0)}" y1="${Y(by.get(a).z).toFixed(0)}" x2="${X(by.get(b).x).toFixed(0)}" y2="${Y(by.get(b).z).toFixed(0)}" class="wl"/>`).join('')}${c.map(z => { const q = sz(z); return `<a href="${BASE}maps/${z.id}.html"><title>${esc(zname(z.id))}</title><image href="${BASE}maps/img/${firstMap.get(z.id)}.webp" x="${(X(z.x) - q / 2).toFixed(0)}" y="${(Y(z.z) - q / 2).toFixed(0)}" width="${q.toFixed(0)}" height="${q.toFixed(0)}"/><text x="${X(z.x).toFixed(0)}" y="${(Y(z.z) + q / 2 + 13).toFixed(0)}" class="wt${z.c ? ' wc' : ''}">${esc(zname(z.id))}</text></a>`; }).join('')}</svg>`;
+    };
+    const comps = W.comps.map(c => c.filter(z => firstMap.has(z.id) && zones.includes(z.id))).filter(c => c.length >= 2);
+    { const used = new Map(); const base = nameOfComp; const names = comps.map(c => { const n = base(c); const k = (used.get(n) || 0) + 1; used.set(n, k); return k > 1 ? n + '（その' + k + '）' : n; }); const nm = new Map(comps.map((c, k) => [c, names[k]])); var nameOf2 = c => nm.get(c); }
+    worldN = comps.reduce((a, c) => a + c.length, 0);
+    fs.writeFileSync(path.join(SITE, 'maps', 'world.html'), head(`つながり地図（ネタ）｜エリアの地図を出入り口のつながりで並べた物｜${SITE_SHORT}`, 'FF11のエリアの地図を、出入り口の位置からおおよその場所に並べ、隣り合うエリアを線で結んだ「つながり地図」。', `${ORIGIN}/maps/world.html`)
+      + `<main class="wide">${crumb(`<a href="${BASE}maps/index.html">地図</a>`, 'つながり地図')}<h1>つながり地図 <span class="cnt">ネタ・${worldN}エリア</span></h1>
+<p class="lead">屋外と街のエリアの地図を、出入り口の座標からおおよその場所に置き、行き来できるエリアを線で結びました。大きさや細かい位置は目安です（洞窟やダンジョンを通るつながりは入れていないので、塊が分かれている所があります）。絵を押すとそのエリアの地図へ。</p>
+<nav class="catnav"><div><span class="lbl">塊</span>${comps.map((c, k) => `<a href="#w${k}">${esc(nameOf2(c))}<span class="cnt">${c.length}</span></a>`).join('')}</div></nav>
+${comps.map((c, k) => `<h2 id="w${k}">${esc(nameOf2(c))} <span class="cnt">${c.length}エリア</span></h2><div class="wbox">${svg(c)}</div>`).join('\n')}
+<p class="note">© SQUARE ENIX CO., LTD.</p></main>` + foot);
+    urls.push(`${ORIGIN}/maps/world.html`);
+  }
+  // トップの節：地図の一覧・つながり地図・時代や地方の括り
+  const eraTiles = REGIONS.map(([era, l]) => { const ks = l.map(([k]) => k).filter(k => groups.has(k)); if (!ks.length) return ''; const n = ks.reduce((a, k) => a + groups.get(k)[2].length, 0); return tile(`${BASE}maps/index.html#mg-${ks[0]}`, era, n, era[0], 'ex'); }).join('');
+  const home = `<section class="box" id="map"><h2>地図（${zones.length}エリア・${list.length}枚）<a class="all" href="${BASE}maps/index.html">一覧へ</a></h2><div class="tiles">${tile(`${BASE}maps/index.html`, '地図の一覧', zones.length, '地', 'ex hot')}${worldN ? tile(`${BASE}maps/world.html`, 'つながり地図（ネタ）', worldN, '繋', 'ex hot') : ''}${eraTiles}</div></section>`;
   return { home, urls, count: list.length, zones: new Set(zones), zname };
 }

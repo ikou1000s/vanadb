@@ -501,3 +501,12 @@ h3.tsub{font-size:13.5px;color:var(--gold);margin:12px 0 6px}
 .tbl .band small.era{font-size:11px;color:var(--sub);font-weight:normal;margin-left:8px}
 .catnav.mreg .lbl{display:inline-block;min-width:7.5em;white-space:nowrap}
 @media (max-width:860px){.catnav.mreg .lbl{display:block;min-width:0}}
+
+/* つながり地図 */
+.wbox{overflow:auto;max-height:80vh;border:1px solid var(--edge);border-radius:8px;background:radial-gradient(circle at 50% 40%,#16295a,#0a1428);margin:6px 0 18px}
+.wmap{display:block}
+.wmap .wl{stroke:#e5c46b;stroke-width:2.5;opacity:.55}
+.wmap image{transition:opacity .15s}
+.wmap a:hover image{opacity:.8}
+.wmap .wt{fill:#fff;font-size:12px;font-weight:700;text-anchor:middle;paint-order:stroke;stroke:#0a1428;stroke-width:3.5px}
+.wmap .wc{fill:#ffd36b}
