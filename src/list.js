@@ -57,7 +57,7 @@
     // 帯ごとの件数と、空の帯を隠す
     [].forEach.call(document.querySelectorAll('.tbl .band'), function (b) {
       var n = 0, el = b.nextElementSibling;
-      while (el && !el.classList.contains('band')) { if (!el.hidden) n++; el = el.nextElementSibling; }
+      while (el && !el.classList.contains('band')) { if (!el.hidden && el.classList.contains('r')) n++; el = el.nextElementSibling; }
       b.hidden = !n; var sp = b.querySelector('span'); if (sp) sp.textContent = n + '件';
       [].forEach.call(document.querySelectorAll('.bands a'), function (a) { if (a.getAttribute('data-band') === b.getAttribute('data-band')) { a.hidden = !n; a.querySelector('span').textContent = n; } });
     });

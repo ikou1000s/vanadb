@@ -201,25 +201,106 @@ ${sc ? `<h2>スクロール</h2><p><a class="bd cat" href="${BASE}item/${sc}.htm
     return `<div class="jfilter"><span class="lbl">ジョブで絞る：</span><button type="button" data-job="" class="on">すべて</button>${JOB_LIST.filter(j => used.has(j.id)).map(j => `<button type="button" data-job="${j.id}" title="${esc(j.ja)}">${esc(j.jas)}</button>`).join('')}</div>`;
   }
 
-  // ── ウェポンスキル（武器の種類ごと・連携属性）
+  // ── ウェポンスキル（武器の種類ごと・覚えるスキル値の順・使えるジョブ）
+  // 覚え方の元：LandSandBoat の data/weapon_skills.yaml（lsb.ws[id] = [スキル値, ジョブのビット, メインのみ, 習得が要る]）
   const wsBySkill = new Map();
   for (const w of wss.values()) { if (!w.ja || w.ja === '.') continue; const s = (skills.get(w.skill) || {}).ja || 'その他'; if (!wsBySkill.has(s)) wsBySkill.set(s, []); wsBySkill.get(s).push(w); }
   const wsSkills = [...wsBySkill.keys()].sort((a, b) => (wsBySkill.get(a)[0].skill || 99) - (wsBySkill.get(b)[0].skill || 99));
   const scCell = w => [w.skillchain_a, w.skillchain_b, w.skillchain_c].filter(Boolean).map(x => `<span class="sc sc-${esc(x)}">${esc(SC_JA[x] || x)}</span>`).join('');
   const wsKey = s => 'ws-' + (wsBySkill.get(s)[0].skill || 0);
-  write('ws/index.html', head(`ウェポンスキルの一覧（${[...wss.values()].length}件）｜連携属性つき｜${SITE_SHORT}`, 'FF11のウェポンスキルを武器の種類ごとに一覧。連携属性（光・闇・核熱・分解…）つき。', `${ORIGIN}/ws/index.html`)
+  const jobGrid = mask => {
+    if (!mask) return '<span class="nl">—</span>';
+    const n = JOB_LIST.filter(j => mask & (1 << j.id)).length;
+    if (n >= 22) return '<span class="jb all">全ジョブ</span>';
+    return `<span class="jb">${JOB_LIST.map(j => (mask & (1 << j.id) ? `<b title="${esc(j.ja)}">${esc(j.jas)}</b>` : `<i>${esc(j.jas)}</i>`)).join('')}</span>`;
+  };
+  // [スキル値, 印, 印の色, 並びの組]：スキル値のある物はスキル値の順、ない物は後ろに組ごと
+  const wsHow = w => {
+    const x = lsb.ws && lsb.ws[w.id];
+    if (!x) return [0, '', '', 9];
+    const [lv, , main, un] = x;
+    if (lv && un && lv >= 357) return [lv, 'メリポ', 'mp', 0];
+    if (lv && un) return [lv, 'クエスト', 'qu', 0];
+    if (lv) return [lv, main ? 'メインのみ' : '', 'mo', 0];
+    if (un) return [0, '武器で習得', 'wp', 1];
+    if (main && !x[1]) return [0, 'レリック', 'wp', 2];
+    return [0, '専用の武器', 'wp', 3];
+  };
+  const wsTag = h => (h[1] ? `<span class="tag ab-${h[2]}">${h[1]}</span>` : '');
+  const wsSort = (a, b) => { const x = wsHow(a), y = wsHow(b); return (x[3] - y[3]) || (x[0] - y[0]) || (a.id - b.id); };
+  write('ws/index.html', head(`ウェポンスキルの一覧（${[...wss.values()].length}件）｜覚えるスキル値・使えるジョブ・連携属性｜${SITE_SHORT}`, 'FF11のウェポンスキルを武器の種類ごとに、覚えるスキル値の順で一覧。使えるジョブ、クエスト・メリポ・エンピリアンなどの覚え方、連携属性（光・闇・核熱・分解…）つき。', `${ORIGIN}/ws/index.html`)
     + `<main class="wide">${crumb('ウェポンスキル')}<h1>ウェポンスキル <span class="cnt">${[...wsBySkill.values()].flat().length}件</span></h1>
+<p class="lead">武器の種類ごとに、覚えるスキル値の順です。印の意味：<span class="tag ab-qu">クエスト</span>クエストで覚える　<span class="tag ab-mp">メリポ</span>メリットポイントで覚える　<span class="tag ab-mo">メインのみ</span>サポートジョブでは使えない　<span class="tag ab-wp">武器で習得</span>エンピリアン・ミシックなどの武器でWSポイントを貯めて覚える　<span class="tag ab-wp">レリック</span><span class="tag ab-wp">専用の武器</span>その武器を持つと使える。</p>
 <nav class="catnav"><div><span class="lbl">武器</span>${wsSkills.map(s => `<a href="#${wsKey(s)}">${esc(s)}</a>`).join('')}</div></nav>
-${wsSkills.map(s => `<h2 id="${wsKey(s)}">${esc(s)} <span class="cnt">${wsBySkill.get(s).length}件</span></h2><div class="tbl ws" data-ck="ws"><div class="r h"><div class="c-n">名前</div><div class="c-sc">連携属性</div><div class="c-x">用語辞典</div></div>${wsBySkill.get(s).sort((a, b) => a.id - b.id).map(w => `<div class="r" data-id="${w.id}"><div class="c-n"><b>${esc(w.ja)}</b><small>${esc(w.en)}</small></div><div class="c-sc">${scCell(w) || '<span class="nl">—</span>'}</div><div class="c-x"><a href="${ffo(w.ja)}" rel="noopener" target="_blank">見る</a></div></div>`).join('')}</div>`).join('')}
+${wsSkills.map(s => `<h2 id="${wsKey(s)}">${esc(s)} <span class="cnt">${wsBySkill.get(s).length}件</span></h2><div class="tbl ws" data-ck="ws"><div class="r h"><div class="c-no">スキル</div><div class="c-n">名前</div><div class="c-jb">使えるジョブ</div><div class="c-sc">連携属性</div><div class="c-x">用語辞典</div></div>${wsBySkill.get(s).sort(wsSort).map(w => { const h = wsHow(w); return `<div class="r" data-id="${w.id}"><div class="c-no">${h[0] || '—'}</div><div class="c-n"><b>${esc(w.ja)}</b>${wsTag(h)}<small>${esc(w.en)}</small></div><div class="c-jb">${jobGrid(lsb.ws && lsb.ws[w.id] ? lsb.ws[w.id][1] : 0)}</div><div class="c-sc">${scCell(w) || '<span class="nl">—</span>'}</div><div class="c-x"><a href="${ffo(w.ja)}" rel="noopener" target="_blank">見る</a></div></div>`; }).join('')}</div>`).join('')}
+<p class="src">覚えるスキル値・使えるジョブ・覚え方は LandSandBoat（GPLv3）の表から。</p>
 </main><script src="${BASE}list.js?v=${VER}"></script>` + foot);
 
-  // ── アビリティ（種類ごと）
+  // ── アビリティ（ジョブごと・覚えるレベルの順）
+  // 覚え方の元：LandSandBoat の abilities.sql（lsb.abil[id] = [ジョブ, Lv, 再使用の秒, 取り方の印]）
   const abByType = new Map();
   for (const a of abils.values()) { if (!a.ja || a.ja === '.') continue; if (!abByType.has(a.type)) abByType.set(a.type, []); abByType.get(a.type).push(a); }
-  write('ability/index.html', head(`アビリティの一覧（${[...abByType.values()].flat().length}件）｜${SITE_SHORT}`, 'FF11のジョブアビリティ・ペットコマンド・ファントムロール・ステップ・契約の履行などを種類ごとに一覧。', `${ORIGIN}/ability/index.html`)
-    + `<main class="wide">${crumb('アビリティ')}<h1>アビリティ <span class="cnt">${[...abByType.values()].flat().length}件</span></h1>
-<nav class="catnav"><div><span class="lbl">種類</span>${JA_TYPES.filter(([t]) => abByType.has(t)).map(([t, k, ja]) => `<a href="#ab-${k}">${ja}</a>`).join('')}</div></nav>
-${JA_TYPES.filter(([t]) => abByType.has(t)).map(([t, k, ja]) => `<h2 id="ab-${k}">${ja} <span class="cnt">${abByType.get(t).length}件</span></h2><div class="tbl ab" data-ck="ab"><div class="r h"><div class="c-n">名前</div><div class="c-m">MP</div><div class="c-m">TP</div><div class="c-x">用語辞典</div></div>${abByType.get(t).sort((a, b) => a.id - b.id).map(a => `<div class="r" data-id="${a.id}"><div class="c-n"><b>${esc(a.ja)}</b><small>${esc(a.en)}</small></div><div class="c-m">${a.mp_cost || ''}</div><div class="c-m">${a.tp_cost || ''}</div><div class="c-x"><a href="${ffo(a.ja)}" rel="noopener" target="_blank">見る</a></div></div>`).join('')}</div>`).join('')}
+  const TYPE_JA = new Map(JA_TYPES.map(([t, , ja]) => [t, ja]));
+  const abAll = [...abByType.values()].flat();
+  const abX = a => (lsb.abil && lsb.abil[a.id]) || null;
+  const recastTxt = s => (s <= 1 ? '' : s % 3600 === 0 ? `${s / 3600}時間` : s >= 60 ? (s % 60 ? `${Math.floor(s / 60)}分${s % 60}秒` : `${s / 60}分`) : `${s}秒`);
+  const isSp = (a, x) => a.type === 'JobAbility' && x && x[2] === 3600 && (x[1] === 0 || x[1] === 96);
+  const abTags = a => {
+    const x = abX(a); if (!x) return '';
+    const t = [];
+    if (isSp(a, x)) t.push(['sp', x[1] === 96 ? 'SPアビ2' : 'SPアビ']);
+    if (x[3] & 1) t.push(['mp', 'メリポ']);
+    if (x[3] & 2) t.push(['wp', 'アストラルフロー中']);
+    if (x[3] & 4) t.push(['mo', 'メインのみ']);
+    if (x[3] & 16) t.push(['qu', '白のグリモア']);
+    if (x[3] & 32) t.push(['qu', '黒のグリモア']);
+    return t.map(([c, s]) => `<span class="tag ab-${c}">${s}</span>`).join('');
+  };
+  const abLv = a => { const x = abX(a); if (!x) return 999; return x[1] === 0 ? 1 : x[1]; };
+  const abSort = (a, b) => (abLv(a) - abLv(b)) || (a.id - b.id);
+  const cost = a => (a.type === 'Scholar' ? '' : a.mp_cost > 1 ? `MP ${a.mp_cost}` : a.tp_cost ? `TP ${a.tp_cost}` : ''); // 戦術魔道書はチャージ制、MP1は表の仮の値
+  const abHead = (lv = true) => `<div class="r h">${lv ? '<div class="c-no">Lv</div>' : ''}<div class="c-n">名前</div><div class="c-ty">種類</div><div class="c-m">再使用</div><div class="c-m">消費</div><div class="c-x">用語辞典</div></div>`;
+  const abRow = (a, lv = true) => { const x = abX(a); return `<div class="r" data-id="${a.id}">${lv ? `<div class="c-no">${x ? abLv(a) : '—'}</div>` : ''}<div class="c-n"><b>${esc(a.ja)}</b>${abTags(a)}<small>${esc(a.en)}</small></div><div class="c-ty">${esc(TYPE_JA.get(a.type) || '')}</div><div class="c-m">${x ? recastTxt(x[2]) : ''}</div><div class="c-m">${cost(a)}</div><div class="c-x"><a href="${ffo(a.ja)}" rel="noopener" target="_blank">見る</a></div></div>`; };
+  const abTbl = (list, lv = true) => `<div class="tbl ab${lv ? '' : ' nolv'}" data-ck="ab">${abHead(lv)}${list.map(a => abRow(a, lv)).join('')}</div>`;
+  // 召喚獣：契約の履行の番号の並びから
+  const avatarOf = id => (id >= 512 && id <= 520 || id === 773 ? 'カーバンクル' : id >= 521 && id <= 527 || id === 780 ? 'ケット・シー' : id >= 528 && id <= 543 ? 'フェンリル'
+    : id >= 544 && id <= 559 ? 'イフリート' : id >= 560 && id <= 575 ? 'タイタン' : id >= 576 && id <= 591 ? 'リヴァイアサン' : id >= 592 && id <= 607 ? 'ガルーダ'
+    : id >= 608 && id <= 623 ? 'シヴァ' : id >= 624 && id <= 638 ? 'ラムウ' : id >= 656 && id <= 667 ? 'ディアボロス' : id === 668 || id === 669 ? 'アトモス'
+    : id === 670 ? 'オーディン' : id === 671 ? 'アレキサンダー' : id >= 960 && id <= 975 ? 'セイレーン' : 'そのほか');
+  const AVATARS = ['カーバンクル', 'ケット・シー', 'イフリート', 'タイタン', 'リヴァイアサン', 'ガルーダ', 'シヴァ', 'ラムウ', 'フェンリル', 'ディアボロス', 'セイレーン', 'アトモス', 'オーディン', 'アレキサンダー', 'そのほか'];
+  const isBp = a => /^BloodPact/.test(a.type);
+  const used = new Set();
+  const jobSec = j => {
+    const mine = abAll.filter(a => { const x = abX(a); return x && x[0] === j.id; });
+    const main = mine.filter(a => !isBp(a) && a.type !== 'Monster').sort(abSort);
+    let extra = '';
+    if (j.id === 15) { // 召喚士：召喚獣ごとの契約の履行（LSBに無い物も番号から）
+      const bps = abAll.filter(a => isBp(a) && avatarOf(a.id) !== 'そのほか' && (!abX(a) || abX(a)[0] === 15));
+      bps.forEach(a => used.add(a.id));
+      extra = `<h3>契約の履行（召喚獣ごと） <span class="cnt">${bps.length}件</span></h3>` + AVATARS.filter(v => bps.some(a => avatarOf(a.id) === v)).map(v => `<h4>${v}</h4>${abTbl(bps.filter(a => avatarOf(a.id) === v).sort(abSort))}`).join('');
+    }
+    if (j.id === 9) { // 獣使い：ペットの技（使える技はペットごとに違う）
+      const pm = mine.filter(a => a.type === 'Monster').sort((a, b) => a.id - b.id);
+      if (pm.length) extra = `<details class="abmore"><summary>ペットの技 <span class="cnt">${pm.length}件</span>（呼び出したペットごとに使える技が違います）</summary>${abTbl(pm, false)}</details>`;
+    }
+    if (j.id === 14) { // 竜騎士：飛竜が使うブレス
+      const br = abAll.filter(a => { const x = abX(a); return x && x[0] === 0; }).sort(abSort);
+      br.forEach(a => used.add(a.id));
+      if (br.length) extra = `<h3>飛竜のブレス <span class="cnt">${br.length}件</span></h3>${abTbl(br)}`;
+    }
+    mine.forEach(a => { if (j.id === 9 || a.type !== 'Monster') used.add(a.id); });
+    const n = main.length + (extra ? (extra.match(/class="r" data-id/g) || []).length : 0);
+    return `<h2 id="ab-j${j.id}">${esc(j.ja)} <span class="cnt">${n}件</span></h2>${abTbl(main)}${extra}`;
+  };
+  const jobHtml = JOB_LIST.map(jobSec).join('');
+  const rest = abAll.filter(a => !used.has(a.id)).sort((a, b) => a.id - b.id);
+  write('ability/index.html', head(`アビリティの一覧（${abAll.length}件）｜ジョブごと・覚えるレベル・メリポ・SPアビ｜${SITE_SHORT}`, 'FF11のアビリティをジョブごとに、覚えるレベルの順で一覧。SPアビ・メリポ・メインのみの印、再使用時間、召喚士は召喚獣ごとの契約の履行つき。', `${ORIGIN}/ability/index.html`)
+    + `<main class="wide">${crumb('アビリティ')}<h1>アビリティ <span class="cnt">${abAll.length}件</span></h1>
+<p class="lead">ジョブごとに、覚えるレベルの順です。印の意味：<span class="tag ab-sp">SPアビ</span>1時間に1回の特別なアビリティ（SPアビ2はLv96）　<span class="tag ab-mp">メリポ</span>メリットポイントで覚える（Lv75から）　<span class="tag ab-mo">メインのみ</span>サポートジョブでは使えない。</p>
+<nav class="catnav"><div><span class="lbl">ジョブ</span>${JOB_LIST.map(j => `<a href="#ab-j${j.id}" title="${esc(j.ja)}">${esc(j.jas)}</a>`).join('')}${rest.length ? '<a href="#ab-other">そのほか</a>' : ''}</div></nav>
+${jobHtml}
+${rest.length ? `<h2 id="ab-other">そのほか <span class="cnt">${rest.length}件</span></h2><p class="lead">覚えるジョブ・レベルが元の表に無い物です。</p>${abTbl(rest, false)}` : ''}
+<p class="src">覚えるジョブ・レベル・再使用時間・メリポなどの印は LandSandBoat（GPLv3）の表から。ジョブポイントで変わる再使用時間は入っていません。</p>
 </main><script src="${BASE}list.js?v=${VER}"></script>` + foot);
 
   // ── トップに出す節

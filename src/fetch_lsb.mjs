@@ -53,6 +53,28 @@ out.guild = rows(await get('guild_item_points')).map(r => r.slice(0, 6).map(Numb
 // 装備の見た目（モデル番号）：[MId, 部位, ほかに覆う部位]
 out.look = {};
 for (const r of rows(await get('item_equipment'))) { const mid = Number(r[5]); if (mid > 0) out.look[Number(r[0])] = [mid, Number(r[8]), Number(r[9])]; }
+// アビリティ：[ジョブ, 取得Lv, 再使用の秒, 取り方の印]（印：1メリポ 2アストラルフロー中 4メインのみ 8習得 16白のグリモア 32黒のグリモア 64呼び出し 128あやつる 256召喚獣 512オートマトン）
+out.abil = {};
+for (const r of rows(await get('abilities'))) out.abil[Number(r[0])] = [Number(r[2]), Number(r[3]), Number(r[5]), Number(r[19])];
+// ウェポンスキル：[必要スキル値, 使えるジョブ(ビット), メインのみ, 習得が要る]（data/weapon_skills.yaml）
+{
+  const JOBS = ['', 'war', 'mnk', 'whm', 'blm', 'rdm', 'thf', 'pld', 'drk', 'bst', 'brd', 'rng', 'sam', 'nin', 'drg', 'smn', 'blu', 'cor', 'pup', 'dnc', 'sch', 'geo', 'run'];
+  const r = await fetch('https://raw.githubusercontent.com/LandSandBoat/server/base/data/weapon_skills.yaml'); if (!r.ok) throw new Error('weapon_skills.yaml: ' + r.status);
+  out.ws = {}; let cur = null, on = false;
+  for (const l of (await r.text()).split(/\r?\n/)) {
+    if (/^weapon_skills:/.test(l)) { on = true; continue; }
+    if (!on) continue;
+    if (/^  [a-z0-9_]+:\s*$/.test(l)) { cur = { lv: 0, jobs: 0, main: 0, un: 0 }; continue; }
+    const m = cur && l.match(/^    ([a-z_]+):\s*(.*?)\s*(#.*)?$/); if (!m) continue;
+    if (m[1] === 'id') out.ws[Number(m[2])] = cur;
+    else if (m[1] === 'level') cur.lv = Number(m[2]);
+    else if (m[1] === 'jobs') cur.jobs = m[2].replace(/[[\]]/g, '').split(',').map(x => JOBS.indexOf(x.trim())).filter(x => x > 0).reduce((a, j) => a | (1 << j), 0);
+    else if (m[1] === 'main_job_only') cur.main = m[2] === 'true' ? 1 : 0;
+    else if (m[1] === 'unlock') cur.un = 1;
+  }
+  for (const k of Object.keys(out.ws)) { const w = out.ws[k]; out.ws[k] = [w.lv, w.jobs, w.main, w.un]; }
+}
+console.log('アビリティ', Object.keys(out.abil).length, 'WS', Object.keys(out.ws).length);
 fs.writeFileSync(path.join(DATA, 'lsb.json'), JSON.stringify(out));
 console.log('見た目', Object.keys(out.look).length);
 console.log('青魔法', Object.keys(out.blue).length, 'ギルド納品', out.guild.length);

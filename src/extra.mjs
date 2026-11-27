@@ -29,25 +29,33 @@ export function writeExtra(ctx) {
   page('mounts.html', `マウントの一覧（${mounts.length}種）・チェックリスト`, `FF11のマウント${mounts.length}種の一覧と説明。持っているマウントにチェックを付けられます。`, 'マウント', `${mounts.length}種`,
     `<div class="tbl simple" data-ck="mt"><div class="r h"><div class="c-n">マウント</div><div class="c-fx">説明（ゲーム内の表記）</div><div class="c-x">用語辞典</div></div>${mounts.map(m => `<div class="r" data-id="${m.id}"><div class="c-n"><b>${esc(m.ja)}</b><small>${esc(m.en)}</small></div><div class="c-fx">${esc(m.jadesc || '')}</div><div class="c-x"><a href="${ffo(m.ja)}" rel="noopener" target="_blank">見る</a></div></div>`).join('')}</div>`);
 
-  // メリットポイント（種類ごと）
+  // メリットポイント（共通の項目 → ジョブごとに1群・2群をまとめて → ウェポンスキル）
   const merits = load('merit_points');
+  // [並びの番号, 帯の名前, 群（ジョブの項目だけ 1/2）]
   const meritCat = id => {
     const k = id >> 6 << 6;
-    const base = { 64: 'HP・MP', 128: '能力値', 192: '戦闘スキル', 256: '魔法スキル', 320: 'その他', 1664: 'ウェポンスキル' };
-    if (base[k]) return [k, base[k]];
-    if (k >= 384 && k <= 1600) { const j = jobById.get((k - 384) / 64 + 1); return [k, `${j ? j.ja : '?'}（1群）`]; }
-    if (k === 1728) return [k, '風水士（1群）']; if (k === 1792) return [k, '魔導剣士（1群）'];
-    if (k >= 2048 && k <= 3264) { const j = jobById.get((k - 2048) / 64 + 1); return [k, `${j ? j.ja : '?'}（2群）`]; }
-    if (k === 3392) return [k, '風水士（2群）']; if (k === 3456) return [k, '魔導剣士（2群）'];
-    return [k, 'そのほか'];
+    const base = { 64: 'HP・MP', 128: '能力値', 192: '戦闘スキル', 256: '魔法スキル', 320: 'その他' };
+    if (base[k]) return [k, base[k], 0];
+    if (k === 1664) return [99999, 'ウェポンスキル', 0];
+    let j = 0, g = 0;
+    if (k >= 384 && k <= 1600) { j = (k - 384) / 64 + 1; g = 1; } else if (k === 1728) { j = 21; g = 1; } else if (k === 1792) { j = 22; g = 1; }
+    else if (k >= 2048 && k <= 3264) { j = (k - 2048) / 64 + 1; g = 2; } else if (k === 3392) { j = 21; g = 2; } else if (k === 3456) { j = 22; g = 2; }
+    if (j) return [10000 + j, (jobById.get(j) || {}).ja || '?', g];
+    return [99998, 'そのほか', 0];
   };
   const mGroups = new Map();
-  for (const m of merits) { const [k, ja] = meritCat(m.id); if (!mGroups.has(k)) mGroups.set(k, [ja, []]); mGroups.get(k)[1].push(m); }
+  for (const m of merits) { const [k, ja, g] = meritCat(m.id); if (!mGroups.has(k)) mGroups.set(k, [ja, []]); mGroups.get(k)[1].push([g, m]); }
   const mSorted = [...mGroups].sort((a, b) => a[0] - b[0]);
+  const mRow = m => `<div class="r" data-id="${m.id}"><div class="c-n"><b>${esc(m.ja)}</b><small>${esc(m.en)}</small></div><div class="c-fx">${esc(m.jadesc || '').replace(/\n/g, '<br>')}</div></div>`;
+  const mBody = l => {
+    l.sort((a, b) => (a[0] - b[0]) || (a[1].id - b[1].id));
+    if (!l[0][0]) return l.map(([, m]) => mRow(m)).join('');
+    return [1, 2].map(g => { const x = l.filter(e => e[0] === g); return x.length ? `<div class="subband">${g}群 <span>${x.length}件</span></div>${x.map(([, m]) => mRow(m)).join('')}` : ''; }).join('');
+  };
   counts.merits = merits.length;
-  page('merits.html', `メリットポイントの一覧（${merits.length}項目）`, `FF11のメリットポイント${merits.length}項目を種類・ジョブごとに、効果の説明つきで。`, 'メリットポイント', `${merits.length}項目`,
-    `<nav class="bands">${mSorted.map(([k, [ja, l]]) => `<a href="#m${k}" data-band="${esc(ja)}">${esc(ja)}<span>${l.length}</span></a>`).join('')}</nav>
-<div class="tbl simple2" data-ck="mr"><div class="r h"><div class="c-n">項目</div><div class="c-fx">効果（ゲーム内の表記）</div></div>${mSorted.map(([k, [ja, l]]) => `<div class="band" id="m${k}" data-band="${esc(ja)}">${esc(ja)} <span>${l.length}件</span></div>${l.sort((a, b) => a.id - b.id).map(m => `<div class="r" data-id="${m.id}"><div class="c-n"><b>${esc(m.ja)}</b><small>${esc(m.en)}</small></div><div class="c-fx">${esc(m.jadesc || '').replace(/\n/g, '<br>')}</div></div>`).join('')}`).join('')}</div>`);
+  page('merits.html', `メリットポイントの一覧（${merits.length}項目）`, `FF11のメリットポイント${merits.length}項目を、共通の項目とジョブごと（1群・2群）に、効果の説明つきで。`, 'メリットポイント', `${merits.length}項目`,
+    `<p class="lead">共通の項目のあとに、ジョブごとに1群・2群をまとめて並べています。</p><nav class="bands">${mSorted.map(([k, [ja, l]]) => `<a href="#m${k}" data-band="${esc(ja)}">${esc(ja)}<span>${l.length}</span></a>`).join('')}</nav>
+<div class="tbl simple2" data-ck="mr"><div class="r h"><div class="c-n">項目</div><div class="c-fx">効果（ゲーム内の表記）</div></div>${mSorted.map(([k, [ja, l]]) => `<div class="band" id="m${k}" data-band="${esc(ja)}">${esc(ja)} <span>${l.length}件</span></div>${mBody(l)}`).join('')}</div>`);
 
   // ジョブポイント（ジョブごと）
   const jps = load('job_points');

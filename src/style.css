@@ -374,3 +374,33 @@ main.wide h2 .cnt{font-size:12.5px;color:var(--sub);font-weight:normal;margin-le
 
 /* 狭い画面の手直し：釣り竿の表を1列に、ジョブ別の表は横に動かしても左の列（部位）を残す */
 @media (max-width:860px){.tbl.simple3 .r{grid-template-columns:1fr;grid-template-areas:none}.tbl.simple3 .c-fx{grid-area:auto;font-size:12px;color:var(--sub)}.tw .grid tr>th:first-child{position:sticky;left:0;z-index:1;background:#16264a;box-shadow:2px 0 4px rgba(0,0,0,.35)}.tw .grid tr:first-child>th:first-child{background:#1b3159}.statpick{min-width:0;flex-basis:100%;grid-template-columns:minmax(0,1fr)}.sg{min-width:0}.sg .chip{white-space:normal;text-align:left}.hfind.big button,.hfind button{padding:0 14px}.hfind.big input{padding-left:40px}}
+
+/* アビリティ・WS：ジョブごと／覚えるレベル・スキル値の順、印 */
+.tbl.ws .r{grid-template-columns:56px minmax(200px,1.5fr) minmax(200px,auto) minmax(150px,1.3fr) 70px}
+.tbl.ab .r{grid-template-columns:52px minmax(220px,2fr) 140px 80px 70px 70px}
+.tbl.ab.nolv .r{grid-template-columns:minmax(220px,2fr) 140px 80px 70px 70px}
+.tbl.ws .c-no,.tbl.ab .c-no{font-variant-numeric:tabular-nums}
+.c-ty{color:var(--sub);font-size:12.5px}
+.c-n .tag[class*="ab-"]{font-size:10.5px;font-weight:700;border-radius:4px;padding:0 4px;margin-left:5px;vertical-align:1px;white-space:nowrap}
+.lead .tag[class*="ab-"]{margin:0 3px 0 0;white-space:nowrap}
+.tag.ab-sp{color:#1b1405;background:var(--gold);border:1px solid var(--gold)}
+.tag.ab-mp{color:#9cc4ff;border:1px solid #4a74c0}
+.tag.ab-mo{color:#c9d2e6;border:1px solid #66749a}
+.tag.ab-qu{color:#a6f0b2;border:1px solid #3f9c55}
+.tag.ab-wp{color:#ffb86b;border:1px solid #b5702a}
+main.wide h3{font-size:15px;margin:16px 0 6px;color:#e3ecff}
+main.wide h4{font-size:13.5px;margin:12px 0 4px;color:var(--gold)}
+main.wide h3 .cnt{font-size:12px;color:var(--sub);font-weight:normal;margin-left:6px}
+details.abmore{margin:10px 0}
+details.abmore>summary{cursor:pointer;color:#e3ecff;font-weight:700;padding:6px 0}
+details.abmore>summary .cnt{font-weight:normal;color:var(--sub);font-size:12px}
+p.src{color:var(--sub);font-size:12px;margin-top:18px}
+.tbl .subband{padding:3px 12px 3px 20px;color:#cdd8ec;font-size:12.5px;font-weight:700;background:rgba(95,130,192,.12);border-top:1px solid rgba(95,130,192,.25)}
+.tbl .subband span{font-weight:normal;color:var(--sub);margin-left:6px;font-size:11.5px}
+@media (max-width:860px){
+ .tbl.ws .c-no,.tbl.ab .c-no{flex:0 0 40px;padding-right:0!important}
+ .tbl.ws .c-n,.tbl.ab .c-n{flex:1 1 calc(100% - 56px);min-width:0}
+ .tbl.ab.nolv .c-n{flex:1 1 100%}
+ .tbl.ws .r.h,.tbl.ab .r.h{display:none}
+ .tbl.ws .c-jb{flex:1 1 100%}
+}
