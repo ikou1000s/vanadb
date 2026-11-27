@@ -57,7 +57,7 @@ ${note}</main><script src="${BASE}list.js?v=${VER}"></script>` + foot);
 ${note}</main>` + foot);
     urls.push(`${ORIGIN}/${r2}`);
   }
-  // つながり地図（ネタ）：出入り口の座標から並べた、エリアの地図のつながり（src/world.json・tools/world で作る）
+  // つながり地図：出入り口の座標から並べた、エリアの地図のつながり（src/world.json・tools/world で作る）
   const worldF = path.join(ROOT, 'src', 'world.json');
   let worldN = 0;
   if (fs.existsSync(worldF)) {
@@ -76,8 +76,8 @@ ${note}</main>` + foot);
     const comps = W.comps.map(c => c.filter(z => firstMap.has(z.id) && zones.includes(z.id))).filter(c => c.length >= 2);
     { const used = new Map(); const base = nameOfComp; const names = comps.map(c => { const n = base(c); const k = (used.get(n) || 0) + 1; used.set(n, k); return k > 1 ? n + '（その' + k + '）' : n; }); const nm = new Map(comps.map((c, k) => [c, names[k]])); var nameOf2 = c => nm.get(c); }
     worldN = comps.reduce((a, c) => a + c.length, 0);
-    fs.writeFileSync(path.join(SITE, 'maps', 'world.html'), head(`つながり地図（ネタ）｜エリアの地図を出入り口のつながりで並べた物｜${SITE_SHORT}`, 'FF11のエリアの地図を、出入り口の位置からおおよその場所に並べ、隣り合うエリアを線で結んだ「つながり地図」。', `${ORIGIN}/maps/world.html`)
-      + `<main class="wide">${crumb(`<a href="${BASE}maps/index.html">地図</a>`, 'つながり地図')}<h1>つながり地図 <span class="cnt">ネタ・${worldN}エリア</span></h1>
+    fs.writeFileSync(path.join(SITE, 'maps', 'world.html'), head(`つながり地図｜エリアの地図を出入り口のつながりで並べた物｜${SITE_SHORT}`, 'FF11のエリアの地図を、出入り口の位置からおおよその場所に並べ、隣り合うエリアを線で結んだ「つながり地図」。', `${ORIGIN}/maps/world.html`)
+      + `<main class="wide">${crumb(`<a href="${BASE}maps/index.html">地図</a>`, 'つながり地図')}<h1>つながり地図 <span class="cnt">${worldN}エリア</span></h1>
 <p class="lead">屋外と街のエリアの地図を、出入り口の座標からおおよその場所に置き、行き来できるエリアを線で結びました。大きさや細かい位置は目安です（洞窟やダンジョンを通るつながりは入れていないので、塊が分かれている所があります）。絵を押すとそのエリアの地図へ。</p>
 <nav class="catnav"><div><span class="lbl">塊</span>${comps.map((c, k) => `<a href="#w${k}">${esc(nameOf2(c))}<span class="cnt">${c.length}</span></a>`).join('')}</div></nav>
 ${comps.map((c, k) => `<h2 id="w${k}">${esc(nameOf2(c))} <span class="cnt">${c.length}エリア</span></h2><div class="wbox">${svg(c)}</div>`).join('\n')}
@@ -86,6 +86,6 @@ ${comps.map((c, k) => `<h2 id="w${k}">${esc(nameOf2(c))} <span class="cnt">${c.l
   }
   // トップの節：地図の一覧・つながり地図・時代や地方の括り
   const eraTiles = REGIONS.map(([era, l]) => { const ks = l.map(([k]) => k).filter(k => groups.has(k)); if (!ks.length) return ''; const n = ks.reduce((a, k) => a + groups.get(k)[2].length, 0); return tile(`${BASE}maps/index.html#mg-${ks[0]}`, era, n, era[0], 'ex'); }).join('');
-  const home = `<section class="box" id="map"><h2>地図（${zones.length}エリア・${list.length}枚）<a class="all" href="${BASE}maps/index.html">一覧へ</a></h2><div class="tiles">${tile(`${BASE}maps/index.html`, '地図の一覧', zones.length, '地', 'ex hot')}${worldN ? tile(`${BASE}maps/world.html`, 'つながり地図（ネタ）', worldN, '繋', 'ex hot') : ''}${eraTiles}</div></section>`;
+  const home = `<section class="box" id="map"><h2>地図（${zones.length}エリア・${list.length}枚）<a class="all" href="${BASE}maps/index.html">一覧へ</a></h2><div class="tiles">${tile(`${BASE}maps/index.html`, '地図の一覧', zones.length, '地', 'ex hot')}${worldN ? tile(`${BASE}maps/world.html`, 'つながり地図', worldN, '繋', 'ex hot') : ''}${eraTiles}</div></section>`;
   return { home, urls, count: list.length, zones: new Set(zones), zname };
 }
