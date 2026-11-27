@@ -70,6 +70,8 @@ await import('./fetch_lsb.mjs');
 // 錬成のレシピ（失敗しても止めない）
 try { await import('./fetch_synergy.mjs'); } catch (e) { console.log('錬成の取り込みに失敗', e.message); }
 await import('./fetch_aug.mjs');
+// お店で買える物（失敗しても止めない）
+try { await import('./fetch_shops.mjs'); } catch (e) { console.log('お店の取り込みに失敗', e.message); }
 
 // ドロップ・ぬすむ（LandSandBoat・GPLv3）
 await import('./fetch_mobs.mjs');
