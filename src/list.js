@@ -32,10 +32,41 @@
   if (tables.length) {
     bar = document.createElement('div');
     bar.className = 'ckbar';
-    bar.innerHTML = '<span class="ckn"></span><button type="button" data-mode="all">全部</button><button type="button" data-mode="todo">まだの物だけ</button><button type="button" data-mode="done">チェック済みだけ</button><span class="ckh">チェックはこのブラウザに残ります（やり忘れ・取り忘れの確認に）</span>';
+    bar.innerHTML = '<span class="ckn"></span><button type="button" data-mode="all">全部</button><button type="button" data-mode="todo">まだの物だけ</button><button type="button" data-mode="done">チェック済みだけ</button><span class="ckio"><button type="button" class="cksave" title="このサイトの全部のチェックを1つのファイルに保存します">記録をファイルに保存</button><button type="button" class="ckload" title="保存したファイルからチェックを戻します（今のチェックは消えません）">ファイルから戻す</button><input type="file" accept=".json,application/json" hidden></span><span class="ckh">チェックはこのブラウザに残ります。キャッシュを消す前や、別の端末・ブラウザに移す時は「記録をファイルに保存」</span>';
     var first = tables[0];
     (document.querySelector('.bands') || first).insertAdjacentElement('beforebegin', bar);
-    bar.addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; mode = b.getAttribute('data-mode'); try { localStorage.setItem('vanadb:ckmode', mode); } catch (x) {} apply(); });
+    // チェックの記録をファイルに保存・ファイルから戻す（このサイトの全部のページの分をまとめて）
+    bar.querySelector('.cksave').addEventListener('click', function () {
+      var data = {}, n = 0;
+      try { for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (k && k.indexOf('vanadb:ck:') === 0) { var v = JSON.parse(localStorage.getItem(k) || '{}'); data[k.slice(10)] = v; n += Object.keys(v).length; } } } catch (x) {}
+      if (!n) { alert('まだチェックがありません。'); return; }
+      var d = new Date(), p = function (x) { return (x < 10 ? '0' : '') + x; };
+      var blob = new Blob([JSON.stringify({ app: 'vanadb-check', ver: 1, saved: d.toISOString(), count: n, data: data }, null, 1)], { type: 'application/json' });
+      var a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+      a.download = 'vanadb-check-' + d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '.json';
+      document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+    });
+    var fileIn = bar.querySelector('input[type=file]');
+    bar.querySelector('.ckload').addEventListener('click', function () { fileIn.value = ''; fileIn.click(); });
+    fileIn.addEventListener('change', function () {
+      var f = fileIn.files && fileIn.files[0]; if (!f) return;
+      var rd = new FileReader();
+      rd.onload = function () {
+        var j; try { j = JSON.parse(rd.result); } catch (x) { j = null; }
+        if (!j || j.app !== 'vanadb-check' || !j.data) { alert('ヴァナDBのチェックの記録ファイルではないようです。'); return; }
+        var add = 0;
+        Object.keys(j.data).forEach(function (ns) {
+          if (!/^[\w-]+$/.test(ns)) return;
+          var cur = store.get(ns), v = j.data[ns] || {};
+          Object.keys(v).forEach(function (id) { if (!cur[id]) { cur[id] = 1; add++; } });
+          store.set(ns, cur);
+        });
+        alert('チェックを ' + add + ' 件戻しました（もともと付いていた物はそのままです）。');
+        location.reload();
+      };
+      rd.readAsText(f);
+    });
+    bar.addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b || !b.hasAttribute('data-mode')) return; mode = b.getAttribute('data-mode'); try { localStorage.setItem('vanadb:ckmode', mode); } catch (x) {} apply(); });
   }
 
   // 名前で絞る（input.tfilter の data-for＝表の id）
