@@ -60,19 +60,59 @@ for (const r of rows(await get('abilities'))) out.abil[Number(r[0])] = [Number(r
 {
   const JOBS = ['', 'war', 'mnk', 'whm', 'blm', 'rdm', 'thf', 'pld', 'drk', 'bst', 'brd', 'rng', 'sam', 'nin', 'drg', 'smn', 'blu', 'cor', 'pup', 'dnc', 'sch', 'geo', 'run'];
   const r = await fetch('https://raw.githubusercontent.com/LandSandBoat/server/base/data/weapon_skills.yaml'); if (!r.ok) throw new Error('weapon_skills.yaml: ' + r.status);
-  out.ws = {}; let cur = null, on = false;
+  out.ws = {}; let cur = null, on = false; const wsKeyId = {};
   for (const l of (await r.text()).split(/\r?\n/)) {
     if (/^weapon_skills:/.test(l)) { on = true; continue; }
     if (!on) continue;
-    if (/^  [a-z0-9_]+:\s*$/.test(l)) { cur = { lv: 0, jobs: 0, main: 0, un: 0 }; continue; }
+    const k = l.match(/^  ([a-z0-9_]+):\s*$/); if (k) { cur = { lv: 0, jobs: 0, main: 0, un: 0, key: k[1] }; continue; }
     const m = cur && l.match(/^    ([a-z_]+):\s*(.*?)\s*(#.*)?$/); if (!m) continue;
-    if (m[1] === 'id') out.ws[Number(m[2])] = cur;
+    if (m[1] === 'id') { out.ws[Number(m[2])] = cur; wsKeyId[cur.key] = Number(m[2]); }
     else if (m[1] === 'level') cur.lv = Number(m[2]);
     else if (m[1] === 'jobs') cur.jobs = m[2].replace(/[[\]]/g, '').split(',').map(x => JOBS.indexOf(x.trim())).filter(x => x > 0).reduce((a, j) => a | (1 << j), 0);
     else if (m[1] === 'main_job_only') cur.main = m[2] === 'true' ? 1 : 0;
     else if (m[1] === 'unlock') cur.un = 1;
   }
   for (const k of Object.keys(out.ws)) { const w = out.ws[k]; out.ws[k] = [w.lv, w.jobs, w.main, w.un]; }
+  // WSの修正項目とTP補正（scripts/actions/weaponskills/<名前>.lua の params。アドゥリン以降の修正の中の値を外の値に重ねる）
+  // out.wsStat[id] = { m: [[能力, 下, 上]], f: [fTP×3], c/a/k: [クリティカル/命中/攻撃力×3], d: 効果時間がTPで変わる, h: [回復×3] }
+  const num = s => { s = s.trim(); if (/^-?[\d.]+$/.test(s)) return [Number(s), Number(s)];
+    let m = s.match(/^(-?[\d.]+)\s*\+\s*\(?\s*player:getMerit\([^)]*\)\s*\*\s*([\d.]+)\s*\)?$/); if (m) return [Number(m[1]) + Number(m[2]), Number(m[1]) + 5 * Number(m[2])];
+    m = s.match(/^\(?\s*player:getMerit\([^)]*\)\s*\*\s*([\d.]+)\s*\)?$/); if (m) return [Number(m[1]), 5 * Number(m[1])];
+    return null; };
+  const tbl = s => { const m = s.match(/^\{([^}]*)\}/); if (!m) return null; const v = m[1].split(',').map(x => Number(x.trim())).filter(x => !Number.isNaN(x)); return v.length === 3 ? v : null; };
+  const parse = text => {
+    const p = {};
+    for (const m of text.matchAll(/params\.(\w+)\s*=\s*(\{[^}]*\}|.*?)(?=\s+params\.|\s*--|\s*$)/gm)) p[m[1]] = m[2];
+    return p;
+  };
+  const files = Object.keys(wsKeyId);
+  const texts = {};
+  for (let i = 0; i < files.length; i += 20) await Promise.all(files.slice(i, i + 20).map(async f => {
+    const r = await fetch(`https://raw.githubusercontent.com/LandSandBoat/server/base/scripts/actions/weaponskills/${f}.lua`);
+    if (r.ok) texts[f] = await r.text();
+  }));
+  out.wsStat = {};
+  for (const [f, text] of Object.entries(texts)) {
+    const body = text.replace(/^\s*--.*$/gm, '');
+    const a = body.search(/if xi\.settings\.main\.USE_ADOULIN_WEAPON_SKILL_CHANGES then/);
+    let outer = body, inner = '';
+    if (a >= 0) { const e = body.indexOf('\n    end', a); inner = body.slice(a, e < 0 ? undefined : e); outer = body.slice(0, a) + (e < 0 ? '' : body.slice(e)); }
+    const p = { ...parse(outer), ...parse(inner) };
+    const st = {};
+    const mods = [];
+    for (const s of ['str', 'dex', 'vit', 'agi', 'int', 'mnd', 'chr']) { const v = p[s + '_wsc'] && num(p[s + '_wsc']); if (v && v[1] > 0) mods.push([s.toUpperCase(), Math.round(v[0] * 100), Math.round(v[1] * 100)]); }
+    if (mods.length) st.m = mods;
+    if (p.ftpMod && tbl(p.ftpMod)) st.f = tbl(p.ftpMod);
+    if (p.critVaries && tbl(p.critVaries)) st.c = tbl(p.critVaries);
+    if (p.accVaries && tbl(p.accVaries)) st.a = tbl(p.accVaries);
+    if (p.atkVaries && tbl(p.atkVaries)) st.k = tbl(p.atkVaries);
+    if (/duration[^\n]*\btp\b/.test(body)) st.d = 1;
+    const h = (inner.match(/fTP\(tp,\s*(\{[^}]*\})\)/) || outer.match(/fTP\(tp,\s*(\{[^}]*\})\)/) || [])[1];
+    if (h && tbl(h)) st.h = tbl(h);
+    if (p.multiHitfTP && /true/.test(p.multiHitfTP)) st.mh = 1;
+    if (Object.keys(st).length) out.wsStat[wsKeyId[f]] = st;
+  }
+  console.log('WSの修正・TP', Object.keys(out.wsStat).length, '/', files.length, '（スクリプト', Object.keys(texts).length, '）');
 }
 // ジョブごとのスキルの段位（data/skills.yaml の ranks）：ranks[スキル名][ジョブ番号] = 'A+' など
 {

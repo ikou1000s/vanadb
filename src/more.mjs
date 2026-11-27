@@ -277,13 +277,34 @@ ${sc ? `<h2>スクロール</h2><p><a class="bd cat" href="${BASE}item/${sc}.htm
     return [0, '専用の武器', 'wp', 3];
   };
   const wsTag = h => (h[1] ? `<span class="tag ab-${h[2]}">${h[1]}</span>` : '');
+  // 修正項目とTP補正（lsb.wsStat[id]：m=[[能力,下,上]]、f=fTP、c=クリティカル、a=命中、k=攻撃力、d=効果時間がTPで変わる、h=回復などの倍率。値はTP1000/2000/3000）
+  const n2 = x => String(+Number(x).toFixed(2));
+  const varies = v => v && new Set(v).size > 1;
+  const wsMod = w => {
+    const x = lsb.wsStat && lsb.wsStat[w.id];
+    if (!x || !x.m) return '<span class="nl">—</span>';
+    return x.m.map(([s, lo, hi]) => `<span class="wm">${s}${lo === hi ? lo : `${lo}〜${hi}`}%${lo === hi ? '' : '<small>メリポ</small>'}</span>`).join('');
+  };
+  const wsTp = w => {
+    const x = lsb.wsStat && lsb.wsStat[w.id];
+    if (!x) return '<span class="nl">—</span>';
+    const t = [];
+    if (varies(x.f)) t.push(['ダメージ', x.f.map(n2).join(' / ')]);
+    if (varies(x.c)) t.push(['クリティカル', x.c.map(v => n2(v <= 1 ? v * 100 : v)).join(' / ') + '%']);
+    if (varies(x.a)) t.push(['命中', x.a.map(v => '+' + n2(v)).join(' / ')]);
+    if (varies(x.k)) t.push(['攻撃力', x.k.map(v => '×' + n2(v)).join(' / ')]);
+    if (x.d) t.push(['効果時間', 'TPで延びる']);
+    if (!x.f && varies(x.h)) t.push(['回復', x.h.map(v => '×' + n2(v)).join(' / ')]);
+    if (!t.length) return x.f ? '<span class="tpn">TPで変わらない</span>' : '<span class="nl">—</span>';
+    return t.map(([k, v]) => `<span class="tp"><i>${k}</i>${v}</span>`).join('');
+  };
   const wsSort = (a, b) => { const x = wsHow(a), y = wsHow(b); return (x[3] - y[3]) || (x[0] - y[0]) || (a.id - b.id); };
   write('ws/index.html', head(`ウェポンスキルの一覧（${[...wss.values()].length}件）｜覚えるスキル値・使えるジョブ・連携属性｜${SITE_SHORT}`, 'FF11のウェポンスキルを武器の種類ごとに、覚えるスキル値の順で一覧。使えるジョブ、クエスト・メリポ・エンピリアンなどの覚え方、連携属性（光・闇・核熱・分解…）つき。', `${ORIGIN}/ws/index.html`)
     + `<main class="wide">${crumb('ウェポンスキル')}<h1>ウェポンスキル <span class="cnt">${[...wsBySkill.values()].flat().length}件</span></h1>
 <p class="lead">武器の種類ごとに、覚えるスキル値の順です。印の意味：<span class="tag ab-qu">クエスト</span>クエストで覚える　<span class="tag ab-mp">メリポ</span>メリットポイントで覚える　<span class="tag ab-mo">メインのみ</span>サポートジョブでは使えない　<span class="tag ab-wp">武器で習得</span>エンピリアン・ミシックなどの武器でWSポイントを貯めて覚える　<span class="tag ab-wp">レリック</span><span class="tag ab-wp">専用の武器</span>その武器を持つと使える。</p>
 <nav class="catnav"><div><span class="lbl">武器</span>${wsSkills.map(s => `<a href="#${wsKey(s)}">${esc(s)}</a>`).join('')}</div></nav>
-${wsSkills.map(s => `<h2 id="${wsKey(s)}">${esc(s)} <span class="cnt">${wsBySkill.get(s).length}件</span></h2><div class="tbl ws" data-ck="ws"><div class="r h"><div class="c-no">スキル</div><div class="c-n">名前</div><div class="c-jb">使えるジョブ</div><div class="c-sc">連携属性</div><div class="c-x">用語辞典</div></div>${wsBySkill.get(s).sort(wsSort).map(w => { const h = wsHow(w); return `<div class="r" data-id="${w.id}"><div class="c-no">${h[0] || '—'}</div><div class="c-n"><b>${esc(w.ja)}</b>${wsTag(h)}<small>${esc(w.en)}</small></div><div class="c-jb">${jobGrid(lsb.ws && lsb.ws[w.id] ? lsb.ws[w.id][1] : 0)}</div><div class="c-sc">${scCell(w) || '<span class="nl">—</span>'}</div><div class="c-x"><a href="${ffo(w.ja)}" rel="noopener" target="_blank">見る</a></div></div>`; }).join('')}</div>`).join('')}
-<p class="src">覚えるスキル値・使えるジョブ・覚え方は、有志が公開しているデータから。</p>
+${wsSkills.map(s => `<h2 id="${wsKey(s)}">${esc(s)} <span class="cnt">${wsBySkill.get(s).length}件</span></h2><div class="tbl ws" data-ck="ws"><div class="r h"><div class="c-no">スキル</div><div class="c-n">名前</div><div class="c-jb">使えるジョブ</div><div class="c-wm">修正</div><div class="c-tp">TP補正（TP1000 / 2000 / 3000）</div><div class="c-sc">連携属性</div><div class="c-x">用語辞典</div></div>${wsBySkill.get(s).sort(wsSort).map(w => { const h = wsHow(w); return `<div class="r" data-id="${w.id}"><div class="c-no">${h[0] || '—'}</div><div class="c-n"><b>${esc(w.ja)}</b>${wsTag(h)}<small>${esc(w.en)}</small></div><div class="c-jb">${jobGrid(lsb.ws && lsb.ws[w.id] ? lsb.ws[w.id][1] : 0)}</div><div class="c-wm">${wsMod(w)}</div><div class="c-tp">${wsTp(w)}</div><div class="c-sc">${scCell(w) || '<span class="nl">—</span>'}</div><div class="c-x"><a href="${ffo(w.ja)}" rel="noopener" target="_blank">見る</a></div></div>`; }).join('')}</div>`).join('')}
+<p class="src">覚えるスキル値・使えるジョブ・覚え方・修正・TP補正は、有志が公開しているデータから。修正・TP補正の数字は目安です（資料によって少し違います）。「ダメージ」はダメージの倍率（fTP）、「回復」は回復量の倍率です。</p>
 </main><script src="${BASE}list.js?v=${VER}"></script>` + foot);
 
   // ── アビリティ（ジョブごと・覚えるレベルの順）
@@ -370,7 +391,7 @@ ${rest.length ? `<h2 id="ab-other">そのほか <span class="cnt">${rest.length}
     const wsMine = [...wsBySkill.entries()].map(([sk, l]) => [sk, l.filter(w => lsb.ws && lsb.ws[w.id] && (lsb.ws[w.id][1] & bit)).sort(wsSort)]).filter(([, l]) => l.length)
       .sort((a, b) => wsSkills.indexOf(a[0]) - wsSkills.indexOf(b[0]));
     const wsN = wsMine.reduce((a, [, l]) => a + l.length, 0);
-    const wsHtml = wsMine.map(([sk, l]) => `<h4>${esc(sk)} <span class="cnt">${l.length}件</span></h4><div class="tbl jws"><div class="r h"><div class="c-no">スキル</div><div class="c-n">名前</div><div class="c-sc">連携属性</div></div>${l.map(w => { const h = wsHow(w); return `<div class="r"><div class="c-no">${h[0] || '—'}</div><div class="c-n"><b>${esc(w.ja)}</b>${wsTag(h)}<small>${esc(w.en)}</small></div><div class="c-sc">${scCell(w) || '<span class="nl">—</span>'}</div></div>`; }).join('')}</div>`).join('');
+    const wsHtml = wsMine.map(([sk, l]) => `<h4>${esc(sk)} <span class="cnt">${l.length}件</span></h4><div class="tbl jws"><div class="r h"><div class="c-no">スキル</div><div class="c-n">名前</div><div class="c-wm">修正</div><div class="c-tp">TP補正（1000 / 2000 / 3000）</div><div class="c-sc">連携属性</div></div>${l.map(w => { const h = wsHow(w); return `<div class="r"><div class="c-no">${h[0] || '—'}</div><div class="c-n"><b>${esc(w.ja)}</b>${wsTag(h)}<small>${esc(w.en)}</small></div><div class="c-wm">${wsMod(w)}</div><div class="c-tp">${wsTp(w)}</div><div class="c-sc">${scCell(w) || '<span class="nl">—</span>'}</div></div>`; }).join('')}</div>`).join('');
     // ジョブ特性（覚えるLvの順・ランク）
     const tr = ((lsb && lsb.traits) || []).filter(t => t[1] === j.id).sort((a, b) => (a[2] - b[2]) || (a[0] - b[0]) || (a[3] - b[3]));
     const maxRank = new Map(); for (const t of tr) maxRank.set(t[0], Math.max(maxRank.get(t[0]) || 0, t[3]));

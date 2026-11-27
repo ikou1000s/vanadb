@@ -413,7 +413,13 @@ p.src{color:var(--sub);font-size:12px;margin-top:18px}
 .rk{display:inline-block;margin-left:6px;font-size:11px;font-weight:700;color:#1b1405;background:var(--gold);border-radius:4px;padding:0 4px;vertical-align:1px}
 .tbl.ab .r{grid-template-columns:52px 320px 140px 80px 70px 70px}
 .tbl.ab.nolv .r{grid-template-columns:320px 140px 80px 70px 70px}
-.tbl.ws .r{grid-template-columns:56px 280px 220px 190px 70px}
+.tbl.ws .r{grid-template-columns:56px 250px 220px 120px 200px 150px 60px}
+/* WSの修正・TP補正 */
+.c-wm,.c-tp{display:flex;flex-direction:column;gap:1px;font-size:12.5px;font-variant-numeric:tabular-nums}
+.c-wm .wm{white-space:nowrap}.c-wm small{font-size:10.5px;color:#9cc4ff;margin-left:3px}
+.c-tp .tp{white-space:nowrap}.c-tp .tp i{font-style:normal;color:var(--sub);font-size:11.5px;margin-right:5px}
+.c-tp .tpn{color:var(--sub);font-size:12px}
+@media (max-width:860px){.tbl.ws .c-wm,.tbl.jws .c-wm{flex:0 0 auto;flex-direction:row;gap:0 6px;padding-left:56px!important}.tbl.ws .c-tp,.tbl.jws .c-tp{flex:1 1 auto;flex-direction:row;flex-wrap:wrap;gap:0 10px}}
 
 /* オーグメント（augment.html） */
 .tbl.aug .r{grid-template-columns:minmax(170px,1.3fr) 64px minmax(260px,2.4fr) minmax(200px,1.6fr)}
@@ -423,7 +429,7 @@ p.src{color:var(--sub);font-size:12px;margin-top:18px}
 
 /* ジョブ別ページ：アビリティ・魔法・WS・特性 */
 .tbl.jsp .r{grid-template-columns:60px 320px 120px 60px}
-.tbl.jws .r{grid-template-columns:56px 320px 200px}
+.tbl.jws .r{grid-template-columns:56px 280px 120px 200px 170px}
 .tbl.jtr .r{grid-template-columns:60px 360px}
 .catnav a .cnt{font-size:11px;color:var(--gold);margin-left:4px}
 @media (max-width:860px){
