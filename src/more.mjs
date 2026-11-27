@@ -151,13 +151,17 @@ ${catNavItems(key)}${key === 'other' ? otherNav(list, grp, pages) : ''}${pager(p
   const foodById = new Map(foods.map(f => [f.i, f]));
   // アイテム1件のページ（作り方・使い道・スクロールの魔法）
   const SK = r => Object.entries(r.skills).map(([k, v]) => `<span class="bd">${esc(k)} ${v}</span>`).join('');
+  // 同じ名前のアイテムは、題名に品番を足して区別する
+  const jaCount = new Map();
+  for (const [id] of itemCatOf) { const j = (items.get(id) || {}).ja; jaCount.set(j, (jaCount.get(j) || 0) + 1); }
   for (const [id, c] of itemCatOf) {
     const it = items.get(id), d = ((desc.get(id) || {}).ja || '').trim();
+    const tTag = jaCount.get(it.ja) > 1 ? `（No.${id}）` : '';
     const cj = ITEM_CATS.find(x => x[0] === c);
     const made = madeBy.get(id) || [];
     const uses = [...(usedIn.get(id) || [])].filter(x => items.get(x));
     const sp = c === 'scroll' ? scrollSpell.get((it.en || '').replace(/^scroll of /i, '').toLowerCase()) : null;
-    write(`item/${id}.html`, head(`${it.ja}｜${cj[1]}｜${SITE_SHORT}`,
+    write(`item/${id}.html`, head(`${it.ja}${tTag}｜${cj[1]}｜${SITE_SHORT}`,
       `${it.ja}（${cj[1]}）の説明${made.length ? '・作り方' : ''}${uses.length ? '・使い道（作れる物）' : ''}。` + d.replace(/\n/g, ' ').slice(0, 80), `${ORIGIN}/item/${id}.html`)
       + `<main class="item">${crumb(`<a href="${BASE}items/${c}.html">${esc(cj[1])}</a>`, esc(it.ja))}
 <section class="ihead"><div class="nm"><h1>${esc(it.ja)}</h1><small>${esc(it.en)}</small></div>

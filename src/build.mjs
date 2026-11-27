@@ -296,6 +296,25 @@ function writeItemPages() {
   const ffo = ja => `https://wiki.ffo.jp/search.cgi?CCC=%E6%84%9B&amp;Command=Search&amp;qf=${encodeURIComponent(ja)}&amp;order=match&amp;ffotype=title&amp;type=title`;
   const bg = en => `https://www.bg-wiki.com/ffxi/${encodeURIComponent((en || '').replace(/ /g, '_'))}`;
 
+  // 同じ名前の装備（レリック等の段階違い）は、題名に Lv/IL（それでも重なればD値→品番）を足して区別する
+  const lvTag = it => it.item_level ? `IL${it.item_level}` : `Lv${it.level}`;
+  const titleTag = new Map();
+  {
+    const byJa = new Map();
+    for (const e of equip) { if (!byJa.has(e.it.ja)) byJa.set(e.it.ja, []); byJa.get(e.it.ja).push(e); }
+    for (const list of byJa.values()) {
+      if (list.length < 2) continue;
+      const cnt = (f) => { const m = new Map(); for (const o of list) m.set(f(o), (m.get(f(o)) || 0) + 1); return m; };
+      const c1 = cnt(o => lvTag(o.it));
+      const c2 = cnt(o => lvTag(o.it) + '|' + (o.it.damage || ''));
+      for (const o of list) {
+        let t = lvTag(o.it);
+        if (c1.get(t) > 1) t += o.it.damage && c2.get(t + '|' + o.it.damage) === 1 ? `・D${o.it.damage}` : `・No.${o.id}`;
+        titleTag.set(o.id, t);
+      }
+    }
+  }
+
   for (const e of equip) {
     const { id, it, text, st, skill } = e;
     const slot = slotNames(it.slots);
@@ -317,7 +336,7 @@ function writeItemPages() {
     const mark = o => (o.id === id ? ' me' : '');
     const tbl = list => `<div class="tbl">${tableHead}${list.map(o => rowHtml(o).replace('<div class="r"', `<div class="r${mark(o)}"`)).join('')}</div>`;
     const descText = `${it.ja}（${kind}・Lv${it.level}${it.item_level ? '・IL' + it.item_level : ''}）の性能・装備できるジョブ・${recs.length ? '合成レシピ・' : ''}${variants.length > 1 ? '段階違い・' : ''}${sameLook.length > 1 ? '見た目が同じ装備・' : ''}性能が近い装備。` + text.replace(/\n/g, ' ').slice(0, 70);
-    const html = head(`${it.ja}｜${kind}の性能｜${SITE_SHORT}`, descText, `${ORIGIN}/item/${id}.html`)
+    const html = head(`${it.ja}${titleTag.has(id) ? `（${titleTag.get(id)}）` : ''}｜${kind}の性能｜${SITE_SHORT}`, descText, `${ORIGIN}/item/${id}.html`)
       + `<main class="item"><p class="crumb"><a href="${BASE}">トップ</a> › ${cat ? `<a href="${BASE}list/${cat[0]}.html">${esc(cat[1])}の一覧</a>` : esc(slot)} › ${esc(it.ja)}</p>
 <section class="ihead"><div class="nm"><h1>${esc(it.ja)}</h1><small>${esc(it.en)}</small></div>
 <div class="badges">${cat ? `<a class="bd cat" href="${BASE}list/${cat[0]}.html">${esc(cat[1])}</a>` : ''}<span class="bd">Lv${it.level}</span>${it.item_level ? `<span class="bd il">IL${it.item_level}</span>` : ''}${it.superior_level ? `<span class="bd">Su${it.superior_level}</span>` : ''}${it.damage ? `<span class="bd">D${it.damage}／隔${it.delay}</span>` : ''}${raceNames(it.races) ? `<span class="bd">${esc(raceNames(it.races))}</span>` : ''}${cover.length ? `<span class="bd cover" title="着ている間、${esc(cover.join('・'))}の枠には装備できません">${esc(cover.join('・'))}も覆う</span>` : ''}${rxBadges(id)}</div>
