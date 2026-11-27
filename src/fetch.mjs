@@ -20,7 +20,9 @@ for (const f of FILES) {
   fs.writeFileSync(path.join(DATA, f + '.lua'), t);
 }
 // いつのバージョンアップまで入っているか（最後の更新の日付と内容）
-const c = await fetch('https://api.github.com/repos/Windower/Resources/commits?per_page=100', { headers: GH }).then(r => r.json());
+// api.github.com は接続待ちで切れることがあるので、3回まで待って取り直す（2026-11-28）
+let c;
+for (let i = 0; ; i++) { try { c = await fetch('https://api.github.com/repos/Windower/Resources/commits?per_page=100', { headers: GH }).then(r => r.json()); break; } catch (e) { if (i >= 3) throw e; await new Promise(s => setTimeout(s, 3000 * (i + 1))); } }
 const last = c[0].commit;
 // 「November 10, 2026 FFXI Update」の形の物＝バージョンアップの取り込み
 const vu = c.map(x => x.commit.message.split('\n')[0]).map(m => /^([A-Z][a-z]+) (\d{1,2}), (\d{4}) FFXI Update/.exec(m)).find(Boolean);
