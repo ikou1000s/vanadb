@@ -15,7 +15,9 @@ const QUEST_AREAS = [['sandoria', 'サンドリア'], ['bastok', 'バストゥ�
 const MISSION_LINES = [['sandy', 'サンドリアミッション'], ['bastok', 'バストゥークミッション'], ['windurst', 'ウィンダスミッション'], ['roz', 'ジラートの幻影'], ['cop', 'プロマシアの呪縛'], ['toau', 'アトルガンの秘宝'], ['wotg', 'アルタナの神兵'],
   ['acp', '石の見る夢'], ['mkd', '戦慄！モグ祭りの夜'], ['asa', 'シャントット帝国の陰謀'], ['abyssea', 'アビセア'], ['adoulin', 'アドゥリンの魔境'], ['rov', 'ヴァナ・ディールの星唄'], ['tvr', '蝕世のエンブリオ'], ['assault', 'アサルト'], ['campaign', 'カンパニエ']];
 
-const get = async f => { const r = await fetch(RAW + f); if (!r.ok) throw new Error(`${f}: ${r.status}`); return r.text(); };
+// 通信が一時的に切れる（ECONNRESET）ことがあるので、3回まで待って取り直す（2026-11-28）
+const retry = async g => { for (let i = 0; ; i++) { try { return await g(); } catch (e) { if (i >= 3) throw e; await new Promise(s => setTimeout(s, 2000 * (i + 1))); } } };
+const get = async f => { const r = await retry(() => fetch(RAW + f)); if (!r.ok) throw new Error(`${f}: ${r.status}`); return r.text(); };
 const unq = s => s.replace(/\\(['"\\])/g, '$1');
 const tr = new Map();
 for (const m of (await get('translations_ja.lua')).matchAll(/\[\s*"((?:[^"\\]|\\.)*)"\s*\]\s*=\s*"((?:[^"\\]|\\.)*)"/g)) tr.set(unq(m[1]), unq(m[2]));

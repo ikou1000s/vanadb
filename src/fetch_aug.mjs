@@ -8,7 +8,9 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DATA = path.join(ROOT, 'data');
 const RAW = 'https://raw.githubusercontent.com/LandSandBoat/server/base/';
-const get = async f => { const r = await fetch(RAW + f); if (!r.ok) throw new Error(`${f}: ${r.status}`); return r.text(); };
+// 通信が一時的に切れる（ECONNRESET）ことがあるので、3回まで待って取り直す（2026-11-28）
+const retry = async g => { for (let i = 0; ; i++) { try { return await g(); } catch (e) { if (i >= 3) throw e; await new Promise(s => setTimeout(s, 2000 * (i + 1))); } } };
+const get = async f => { const r = await retry(() => fetch(RAW + f)); if (!r.ok) throw new Error(`${f}: ${r.status}`); return r.text(); };
 
 const [enumTxt, sqlTxt, magTxt, pyxTxt] = await Promise.all([
   get('scripts/enum/item.lua'), get('sql/augments.sql'), get('scripts/globals/magian_data.lua'), get('scripts/globals/abyssea/sturdypyxis/augmented_item.lua'),

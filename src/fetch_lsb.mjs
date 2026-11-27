@@ -6,7 +6,9 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DATA = path.join(ROOT, 'data');
 const RAW = 'https://raw.githubusercontent.com/LandSandBoat/server/base/sql/';
-const get = async f => { const r = await fetch(RAW + f + '.sql'); if (!r.ok) throw new Error(`${f}: ${r.status}`); return r.text(); };
+// 通信が一時的に切れる（ECONNRESET）ことがあるので、3回まで待って取り直す（2026-11-28）
+const retry = async g => { for (let i = 0; ; i++) { try { return await g(); } catch (e) { if (i >= 3) throw e; await new Promise(s => setTimeout(s, 2000 * (i + 1))); } } };
+const get = async f => { const r = await retry(() => fetch(RAW + f + '.sql')); if (!r.ok) throw new Error(`${f}: ${r.status}`); return r.text(); };
 // INSERT INTO `t` VALUES (...); の行を配列に（'…' と数値と @記号の式）
 const rows = t => [...t.matchAll(/^INSERT INTO `\w+` VALUES \((.*)\);/gm)].map(m => {
   const out = []; let cur = '', q = false;

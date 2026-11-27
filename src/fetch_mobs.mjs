@@ -9,7 +9,8 @@ const GH = { 'User-Agent': 'ff11-db', ...(process.env.GITHUB_TOKEN ? { Authoriza
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DATA = path.join(ROOT, 'data');
 const RAW = 'https://raw.githubusercontent.com/LandSandBoat/server/base/';
-const get = async f => { const r = await fetch(RAW + f); return r.ok ? r.text() : ''; };
+// 通信が一時的に切れる（ECONNRESET）ことがあるので、3回まで待って取り直す（2026-11-28 の自動作成がこれで落ちた）
+const get = async f => { for (let i = 0; ; i++) { try { const r = await fetch(RAW + f); return r.ok ? await r.text() : ''; } catch (e) { if (i >= 3) throw e; await new Promise(s => setTimeout(s, 2000 * (i + 1))); } } };
 
 // item_basic の名前 → アイテムID
 const basic = await get('sql/item_basic.sql');
