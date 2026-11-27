@@ -383,6 +383,6 @@ ${rest.length ? `<h2 id="ab-other">そのほか <span class="cnt">${rest.length}
 <section class="box" id="magic"><h2>魔法（${[...spCount.values()].reduce((a, b) => a + b, 0)}件）</h2><div class="tiles">${SPELL_TYPES.map(([, k, ja]) => tile(`${BASE}magic/${k}.html`, ja, spCount.get(k) || 0, ja[0], 'mg')).join('')}</div></section>
 <section class="box" id="ws"><h2>ウェポンスキル・アビリティ</h2><div class="tiles">${tile(`${BASE}ws/index.html`, 'ウェポンスキル', [...wsBySkill.values()].flat().length, '技', 'w')}${tile(`${BASE}ability/index.html`, 'アビリティ', [...abByType.values()].flat().length, '能', 'w')}</div></section>
 <section class="box" id="ki"><h2>だいじなもの（${[...kiByCat.values()].flat().length.toLocaleString()}件）</h2><div class="tiles">${kiCats.map(c => tile(`${BASE}ki/${KI_KEY[c] || 'other'}.html`, KI_JA[c] || c, kiByCat.get(c).length, (KI_JA[c] || c)[0], 'ki')).join('')}</div></section>`;
-  const counts = { foods: foods.length, items: [...itemCount.values()].reduce((a, b) => a + b, 0), ki: [...kiByCat.values()].flat().length, spells: [...spCount.values()].reduce((a, b) => a + b, 0), ws: [...wsBySkill.values()].flat().length, ab: [...abByType.values()].flat().length };
+  const counts = { foods: foods.length, items: [...itemCount.values()].reduce((a, b) => a + b, 0), ki: [...kiByCat.values()].flat().length, spells: [...spCount.values()].reduce((a, b) => a + b, 0), ws: [...wsBySkill.values()].flat().length, ab: [...abByType.values()].flat().length, trust: spCount.get('trust') || 0 };
   return { home, urls, counts, itemCatOf, byJob };
 }
