@@ -478,6 +478,11 @@ p.src{color:var(--sub);font-size:12px;margin-top:18px}
 .tag.mx{display:inline-block;font-size:10.5px;font-weight:700;color:#1b1405;background:var(--gold);border-radius:4px;padding:0 5px;margin-right:6px;vertical-align:1px}
 @media (min-width:861px){ .tbl.aug .r{grid-template-columns:200px 130px 400px minmax(180px,1fr)} }
 @media (max-width:860px){ .tbl.aug .c-fx,.tbl.aug .c-bt{flex:1 1 100%;min-width:0;white-space:normal;display:block} .tbl.aug .c-fx .aug{display:inline-block;max-width:100%;white-space:normal} }
+/* 装備ページのオーグメントの節 */
+@media (min-width:861px){ .tbl.aug.ip .r{grid-template-columns:110px 64px 360px minmax(200px,1fr)} }
+.tbl.aug .r.me{background:rgba(214,178,94,.10)}
+.tbl.augp .r{grid-template-columns:minmax(220px,max-content) minmax(160px,1fr)}
+@media (max-width:860px){ .tbl.augp .r{display:flex;flex-wrap:wrap;gap:0 8px} .tbl.augp .r>div{padding:4px 8px;min-width:0;white-space:normal} }
 
 /* 地図 */
 .maps{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0}

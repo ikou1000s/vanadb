@@ -330,8 +330,9 @@ ${Object.keys(st.cond).length ? `<p class="note">※潜在能力などの条件�
 ${variants.length > 1 ? `<h2>段階違い（＋1・＋2…）</h2>${tbl(variants)}` : ''}
 ${seriesOk ? `<h2>同じシリーズ</h2>${tbl(series.sort((a, b) => catOrder(a) - catOrder(b) || a.it.ja.localeCompare(b.it.ja, 'ja')))}` : ''}
 ${sameLook.length > 1 ? `<h2>見た目が同じ装備（${sameLook.length}件）</h2><p class="note">ゲームの中で同じ見た目になる装備です（同じ部位でモデル番号が同じ物）。見た目の固定（ロックスタイル）選びに。${cat ? ` <a href="${BASE}looks/${cat[0]}.html">${esc(cat[1])}の見た目で探す</a>` : ''}</p>${tbl(sameLook.slice(0, 40))}${sameLook.length > 40 ? `<p class="note">ほか${sameLook.length - 40}件。</p>` : ''}` : ''}
+${au.pageHtml.get(id) || ''}
 <h2>入手方法</h2>${acqHtml(id)}${recs.length ? '<h3>合成</h3>' : ''}${recs.length ? `<p class="note">合成で作れます（数値は参考）。</p>${recs.slice(0, 4).map(recipeHtml).join('')}` : ''}
-<p class="note">${recs.length ? 'ほかの入手方法' : 'ドロップ・報酬・お店などの入手方法'}と、オーグメント（追加の性能）の中身は、<a href="${ffo(it.ja)}" rel="noopener" target="_blank">FF11用語辞典の「${esc(it.ja)}」</a>を見てください。</p>
+<p class="note">${recs.length ? 'ほかの入手方法' : 'ドロップ・報酬・お店などの入手方法'}${au.pageHtml.has(id) ? 'と、ほかのオーグメント（オデシーなど）' : 'と、オーグメント（追加の性能）の中身'}は、<a href="${ffo(it.ja)}" rel="noopener" target="_blank">FF11用語辞典の「${esc(it.ja)}」</a>を見てください。</p>
 ${uses.length ? `<h2>この装備を使っているセット（姉妹ブログ）</h2><ul class="uses">${uses.map(u => `<li><a href="${u.url}">${esc(u.job)}：${esc(u.set)}</a> <span class="k">（${esc(u.parts.join('・'))}）</span></li>`).join('')}</ul>` : ''}
 ${sim.length ? `<h2>性能が近い装備（同じ${esc(kind)}・同じ帯）</h2>${tbl(sim)}` : ''}
 ${sameLinks ? `<h2>同じ${cat && cat[3] === 'weapon' ? '種類' : '部位'}（${esc(kind)}）を性能の大きい順で見る</h2><p class="same">${sameLinks}</p>` : ''}

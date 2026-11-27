@@ -23,7 +23,7 @@ const AID = { 746: '（遠隔）', 747: '（遠隔）', 761: '（遠隔）', 764
 export function writeAugment(ctx) {
   const { items, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE_SHORT, VER, tile, hasPage } = ctx;
   const f = path.join(DATA, 'aug.json');
-  if (!fs.existsSync(f)) return { home: '', urls: [], count: 0, byItem: new Map() };
+  if (!fs.existsSync(f)) return { home: '', urls: [], count: 0, byItem: new Map(), pageHtml: new Map() };
   const A = JSON.parse(fs.readFileSync(f, 'utf8'));
   // WS・アビリティの名前は英→日の表で置き換える（"Shining Blade:DMG" → シャインブレードのダメージ）
   const names = new Map();
@@ -64,6 +64,23 @@ export function writeAugment(ctx) {
   const range = x => { const lo = ja(x[3], x[0]), hi = ja(x[4], x[0]); if (lo !== hi && (lo.match(/[+-]\d/g) || []).length > 1) return `${lo} 〜 ${hi}`; const m = /^(.*?)([+-]\d+%?)$/.exec(lo), n = /([+-]\d+%?)$/.exec(hi); return m && n && lo !== hi ? `${m[1]}${m[2]}〜${n[1].replace(/^\+/, '')}` : lo; };
   for (const p of px) if (!byItem.has(p.id)) byItem.set(p.id, null);
 
+  // 装備ページに入れる節（品番 → HTML）。試練は段ごとの値・持ち込む物・回数、箱は候補の最大の値
+  const pageHtml = new Map();
+  const chainOf = t => { const l = [t]; let c = t; while (byNo.has(c.prev) && l.length < 50) { c = byNo.get(c.prev); l.unshift(c); } return l; };
+  for (const [id, l] of weapons) {
+    const ends = maxOf(l);
+    const body = ends.map((end, k) => {
+      const ch = chainOf(end);
+      return `${ends.length > 1 ? `<h3>つながり${k + 1}（全${ch.length}段・最後は試練${end.no}）</h3>` : ''}<div class="tbl aug ip"><div class="r h"><div class="c-n">段</div><div class="c-lv">試練</div><div class="c-fx">クリアで付くオーグメント</div><div class="c-bt">持ち込む物・必要な回数</div></div>`
+        + ch.map((t, i) => `<div class="r${t === end ? ' me' : ''}"><div class="c-n">${i + 1}段目${t === end ? ` ${MAX}` : ''}</div><div class="c-lv">${t.no}</div><div class="c-fx">${t.rew.augs.length ? augList(t.rew.augs) : '<span class="nl">—</span>'}</div><div class="c-bt">${t.req.id ? (t.req.id === id ? esc(iname(id)) : ilink(t.req.id)) + (t.req.augs.length ? ` <small>（${augList(t.req.augs)}）</small>` : '') : '<span class="nl">—</span>'}${t.num ? ` <small class="nl">／${t.num}回</small>` : ''}</div></div>`).join('') + '</div>';
+    }).join('');
+    pageHtml.set(id, `<h2 id="aug">オーグメント（魔法試練で固定で付く）</h2><p class="note">マジアンの試練を段ごとに進めると、毎回同じ値が付きます。前の段の報酬を持ち込んで次の段へ進みます（オーグメントが付く段だけ。「必要な回数」は試練の目標の数。番号・回数は参考）。<a href="${BASE}augment.html#magian">オーグメント一覧で見る</a></p>${body}`);
+  }
+  for (const p of px) {
+    const cand = p.augs.map(x => `<div class="r"><div class="c-n"><b>${esc(ja(x[4], x[0]))}</b></div><div class="c-fx"><small class="nl">幅：${esc(range(x))}</small></div></div>`).join('');
+    pageHtml.set(p.id, (pageHtml.get(p.id) || '') + `<h2 id="aug-pyxis">オーグメント（アビセアの箱で付く）</h2><p class="note">${esc(zone(p.zone))}の頑丈な箱から出ます。下の候補のうちいくつかが付きます（どれが付くか・値はランダム）。太字は付く時の最大の値です。<a href="${BASE}augment.html#pyxis">オーグメント一覧で見る</a></p><div class="tbl augp"><div class="r h"><div class="c-n">候補（最大の値）</div><div class="c-fx">幅</div></div>${cand}</div>`);
+  }
+
   const rel = 'augment.html';
   const html = head(`オーグメント一覧｜魔法試練で固定で付く値・アビセアの箱の幅｜${SITE_SHORT}`,
     `FF11のオーグメントのうち、魔法試練（マジアン）の報酬で決まって付く値${tr.length}件と、アビセアの箱から出る装備${px.length}品の候補と幅。`, `${ORIGIN}/${rel}`)
@@ -81,5 +98,5 @@ ${px.map(p => `<div class="r" data-id="${p.id}"><div class="c-n">${ilink(p.id)}<
 <p class="note">元データ：有志が公開しているデータ。英語の表記を、ゲーム内の日本語の略し方（攻・飛攻・D・隔など）に置き換えています。字にマウスを乗せると元の英語が出ます。今のゲームと違う所があり得ます（試練の番号・回数は参考）。</p></main><script src="${BASE}list.js?v=${VER}"></script>` + foot;
   fs.writeFileSync(path.join(SITE, rel), html);
   const home = tile(`${BASE}augment.html`, 'オーグメント', tr.length + px.length, '強', 'ex');
-  return { home, urls: [`${ORIGIN}/${rel}`], count: tr.length + px.length, byItem };
+  return { home, urls: [`${ORIGIN}/${rel}`], count: tr.length + px.length, byItem, pageHtml };
 }
