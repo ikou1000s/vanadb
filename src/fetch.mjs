@@ -74,6 +74,8 @@ try { await import('./fetch_synergy.mjs'); } catch (e) { console.log('錬成の�
 await import('./fetch_aug.mjs');
 // お店で買える物（失敗しても止めない）
 try { await import('./fetch_shops.mjs'); } catch (e) { console.log('お店の取り込みに失敗', e.message); }
+// HELM（収穫・発掘・伐採・採掘）で取れる物（失敗しても止めない）
+try { await import('./fetch_helm.mjs'); } catch (e) { console.log('HELMの取り込みに失敗', e.message); }
 
 // ドロップ・ぬすむ（LandSandBoat・GPLv3）
 await import('./fetch_mobs.mjs');
