@@ -32,7 +32,7 @@ export function writeAugment(ctx) {
     for (const v of readLua(p).values()) if (v && v.en && v.ja) names.set(v.en, v.ja);
   }
   const ja = (txt, id) => {
-    let s = txt.replace(/"/g, '').replace(/'/g, '');
+    let s = txt.replace(/"/g, '').replace(/'/g, '').replace(/(dmg\. taken) ?-(\d)01%/gi, '$1-$2%');
     const ws = /^(.+?):\s*DMG/.exec(s);
     if (ws && names.has(ws[1].trim())) s = s.replace(ws[1], names.get(ws[1].trim()));
     const pen = /^Enhances (.+) effect$/i.exec(s);
@@ -49,8 +49,14 @@ export function writeAugment(ctx) {
   const tr = A.trials.filter(t => t.rew.augs.length && items.get(t.rew.id));
   const byW = new Map(); for (const t of tr) { if (!byW.has(t.rew.id)) byW.set(t.rew.id, []); byW.get(t.rew.id).push(t); }
   const weapons = [...byW].sort((a, b) => iname(a[0]).localeCompare(iname(b[0]), 'ja'));
+  // つながりの終わり＝ほかの試練の「前の試練」になっていない物。段数は前をたどって数える
+  const byNo = new Map(tr.map(t => [t.no, t]));
+  const prevs = new Set(tr.map(t => t.prev));
+  const steps = t => { let n = 1, c = t; while (c && byNo.has(c.prev) && n < 50) { c = byNo.get(c.prev); n++; } return [n, c]; };
+  const maxOf = l => l.filter(t => !prevs.has(t.no)).sort((a, b) => a.no - b.no);
+  const MAX = '<span class="tag mx">最大</span>';
   const byItem = new Map(); // 装備ページ用：品番 → 文
-  for (const [id, l] of weapons) byItem.set(id, l.sort((a, b) => a.no - b.no).map(t => ja(t.rew.augs.map(x => x[2]).join(' '), t.rew.augs[0][0])));
+  for (const [id, l] of weapons) byItem.set(id, maxOf(l).map(t => ja(t.rew.augs.map(x => x[2]).join(' '), t.rew.augs[0][0])));
   // アビセアの箱：候補と幅
   const px = A.pyxis.filter(p => items.get(p.id)).sort((a, b) => iname(a.id).localeCompare(iname(b.id), 'ja'));
   const zj = { KONSCHTAT: 'コンシュタット', TAHRONGI: 'タロンギ', LA_THEINE: 'ラテーヌ', ATTOHWA: 'アットワ', MISAREAUX: 'ミザレオ', VUNKERL: 'ブンカール', ALTEPA: 'アルテパ', ULEGUERAND: 'ウルガラン', GRAUBERG: 'グロウベルグ' };
@@ -61,16 +67,17 @@ export function writeAugment(ctx) {
   const rel = 'augment.html';
   const html = head(`オーグメント一覧｜魔法試練で固定で付く値・アビセアの箱の幅｜${SITE_SHORT}`,
     `FF11のオーグメントのうち、魔法試練（マジアン）の報酬で決まって付く値${tr.length}件と、アビセアの箱から出る装備${px.length}品の候補と幅。`, `${ORIGIN}/${rel}`)
-    + `<main class="wide"><p class="crumb"><a href="${BASE}">トップ</a> › オーグメント</p><h1>オーグメント <span class="cnt">固定${tr.length}件・幅つき${px.length}品</span></h1>
-<p class="lead">オーグメントの中身が決まっている分を集めています。<b>固定</b>＝魔法試練（マジアンの試練）の報酬で、毎回同じ値が付く物。<b>幅つき</b>＝アビセアの頑丈な箱から出る装備で、候補の中から選ばれた物が、幅の中のどこかの値で付く物です。オデシー・ニャメなどの新しいコンテンツの分は、使ってよい公開データが無いため、まだ載せていません。</p>
+    + `<main class="wide"><p class="crumb"><a href="${BASE}">トップ</a> › オーグメント</p><h1>オーグメント <span class="cnt">魔法試練${weapons.length}武器・アビセアの箱${px.length}品</span></h1>
+<p class="lead">オーグメントの中身が決まっている分を集めています。<b>固定</b>＝魔法試練（マジアンの試練）の報酬で、毎回同じ値が付く物。<b>アビセアの箱</b>＝頑丈な箱から出る装備で、候補の中からいくつかが付く物。どちらも、付く値の<b>最大</b>だけを出しています。オデシー・ニャメなどの新しいコンテンツの分は、使ってよい公開データが無いため、まだ載せていません。</p>
 <div class="row"><label>名前</label><input type="search" class="tfilter" data-for="mg" placeholder="武器の名前・オーグメントで絞る（例：攻、ストアTP）"></div>
-<h2 id="magian">魔法試練で固定で付く（${weapons.length}武器・${tr.length}件）</h2>
-<div class="tbl aug" id="mg"><div class="r h"><div class="c-n">武器</div><div class="c-lv">試練</div><div class="c-fx">付くオーグメント</div><div class="c-bt">試練に持ち込む物</div></div>
-${weapons.map(([id, l]) => l.map((t, i) => `<div class="r" data-id="${id}"><div class="c-n">${i ? '<span class="nl">〃</span>' : ilink(id) + `<small>${esc((items.get(id) || {}).en || '')}</small>`}</div><div class="c-lv">${t.no}</div><div class="c-fx">${augList(t.rew.augs)}</div><div class="c-bt">${t.req.id ? ilink(t.req.id) + (t.req.augs.length ? ` <small>（${augList(t.req.augs)}）</small>` : '') : '<span class="nl">—</span>'}${t.num ? ` <small class="nl">×${t.num}</small>` : ''}</div></div>`).join('')).join('')}</div>
+<h2 id="magian">魔法試練で固定で付く（${weapons.length}武器）</h2>
+<p>試練を最後まで進めた時の、一番強いオーグメントだけを出しています（途中の段の値は省いています）。</p>
+<div class="tbl aug" id="mg"><div class="r h"><div class="c-n">武器</div><div class="c-lv">最後の試練</div><div class="c-fx">付くオーグメント（最大）</div><div class="c-bt">はじめに持ち込む物</div></div>
+${weapons.map(([id, l]) => maxOf(l).map((t, i) => { const [n, first] = steps(t); return `<div class="r" data-id="${id}"><div class="c-n">${i ? '<span class="nl">〃</span>' : ilink(id) + `<small>${esc((items.get(id) || {}).en || '')}</small>`}</div><div class="c-lv">${t.no}<small class="nl">（全${n}段）</small></div><div class="c-fx">${MAX}${augList(t.rew.augs)}</div><div class="c-bt">${first.req.id ? ilink(first.req.id) + (first.req.augs.length ? ` <small>（${augList(first.req.augs)}）</small>` : '') : '<span class="nl">—</span>'}</div></div>`; }).join('')).join('')}</div>
 <h2 id="pyxis">アビセアの箱で幅つきで付く（${px.length}品）</h2>
-<p>候補のうちいくつかが、表の幅の中の値で付きます（どれが付くかはランダム）。</p>
-<div class="tbl aug"><div class="r h"><div class="c-n">装備</div><div class="c-lv">エリア</div><div class="c-fx">候補と幅</div></div>
-${px.map(p => `<div class="r" data-id="${p.id}"><div class="c-n">${ilink(p.id)}<small>${esc((items.get(p.id) || {}).en || '')}</small></div><div class="c-lv">${esc(zone(p.zone))}</div><div class="c-fx">${p.augs.map(x => `<span class="aug" title="${esc(x[3])}〜${esc(x[4])}">${esc(range(x))}</span>`).join(' ')}</div></div>`).join('')}</div>
+<p>候補のうちいくつかが付きます（どれが付くか・いくつになるかはランダム）。値は、付く時の最大の値です。</p>
+<div class="tbl aug"><div class="r h"><div class="c-n">装備</div><div class="c-lv">エリア</div><div class="c-fx">候補（最大の値）</div></div>
+${px.map(p => `<div class="r" data-id="${p.id}"><div class="c-n">${ilink(p.id)}<small>${esc((items.get(p.id) || {}).en || '')}</small></div><div class="c-lv">${esc(zone(p.zone))}</div><div class="c-fx">${MAX}${p.augs.map(x => `<span class="aug" title="${esc(range(x))}">${esc(ja(x[4], x[0]))}</span>`).join(' ')}</div></div>`).join('')}</div>
 <p class="note">元データ：有志が公開しているデータ。英語の表記を、ゲーム内の日本語の略し方（攻・飛攻・D・隔など）に置き換えています。字にマウスを乗せると元の英語が出ます。今のゲームと違う所があり得ます（試練の番号・回数は参考）。</p></main><script src="${BASE}list.js?v=${VER}"></script>` + foot;
   fs.writeFileSync(path.join(SITE, rel), html);
   const home = tile(`${BASE}augment.html`, 'オーグメント', tr.length + px.length, '強', 'ex');
