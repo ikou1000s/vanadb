@@ -114,6 +114,32 @@ for (const r of rows(await get('abilities'))) out.abil[Number(r[0])] = [Number(r
   }
   console.log('WSの修正・TP', Object.keys(out.wsStat).length, '/', files.length, '（スクリプト', Object.keys(texts).length, '）');
 }
+// 状態の分け方：buffKind[id] = 1 強化 / 2 弱体（無い物は「そのほか」）。data/status_effects.yaml の flags と名前から
+{
+  const r = await fetch('https://raw.githubusercontent.com/LandSandBoat/server/base/data/status_effects.yaml'); if (!r.ok) throw new Error('status_effects.yaml: ' + r.status);
+  const fx = {}; let cur = null, inFlags = false, on = false;
+  for (const l of (await r.text()).split(/\r?\n/)) {
+    if (/^status_effects:/.test(l)) { on = true; continue; }
+    if (!on) continue;
+    let m = l.match(/^  ([a-z0-9_]+):\s*$/); if (m) { cur = { key: m[1], flags: [] }; inFlags = false; continue; }
+    if (!cur) continue;
+    m = l.match(/^    ([a-z_]+):\s*(.*)$/); if (m) { inFlags = m[1] === 'flags'; if (m[1] === 'id') fx[Number(m[2])] = cur; continue; }
+    m = l.match(/^      - ([a-z_]+)/); if (m && inFlags) cur.flags.push(m[1]);
+  }
+  const BAD = /down|slow|poison|paraly|blind|silence|sleep|charm|terror|stun|petrif|amnesia|bind|weight|gravity|plague|disease|curse|doom|bane|^dia$|^bio$|helix|addle|choke|burn|frost|rasp|shock|drown|^flash$|requiem|elegy|threnody|lullaby|nocturne|inundation|encumbrance|vertigo|muddle|virus|mute|weakness|intimidat|lethargy|bust|daze|^kaustra$|^inhibit_tp$|^doubt$|^taint$|^haunt$|^ullegores_gloom$|^hamanoha$|^dragon_breaker$|^arcane_crest$|^sepulcher$|^debilitation$|^gambit$|^rayke$/;
+  const GOOD = /^negate_|^bar|_spikes$|maneuver|_favor$|finishing_move|_arts$|^addendum|^(ignis|gelus|flabra|tellus|sulpor|unda|lux|tenebrae)$|^(sprint|flurry|concentration|perfect_defense|migawari|afterglow|grace|transcendency|scarlet_delirium|building_flourish|commitment|dedication|lasting_emanation|ecliptic_attrition|dematerialize|colure_active|intervene|awaken|serpents_guile|resolved|black_sanctus|animated|emporoxs_gift|moogle_amplifier|fishy_intuition|artisanal_knowledge|prowess|odyllic_subterfuge|quickening|mazurka|bolters_roll|diabolic_eye|flashy_shot|impetus)$|^sublimation|aftermath|boost|_up$|_bonus/;
+  out.buffKind = {};
+  for (const [id, e] of Object.entries(fx)) {
+    const k = e.key, f = e.flags;
+    let c = 0;
+    if (/^(geo|indi)_/.test(k)) c = BAD.test(k.replace(/^(geo|indi)_/, '')) ? 2 : 1;
+    else if (GOOD.test(k)) c = 1;
+    else if (BAD.test(k) || f.includes('erasable') || f.includes('waltzable') || f.includes('damage')) c = 2;
+    else if (f.includes('dispelable') || f.includes('song') || f.includes('roll') || !f.includes('no_cancel')) c = 1;
+    if (c) out.buffKind[id] = c;
+  }
+  console.log('状態の分け方', Object.keys(out.buffKind).length, '/', Object.keys(fx).length);
+}
 // ジョブごとのスキルの段位（data/skills.yaml の ranks）：ranks[スキル名][ジョブ番号] = 'A+' など
 {
   const JOBS = ['', 'war', 'mnk', 'whm', 'blm', 'rdm', 'thf', 'pld', 'drk', 'bst', 'brd', 'rng', 'sam', 'nin', 'drg', 'smn', 'blu', 'cor', 'pup', 'dnc', 'sch', 'geo', 'run'];

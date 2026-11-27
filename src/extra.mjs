@@ -73,8 +73,14 @@ export function writeExtra(ctx) {
     `${filterBox('tr')}<div class="tbl simple" id="tr"><div class="r h"><div class="c-n">特性</div><div class="c-fx">英語名</div><div class="c-x">用語辞典</div></div>${traits.map(t => `<div class="r"><div class="c-n"><b>${esc(t.ja)}</b></div><div class="c-fx">${esc(t.en)}</div><div class="c-x"><a href="${ffo(t.ja)}" rel="noopener" target="_blank">見る</a></div></div>`).join('')}</div>`);
   const buffs = load('buffs').sort((a, b) => a.id - b.id);
   counts.buffs = buffs.length;
-  page('buffs.html', `状態（強化・弱体）の一覧（${buffs.length}件）`, `FF11の強化・弱体などの状態${buffs.length}件の一覧（日本語名・英語名）。`, '状態（強化・弱体）', `${buffs.length}件`,
-    `${filterBox('bf')}<div class="tbl simple" id="bf"><div class="r h"><div class="c-n">状態</div><div class="c-fx">英語名</div><div class="c-x">用語辞典</div></div>${buffs.map(t => `<div class="r"><div class="c-n"><b>${esc(t.ja)}</b></div><div class="c-fx">${esc(t.en)}</div><div class="c-x"><a href="${ffo(t.ja)}" rel="noopener" target="_blank">見る</a></div></div>`).join('')}</div>`);
+  // 強化・弱体・そのほか（分け方は fetch_lsb.mjs の buffKind。取れなかった時は分けずに1つの表）
+  const lsbF = path.join(DATA, 'lsb.json');
+  const bKind = (fs.existsSync(lsbF) && JSON.parse(fs.readFileSync(lsbF, 'utf8')).buffKind) || null;
+  const bRow = t => `<div class="r"><div class="c-n"><b>${esc(t.ja)}</b></div><div class="c-fx">${esc(t.en)}</div><div class="c-x"><a href="${ffo(t.ja)}" rel="noopener" target="_blank">見る</a></div></div>`;
+  const bGroups = bKind ? [['強化', 'bf1', buffs.filter(t => bKind[t.id] === 1)], ['弱体', 'bf2', buffs.filter(t => bKind[t.id] === 2)], ['そのほか（戦闘不能・食事・レベル制限・エリアの状態など）', 'bf3', buffs.filter(t => !bKind[t.id])]] : null;
+  page('buffs.html', `状態（強化・弱体）の一覧（${buffs.length}件）`, `FF11の強化・弱体などの状態${buffs.length}件を、強化・弱体・そのほかに分けた一覧（日本語名・英語名）。`, '状態（強化・弱体）', `${buffs.length}件`,
+    `${bGroups ? `<nav class="bands">${bGroups.map(([ja, id, l]) => `<a href="#${id}" data-band="${esc(ja)}">${esc(ja.replace(/（.*/, ''))}<span>${l.length}</span></a>`).join('')}</nav>` : ''}${filterBox('bf')}<div class="tbl simple" id="bf"><div class="r h"><div class="c-n">状態</div><div class="c-fx">英語名</div><div class="c-x">用語辞典</div></div>${bGroups ? bGroups.map(([ja, id, l]) => `<div class="band" id="${id}" data-band="${esc(ja)}">${esc(ja)} <span>${l.length}件</span></div>${l.map(bRow).join('')}`).join('') : buffs.map(bRow).join('')}</div>
+${bGroups ? '<p class="src">強化・弱体の分け方は、有志が公開しているデータ（消せるか・ワルツで治るか・ディスペルで消えるか）と名前からの目安です。</p>' : ''}`);
 
   // モンスターの技（検索できる一覧）
   const mab = load('monster_abilities').sort((a, b) => a.id - b.id);
