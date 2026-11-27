@@ -495,3 +495,9 @@ h3.tsub{font-size:13.5px;color:var(--gold);margin:12px 0 6px}
 .tbl.syn .c-lv{color:var(--gold);font-weight:800;text-align:center}
 .fw{display:inline-block;font-size:11.5px;border-radius:4px;padding:0 4px;margin:1px 2px;border:1px solid #3b5f8c;color:#cfe6ff}
 .fw0{color:#ffb3a0;border-color:#a5483a}.fw1{color:#bfe6ff;border-color:#4a8ab5}.fw2{color:#b8f0c0;border-color:#3f9c55}.fw3{color:#f0d9a0;border-color:#9c7a3f}.fw4{color:#e6c3ff;border-color:#7a4ab5}.fw5{color:#a8d0ff;border-color:#3f6fb5}.fw6{color:#fff6c8;border-color:#b5a54a}.fw7{color:#c8b8d8;border-color:#5a4a6a}
+
+/* 地図の地方 */
+.catnav.mreg>div{margin:2px 0}
+.tbl .band small.era{font-size:11px;color:var(--sub);font-weight:normal;margin-left:8px}
+.catnav.mreg .lbl{display:inline-block;min-width:7.5em;white-space:nowrap}
+@media (max-width:860px){.catnav.mreg .lbl{display:block;min-width:0}}

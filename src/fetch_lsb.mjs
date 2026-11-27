@@ -94,6 +94,19 @@ for (const r of rows(await get('abilities'))) out.abil[Number(r[0])] = [Number(r
 // フェイスのジョブ：mob_pools の呼び出し用の型（小文字の名前）→ [メイン, サポート]
 // 錬成：素材・フュエル（火氷風土雷水光闇）・できる物
 out.synergy = rows(await get('synergy_recipes')).map(r => ({ fe: r.slice(7, 15).map(Number), ings: r.slice(15, 23).map(Number).filter(Boolean), result: Number(r[23]), hq: r.slice(24, 27).map(Number) }));
+// エリア → 地方（コンクェストの地方。src/map/utils/zoneutils.cpp の GetCurrentRegion と data/enums/zone.yaml）
+{
+  const yml = await (await fetch('https://raw.githubusercontent.com/LandSandBoat/server/base/data/enums/zone.yaml')).text();
+  const idOf = {}; for (const m of yml.matchAll(/^\s+([a-z0-9_]+):\s+(\d+)/gm)) idOf[m[1]] = Number(m[2]);
+  const cpp = await (await fetch('https://raw.githubusercontent.com/LandSandBoat/server/base/src/map/utils/zoneutils.cpp')).text();
+  const a = cpp.indexOf('auto GetCurrentRegion('); const body = cpp.slice(a, cpp.indexOf('\n}\n', a));
+  const snake = s => s.replace(/([a-z0-9])([A-Z])/g, '$1_$2').replace(/([A-Z])([A-Z][a-z])/g, '$1_$2').replace(/([a-zA-Z])(\d)/g, '$1_$2').toLowerCase();
+  out.zoneRegion = {}; let pend = [];
+  for (const l of body.split('\n')) {
+    const c = /case xi::ZoneId::(\w+):/.exec(l); if (c) { pend.push(c[1]); continue; }
+    const r = /return xi::Region::(\w+);/.exec(l); if (r) { for (const z of pend) { const id = idOf[snake(z)] ?? idOf[z.toLowerCase()]; if (id != null) out.zoneRegion[id] = r[1]; } pend = []; }
+  }
+}
 out.trustJob = {};
 for (const r of rows(await get('mob_pools'))) { const id = Number(r[0]), k = String(r[1]).toLowerCase(); if (id < 5800 || !/^[a-z0-9_-]+$/.test(k)) continue; if (!out.trustJob[k] || r[1] === k) out.trustJob[k] = [Number(r[5]), Number(r[6])]; }
 console.log('アビリティ', Object.keys(out.abil).length, 'WS', Object.keys(out.ws).length);

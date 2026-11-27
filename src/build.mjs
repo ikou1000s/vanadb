@@ -513,7 +513,7 @@ console.log('装備以外', JSON.stringify(more.counts));
 const qs2 = writeQuests({ items, JOB_LIST, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE_SHORT, VER, tile });
 console.log('クエスト・ミッション', JSON.stringify(qs2.counts));
 const ex = writeExtra({ JOB_LIST, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE_SHORT, VER, tile });
-const mp = writeMaps({ ROOT, SITE, DATA, head, foot, esc, BASE, ORIGIN, SITE_SHORT, VER, tile });
+const mp = writeMaps({ ROOT, SITE, DATA, head, foot, esc, BASE, ORIGIN, SITE_SHORT, VER, tile, lsb });
 console.log('地図', mp.count);
 const asc = writeAscend({ items, desc, SITE, head, foot, esc, BASE, ORIGIN, SITE_SHORT, hasPage: id => equipById.has(id) || more.itemCatOf.has(id), trustCount: more.counts.trust });
 const cm = writeCommands({ SITE, DATA, head, foot, esc, BASE, ORIGIN, SITE_SHORT, VER, readLua, fs, path });
@@ -553,7 +553,7 @@ ${homeSec(more.home, 'magic')}
 ].map(([u, ja, n, ic]) => tile(`${BASE}${u}`, ja, n || 0, ic, 'w')).join('')}</div></section>
 ${qs2.home}
 ${mp.home}
-${ex.home.replace(/<a class="tile[^"]*" href="[^"]*\/(merits|jobpoints|traits|mounts)\.html">.*?<\/a>/g, '').replace('</div></section>', tile(`${BASE}commands.html`, 'テキストコマンド', cm.count, '／', 'ex hot') + au.home + lk.home + '</div></section>')}
+${ex.home.replace(/<a class="tile[^"]*" href="[^"]*\/(merits|jobpoints|traits|mounts|zones)\.html">.*?<\/a>/g, '').replace('</div></section>', tile(`${BASE}commands.html`, 'テキストコマンド', cm.count, '／', 'ex hot') + au.home + lk.home + '</div></section>')}
 </main><script src="${BASE}list.js?v=${VER}"></script>` + foot);
 
 
