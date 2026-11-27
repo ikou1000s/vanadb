@@ -49,7 +49,7 @@ export function writeMore(ctx) {
     else if (it.category === 'Maze') c = 'maze';
     else if (it.type === 8) c = 'crystal';
     else if (it.type === 10) c = 'furnishing';
-    else if (it.category === 'Usable' && /^scroll of /i.test(it.en || '')) c = 'scroll';
+    else if (it.category === 'Usable' && /^scroll of /i.test(it.enl || it.en || '')) c = 'scroll'; // 短い英名は「Cure」、長い名前（enl）が「scroll of Cure」
     else if (it.category === 'Usable' && /[+＋]\d/.test(d) && !/秘薬|薬|『|入った/.test(d)) c = 'food';
     else if (it.category === 'Usable') c = 'medicine';
     else if (usedIn.has(id)) c = 'material';
