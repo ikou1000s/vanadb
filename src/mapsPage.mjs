@@ -70,9 +70,11 @@ ${note}</main><script src="${BASE}list.js?v=${VER}"></script>` + foot);
   { const qF = path.join(DATA, 'quests.json'); if (fs.existsSync(qF)) { const Q = JSON.parse(fs.readFileSync(qF, 'utf8')); for (const a of Q.quests || []) for (const q of a.list || []) { const k = zkey(q.zone); if (!k) continue; if (!questZ.has(k)) questZ.set(k, []); questZ.get(k).push({ ja: q.ja || q.en, key: a.key, area: a.ja, rep: q.rep }); } } }
   // お店で買える物（data/shops.json・src/fetch_shops.mjs）。エリア番号ごとに店（NPC）を並べる
   const shopZ = new Map();
+  // ギルドの店の品を買えるギルドの位（src/fetch_shops.mjs の RANKS の順）
+  const CRAFT_RANK_JA = ['素人', '見習', '徒弟', '下級職人', '名取', '目録', '印可', '高弟', '皆伝', '師範'];
   { const { items, hasPage } = ctx; const sF = path.join(DATA, 'shops.json'); if (items && fs.existsSync(sF)) for (const s of JSON.parse(fs.readFileSync(sF, 'utf8')).shops || []) {
     const l = s.items.map(([id, p, r]) => { const it = items.get(id); return it && it.ja && it.ja !== '.' && (!hasPage || hasPage(id)) ? [id, it.ja, p, r] : null; }).filter(Boolean);
-    if (!l.length) continue; if (!shopZ.has(s.z)) shopZ.set(s.z, []); shopZ.get(s.z).push({ npc: s.npc, nation: s.nation, l });
+    if (!l.length) continue; if (!shopZ.has(s.z)) shopZ.set(s.z, []); shopZ.get(s.z).push({ npc: s.npc, nation: s.nation, guild: !!s.guild, note: s.note || '', l });
   } }
   const aboutOf = z => {
     const k = regOf(z), g = groups.get(k); let h = '';
@@ -85,7 +87,7 @@ ${note}</main><script src="${BASE}list.js?v=${VER}"></script>` + foot);
     const fi = [...(fishZ.get(z) || new Map())].sort((a, b) => a[0] - b[0]);
     if (fi.length) h += `<h3>釣れる物 <span class="cnt">${fi.length}件</span></h3><ul class="chips">${fi.map(([id, ja]) => `<li><a href="${BASE}item/${id}.html">${esc(ja)}</a></li>`).join('')}</ul>`;
     const sh = shopZ.get(z) || [];
-    if (sh.length) { const n = sh.reduce((s, x) => s + x.l.length, 0); h += `<h3>お店で買える物 <span class="cnt">${sh.length}店・${n}件</span></h3>${sh.some(x => x.nation) ? `<p class="note">国の店の「◯位まで」は、国の順位（コンクエスト）がその順位以内の時だけ買える物です。</p>` : ''}${sh.map(x => `<h4>${esc(x.npc)}${x.nation ? ' <small>国の店</small>' : ''}</h4><ul class="chips">${x.l.map(([id, ja, p, r]) => `<li><a href="${BASE}item/${id}.html">${esc(ja)}</a> <small>${p.toLocaleString()}ギル${r && r < 3 ? `・${r}位まで` : ''}</small></li>`).join('')}</ul>`).join('')}`; }
+    if (sh.length) { const n = sh.reduce((s, x) => s + x.l.length, 0); h += `<h3>お店で買える物 <span class="cnt">${sh.length}店・${n}件</span></h3>${sh.some(x => x.nation) ? `<p class="note">国の店の「◯位まで」は、国の順位（コンクエスト）がその順位以内の時だけ買える物です。</p>` : ''}${sh.map(x => `<h4>${esc(x.npc)}${x.nation ? ' <small>国の店</small>' : ''}${x.note ? ` <small>${esc(x.note)}</small>` : ''}</h4><ul class="chips">${x.l.map(([id, ja, p, r]) => `<li><a href="${BASE}item/${id}.html">${esc(ja)}</a> <small>${p.toLocaleString()}ギル${x.nation && r && r < 3 ? `・${r}位まで` : ''}${x.guild && r && CRAFT_RANK_JA[r] ? `・${CRAFT_RANK_JA[r]}から` : ''}</small></li>`).join('')}</ul>`).join('')}`; }
     const qs = questZ.get(zkey(zen(z))) || [];
     if (qs.length) { const ks = [...new Set(qs.map(q => q.key))]; h += `<h3>このエリアで受けるクエスト <span class="cnt">${qs.length}件</span></h3>${qs.length > 30 ? `<p class="note">30件まで。全部は${ks.map(k => { const q = qs.find(x => x.key === k); return `<a href="${BASE}quest/${k}.html#${encodeURIComponent(zname(z))}">${esc(q.area)}のクエスト一覧</a>`; }).join('・')}で。</p>` : ''}<ul class="chips">${qs.slice(0, 30).map(q => `<li><a href="${BASE}quest/${q.key}.html#${encodeURIComponent(zname(z))}">${esc(q.ja)}</a>${q.rep ? ' <small>くり返し可</small>' : ''}</li>`).join('')}</ul>`; }
     // 同じ地方のほかのエリア（隣のエリアに出た物は除く）。モンスターのいない街・船などのページにも行き先を

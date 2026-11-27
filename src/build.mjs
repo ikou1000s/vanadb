@@ -56,8 +56,9 @@ const rewardOf = new Map();
 }
 // お店で買える物（data/shops.json・src/fetch_shops.mjs）：アイテム番号 → [店のNPC, エリア番号, 値段, 国の店の順位]
 const shopOf = new Map();
+const CRAFT_RANK_JA = ['素人', '見習', '徒弟', '下級職人', '名取', '目録', '印可', '高弟', '皆伝', '師範'];
 const mapZs = new Set(fs.existsSync(path.join(ROOT, 'src', 'maps.json')) ? JSON.parse(fs.readFileSync(path.join(ROOT, 'src', 'maps.json'), 'utf8')).map(x => x[1]) : []);
-{ const sF = path.join(DATA, 'shops.json'); if (fs.existsSync(sF)) for (const s of JSON.parse(fs.readFileSync(sF, 'utf8')).shops || []) for (const [id, p, r] of s.items) { if (!shopOf.has(id)) shopOf.set(id, []); shopOf.get(id).push([s.npc, s.z, p, s.nation ? r : 0]); } }
+{ const sF = path.join(DATA, 'shops.json'); if (fs.existsSync(sF)) for (const s of JSON.parse(fs.readFileSync(sF, 'utf8')).shops || []) for (const [id, p, r] of s.items) { if (!shopOf.has(id)) shopOf.set(id, []); shopOf.get(id).push([s.npc, s.z, p, s.nation ? r : 0, (s.region ? s.note.replace(/（.*$/, '') : s.guild ? s.note : '') + (s.guild && r && CRAFT_RANK_JA[r] ? '・' + CRAFT_RANK_JA[r] + 'から' : '')]); } }
 const acqHtml = id => {
   const shops = (shopOf.get(id) || []).slice().sort((a, b) => a[2] - b[2]);
   const drops = (mobsData.drops[id] || []).map(([m, z, c, nm]) => [mobName(m), z, c, nm]);
@@ -65,7 +66,7 @@ const acqHtml = id => {
   const steal = mobsData.steal[id] || [];
   const qs = rewardOf.get(id) || [];
   let h = '';
-  if (shops.length) h += '<h3>お店で買える <span class="cnt">' + shops.length + '店</span></h3><ul class="acq">' + shops.slice(0, 20).map(([n, z, p, r]) => '<li><b>' + esc(n) + '</b> <span class="zn">' + (mapZs.has(z) ? '<a href="' + BASE + 'maps/' + z + '.html">' + esc(zoneJaById(z) || ('#' + z)) + '</a>' : esc(zoneJaById(z) || ('#' + z))) + '</span> ' + p.toLocaleString() + 'ギル' + (r && r < 3 ? ' <span class="nl">（国の順位' + r + '位まで）</span>' : '') + '</li>').join('') + (shops.length > 20 ? '<li class="nl">ほか' + (shops.length - 20) + '店</li>' : '') + '</ul>';
+  if (shops.length) h += '<h3>お店で買える <span class="cnt">' + shops.length + '店</span></h3><ul class="acq">' + shops.slice(0, 20).map(([n, z, p, r, note]) =>'<li><b>' + esc(n) + '</b> <span class="zn">' + (mapZs.has(z) ? '<a href="' + BASE + 'maps/' + z + '.html">' + esc(zoneJaById(z) || ('#' + z)) + '</a>' : esc(zoneJaById(z) || ('#' + z))) + '</span> ' + p.toLocaleString() + 'ギル' + (r && r < 3 ? ' <span class="nl">（国の順位' + r + '位まで）</span>' : '') + (note ? ' <span class="nl">（' + esc(note) + '）</span>' : '') + '</li>').join('') + (shops.length > 20 ? '<li class="nl">ほか' + (shops.length - 20) + '店</li>' : '') + '</ul>';
   if (qs.length) h += '<h3>クエストの報酬</h3><ul class="acq">' + qs.map(([k, aja, qja]) => '<li><a href="' + BASE + 'quest/' + k + '.html">' + esc(qja) + '</a> <span class="nl">（' + esc(aja) + 'のクエスト）</span></li>').join('') + '</ul>';
   if (dl.length) h += '<h3>ドロップ <span class="cnt">' + dl.length + '件</span></h3><ul class="acq drops">' + dl.slice(0, 40).map(([m, z, c, nm]) => '<li><b>' + esc(m) + '</b>' + (nm ? '<span class="tag nm">NM</span>' : '') + ' <span class="zn">' + esc(zoneJaById(z) || ('#' + z)) + '</span>' + (CHANCE_JA[c] ? ' <span class="ch ch-' + c + '">' + CHANCE_JA[c] + '</span>' : '') + '</li>').join('') + (dl.length > 40 ? '<li class="nl">ほか' + (dl.length - 40) + '件</li>' : '') + '</ul>';
   if (steal.length) h += '<h3>ぬすむ</h3><ul class="acq">' + steal.slice(0, 20).map(([m, z]) => '<li><b>' + esc(mobName(m)) + '</b> <span class="zn">' + esc(zoneJaById(z)) + '</span></li>').join('') + '</ul>';
