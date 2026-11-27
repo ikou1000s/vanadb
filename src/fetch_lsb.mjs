@@ -214,7 +214,9 @@ try {
   // 変えるNPCに出ない称号：アルタナ・アドゥリン・星唄のクエスト／ミッションの中で付く物を、その組に（2026-11-28）
   try {
     const GH = { 'User-Agent': 'ff11-db', ...(process.env.GITHUB_TOKEN ? { Authorization: 'Bearer ' + process.env.GITHUB_TOKEN } : {}) };
-    const tree = await (await fetch('https://api.github.com/repos/LandSandBoat/server/git/trees/base?recursive=1', { headers: GH })).json();
+    // api.github.com は接続待ちで切れることがあるので、3回まで待って取り直す（2026-11-28）
+    let tree;
+    for (let k = 0; ; k++) { try { tree = await (await fetch('https://api.github.com/repos/LandSandBoat/server/git/trees/base?recursive=1', { headers: GH })).json(); break; } catch (e) { if (k >= 3) throw e; await new Promise(s => setTimeout(s, 3000 * (k + 1))); } }
     const SRC = [['scripts/missions/wotg/', 'wotg'], ['scripts/quests/crystalWar/', 'wotg'], ['scripts/missions/soa/', 'soa'], ['scripts/quests/adoulin/', 'soa'], ['scripts/missions/rov/', 'rov']];
     const files = (tree.tree || []).filter(x => x.type === 'blob' && x.path.endsWith('.lua')).map(x => [x.path, (SRC.find(([p]) => x.path.startsWith(p)) || [])[1]]).filter(x => x[1]);
     if (!files.length) throw new Error('ファイル一覧が取れない');
