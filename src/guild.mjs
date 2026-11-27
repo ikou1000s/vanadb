@@ -29,7 +29,7 @@ ${GUILDS.map((ja, g) => {
   if (!mine.length) return '';
   return `<h2 id="g${g}">${ja}ギルド <span class="cnt">${mine.length}件</span></h2><div class="tbl guild"><div class="r h"><div class="c-rk">ランク</div><div class="c-n">納品アイテム</div><div class="c-m">ポイント</div><div class="c-m">1日の上限</div><div class="c-pt">型</div></div>${mine.map(r => `<div class="r"><div class="c-rk">${esc(RANKS[r.rank] || r.rank)}</div><div class="c-n">${ilink(r.item)}</div><div class="c-m">${r.pts}</div><div class="c-m">${r.max.toLocaleString()}</div><div class="c-pt">${[...r.pats].sort((a, b) => a - b).map(p => p + 1).join('・')}</div></div>`).join('')}</div>`;
 }).join('')}
-<p class="note">元データ：有志のサーバー再現データ LandSandBoat（GPLv3）。ポイント・上限は参考です。</p></main>` + foot;
+<p class="note">元データ：有志が公開しているデータ。ポイント・上限は参考です。</p></main>` + foot;
   fs.writeFileSync(path.join(SITE, 'guild.html'), html);
   return { home: tile(`${BASE}guild.html`, 'ギルドの納品', rows.length, 'ギ', 'ex'), urls: [`${ORIGIN}/guild.html`], count: rows.length };
 }

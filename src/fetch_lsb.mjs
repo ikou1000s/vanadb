@@ -86,6 +86,11 @@ for (const r of rows(await get('abilities'))) out.abil[Number(r[0])] = [Number(r
     out.ranks[m[1]] = o;
   }
 }
+// ジョブ特性：[特性ID, ジョブ, Lv, ランク, メリポの番号]（同じ組は1つに）
+{
+  const seen = new Set(); out.traits = [];
+  for (const r of rows(await get('traits'))) { const k = [r[0], r[2], r[3], r[4]].join(':'); if (seen.has(k)) continue; seen.add(k); out.traits.push([Number(r[0]), Number(r[2]), Number(r[3]), Number(r[4]), Number(r[8])]); }
+}
 console.log('アビリティ', Object.keys(out.abil).length, 'WS', Object.keys(out.ws).length);
 fs.writeFileSync(path.join(DATA, 'lsb.json'), JSON.stringify(out));
 console.log('見た目', Object.keys(out.look).length);

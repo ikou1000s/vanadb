@@ -29,7 +29,7 @@ export function writeFishing(ctx) {
 <div class="tbl fishing" id="fs" data-ck="fs"><div class="r h"><div class="c-lv">スキル</div><div class="c-n">魚</div><div class="c-sz">大きさ</div><div class="c-fx">釣れる場所</div><div class="c-bt">よく掛かるエサ</div></div>
 ${[...groups].map(([g, l]) => `<div class="band" id="${esc(g)}" data-band="${esc(g)}">${esc(g)} <span>${l.length}件</span></div>` + l.map(f => `<div class="r" data-id="${f.id}"><div class="c-lv">${f.skill}</div><div class="c-n">${ilink(f.id)}<small>${esc((items.get(f.id) || {}).en || '')}</small></div><div class="c-sz">${f.size ? '<span class="tag big">大物</span>' : '小物'}</div><div class="c-fx">${whereTxt(f)}</div><div class="c-bt">${f.baits.slice(0, 5).map(([b]) => ilink(b)).join('、') || '<span class="nl">—</span>'}</div></div>`).join('')).join('')}</div>
 <h2>釣り竿</h2><div class="tbl simple3"><div class="r h"><div class="c-n">竿</div><div class="c-fx">英語名</div></div>${lsb.rods.filter(r => items.get(r.id)).map(r => `<div class="r"><div class="c-n">${ilink(r.id)}</div><div class="c-fx">${esc(items.get(r.id).en)}</div></div>`).join('')}</div>
-<p class="note">元データ：有志のサーバー再現データ LandSandBoat（GPLv3）。必要スキル・場所・エサの相性は参考です。</p></main><script src="${BASE}list.js?v=${VER}"></script>` + foot;
+<p class="note">元データ：有志が公開しているデータ。必要スキル・場所・エサの相性は参考です。</p></main><script src="${BASE}list.js?v=${VER}"></script>` + foot;
   fs.writeFileSync(path.join(SITE, rel), html);
   const home = tile(`${BASE}fishing.html`, '釣り', fish.length, '釣', 'ex');
   return { home, urls: [`${ORIGIN}/${rel}`], count: fish.length };

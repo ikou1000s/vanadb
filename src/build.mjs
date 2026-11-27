@@ -59,7 +59,7 @@ const acqHtml = id => {
   if (qs.length) h += '<h3>クエストの報酬</h3><ul class="acq">' + qs.map(([k, aja, qja]) => '<li><a href="' + BASE + 'quest/' + k + '.html">' + esc(qja) + '</a> <span class="nl">（' + esc(aja) + 'のクエスト）</span></li>').join('') + '</ul>';
   if (dl.length) h += '<h3>ドロップ <span class="cnt">' + dl.length + '件</span></h3><ul class="acq drops">' + dl.slice(0, 40).map(([m, z, c, nm]) => '<li><b>' + esc(m) + '</b>' + (nm ? '<span class="tag nm">NM</span>' : '') + ' <span class="zn">' + esc(zoneJaById(z) || ('#' + z)) + '</span>' + (CHANCE_JA[c] ? ' <span class="ch ch-' + c + '">' + CHANCE_JA[c] + '</span>' : '') + '</li>').join('') + (dl.length > 40 ? '<li class="nl">ほか' + (dl.length - 40) + '件</li>' : '') + '</ul>';
   if (steal.length) h += '<h3>ぬすむ</h3><ul class="acq">' + steal.slice(0, 20).map(([m, z]) => '<li><b>' + esc(mobName(m)) + '</b> <span class="zn">' + esc(zoneJaById(z)) + '</span></li>').join('') + '</ul>';
-  if (dl.length || steal.length) h += '<p class="note">ドロップ・ぬすむは有志のサーバー再現データ（LandSandBoat）。モンスター名は英語、出やすさは目安です。</p>';
+  if (dl.length || steal.length) h += '<p class="note">ドロップ・ぬすむは有志が公開しているデータから。モンスター名は英語、出やすさは目安です。</p>';
   return h;
 };
 const asof = JSON.parse(fs.readFileSync(path.join(DATA, 'asof.json'), 'utf8'));
@@ -197,8 +197,8 @@ const head = (title, description, canonical) => `<!DOCTYPE html>
 <link rel="icon" href="${BASE}favicon.ico" sizes="48x48"><link rel="icon" href="${BASE}favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="${BASE}apple-touch-icon.png"><link rel="manifest" href="${BASE}site.webmanifest"><meta name="theme-color" content="#14254a">
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE}" crossorigin="anonymous"></script><script src="${BASE}find.js?v=${VER}" defer></script></head><body>
 <header class="top"><div class="in"><a class="brand" href="${BASE}">ヴァナDB<small>FF11 データベース</small></a><span class="asof">データ ${esc(asof.date)} 時点（${esc(asof.note)}）</span><form class="hfind" action="${BASE}find.html" method="get" role="search"><span class="hf-ic" aria-hidden="true"></span><input name="q" type="search" placeholder="名前で探す（装備・アイテム・魔法・クエスト…）" autocomplete="off" aria-label="名前で探す"><button type="submit">探す</button></form></div>
-<nav class="gnav"><a class="new" href="${BASE}new.html">新装備・新アイテム</a><a href="${BASE}#armor">防具</a><a href="${BASE}#weapon">武器</a><a href="${BASE}#items">アイテム</a><a href="${BASE}#magic">魔法</a><a href="${BASE}#synth">合成</a><a href="${BASE}ws/index.html">WS</a><a href="${BASE}ability/index.html">アビリティ</a><a href="${BASE}#ki">だいじなもの</a><a href="${BASE}quest/index.html">クエスト</a><a href="${BASE}mission/index.html">ミッション</a><a href="${BASE}titles.html">称号</a><a href="${BASE}#more">そのほか</a><a href="${BASE}#job">ジョブ別</a><a href="${BASE}search.html">性能で探す</a><a href="${BASE}food.html">食事で探す</a></nav></header>`;
-const foot = `<footer class="foot"><p>装備の名前と性能の文はゲーム内の表記（データの出典：<a href="https://github.com/Windower/Resources" rel="noopener">Windower Resources</a>）。誤りに気づいたら教えてください。</p>
+<nav class="gnav"><a class="new" href="${BASE}new.html">新装備・新アイテム</a><a href="${BASE}#job">ジョブ別</a><a href="${BASE}#weapon">武器</a><a href="${BASE}#armor">防具</a><a href="${BASE}#items">アイテム</a><a href="${BASE}#synth">合成</a><a href="${BASE}#ki">だいじなもの</a><a href="${BASE}#magic">魔法</a><a href="${BASE}ws/index.html">WS</a><a href="${BASE}ability/index.html">アビリティ</a><a href="${BASE}mission/index.html">ミッション</a><a href="${BASE}quest/index.html">クエスト</a><a href="${BASE}titles.html">称号</a><a href="${BASE}#more">そのほか</a><a href="${BASE}search.html">性能で探す</a><a href="${BASE}food.html">食事で探す</a></nav></header>`;
+const foot = `<footer class="foot"><p>装備の名前と性能の文はゲーム内の表記です。誤りに気づいたら教えてください。</p>
 <p>姉妹サイト：<a href="https://ff11ikou.blog.fc2.com/">【 FF11 】いこう！ の実験＆実用メモ帳</a>（ジョブ別の装備セットと選んだ理由）</p>
 <p><a href="${BASE}about.html">このサイトについて・プライバシーポリシー・お問い合わせ</a></p>
 <p class="cr">FINAL FANTASY XI © SQUARE ENIX CO., LTD. All Rights Reserved. このサイトは個人のファンサイトで、株式会社スクウェア・エニックスとは関係ありません。</p></footer></body></html>`;
@@ -242,7 +242,7 @@ ${nav(c[0])}
 <h2>同じ見た目の装備が2件以上 <span class="cnt">${multi.length}通り</span></h2>
 <div id="looks">${multi.map(card).join('')}</div>
 ${single.length ? `<h2>この見た目は1件だけ <span class="cnt">${single.length}件</span></h2><div class="looks1">${single.map(card).join('')}</div>` : ''}
-<p class="note">元データ：有志のサーバー再現データ LandSandBoat（GPLv3）の、装備ごとのモデル番号。同じ部位で番号が同じ物を「同じ見た目」としています（参考）。</p>
+<p class="note">元データ：有志が公開しているデータの、装備ごとのモデル番号。同じ部位で番号が同じ物を「同じ見た目」としています（参考）。</p>
 <script>(function(){var q=document.getElementById('lq'),c=document.getElementById('lc'),cards=[].slice.call(document.querySelectorAll('.look'));function f(){var v=q.value.trim().toLowerCase(),n=0;cards.forEach(function(d){var ok=!v||d.getAttribute('data-q').indexOf(v)>=0;d.hidden=!ok;if(ok)n++;});c.textContent=v?n+'通り':'';}q.addEventListener('input',f);})();</script>
 </main>` + foot);
   }
@@ -325,8 +325,8 @@ ${Object.keys(st.pet).length ? `<h2>ペットの性能</h2><ul class="stats">${O
 ${Object.keys(st.cond).length ? `<p class="note">※潜在能力などの条件付きの性能は、内訳と絞り込みに含めていません（上のゲーム内の文を見てください）。</p>` : ''}
 ${variants.length > 1 ? `<h2>段階違い（＋1・＋2…）</h2>${tbl(variants)}` : ''}
 ${seriesOk ? `<h2>同じシリーズ</h2>${tbl(series.sort((a, b) => catOrder(a) - catOrder(b) || a.it.ja.localeCompare(b.it.ja, 'ja')))}` : ''}
-${sameLook.length > 1 ? `<h2>見た目が同じ装備（${sameLook.length}件）</h2><p class="note">ゲームの中で同じ見た目になる装備です（有志のサーバー再現データ LandSandBoat で、同じ部位のモデル番号が同じ物）。見た目の固定（ロックスタイル）選びに。${cat ? ` <a href="${BASE}looks/${cat[0]}.html">${esc(cat[1])}の見た目で探す</a>` : ''}</p>${tbl(sameLook.slice(0, 40))}${sameLook.length > 40 ? `<p class="note">ほか${sameLook.length - 40}件。</p>` : ''}` : ''}
-<h2>入手方法</h2>${acqHtml(id)}${recs.length ? '<h3>合成</h3>' : ''}${recs.length ? `<p class="note">合成で作れます（有志のサーバー再現データ LandSandBoat のレシピ。数値は参考）。</p>${recs.slice(0, 4).map(recipeHtml).join('')}` : ''}
+${sameLook.length > 1 ? `<h2>見た目が同じ装備（${sameLook.length}件）</h2><p class="note">ゲームの中で同じ見た目になる装備です（同じ部位でモデル番号が同じ物）。見た目の固定（ロックスタイル）選びに。${cat ? ` <a href="${BASE}looks/${cat[0]}.html">${esc(cat[1])}の見た目で探す</a>` : ''}</p>${tbl(sameLook.slice(0, 40))}${sameLook.length > 40 ? `<p class="note">ほか${sameLook.length - 40}件。</p>` : ''}` : ''}
+<h2>入手方法</h2>${acqHtml(id)}${recs.length ? '<h3>合成</h3>' : ''}${recs.length ? `<p class="note">合成で作れます（数値は参考）。</p>${recs.slice(0, 4).map(recipeHtml).join('')}` : ''}
 <p class="note">${recs.length ? 'ほかの入手方法' : 'ドロップ・報酬・お店などの入手方法'}と、オーグメント（追加の性能）の中身は、<a href="${ffo(it.ja)}" rel="noopener" target="_blank">FF11用語辞典の「${esc(it.ja)}」</a>を見てください。</p>
 ${uses.length ? `<h2>この装備を使っているセット（姉妹ブログ）</h2><ul class="uses">${uses.map(u => `<li><a href="${u.url}">${esc(u.job)}：${esc(u.set)}</a> <span class="k">（${esc(u.parts.join('・'))}）</span></li>`).join('')}</ul>` : ''}
 ${sim.length ? `<h2>性能が近い装備（同じ${esc(kind)}・同じ帯）</h2>${tbl(sim)}` : ''}
@@ -339,6 +339,8 @@ ${sameLinks ? `<h2>同じ${cat && cat[3] === 'weapon' ? '種類' : '部位'}（$
 // よく使う絞り込み（トップのリンク）→ 性能で探す（search.html）
 const qs = o => Object.entries(o).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&amp;');
 const jobId = ens => JOB_LIST.find(j => j.ens === ens).id;
+// トップの節を id で1つ取り出す（more.home には アイテム・魔法・WS・だいじなもの が入っている）
+const homeSec = (html, id) => { const m = html.match(new RegExp(`<section class="box" id="${id}">[\\s\\S]*?</section>`)); return m ? m[0] : ''; };
 const QUICK = [
   ['忍者・頭のヘイスト', qs({ job: jobId('NIN'), cat: 'head', stat: 'ヘイスト%' })],
   ['赤魔・胴のファストキャスト', qs({ job: jobId('RDM'), cat: 'body', stat: 'ファストキャスト%' })],
@@ -428,8 +430,27 @@ const RANK_SKILL = { h2h: 'hand_to_hand', dagger: 'dagger', sword: 'sword', gswo
 const JOB_ROLE = { WHM: 'mage', BLM: 'mage', RDM: 'mage', SMN: 'mage', SCH: 'mage', GEO: 'mage', BRD: 'mage', PLD: 'tank', RUN: 'tank' };
 const BLOG_JOB = { MNK: 89, RDM: 73, THF: 124, BST: 168, BRD: 154, NIN: 113, DRG: 60, SMN: 68, BLU: 169, COR: 54, PUP: 131, SCH: 67, GEO: 104, RUN: 71 };
 fs.mkdirSync(path.join(SITE, 'job'), { recursive: true });
+// ジョブ別ページの「アビリティ・魔法・WS・特性・メリポ・ジョブポイント」
+const jobParts = (j, more, ex) => {
+  const b = (more.byJob && more.byJob.get(j.id)) || {};
+  const ml = (ex.meritByJob && ex.meritByJob.get(j.id)) || [];
+  const jp = (ex.jpByJob && ex.jpByJob.get(j.id)) || [];
+  const mRows = g => ml.filter(([x]) => x === g).sort((a, b2) => a[1].id - b2[1].id).map(([, m]) => `<div class="r"><div class="c-n"><b>${esc(m.ja)}</b><small>${esc(m.en)}</small></div><div class="c-fx">${esc(m.jadesc || '').replace(/\n/g, '<br>')}</div></div>`).join('');
+  const mHtml = ml.length ? [1, 2].map(g => { const r = mRows(g); return r ? `<h4>${g}群</h4><div class="tbl simple2">${r}</div>` : ''; }).join('') : '';
+  const jpHtml = jp.length ? `<div class="tbl simple2">${[...jp].sort((a, b2) => a.id - b2.id).map(p => `<div class="r"><div class="c-n"><b>${esc(p.ja)}</b><small>${esc(p.en)}</small></div><div class="c-fx">${esc(p.jadesc || '').replace(/\n/g, '<br>')}</div></div>`).join('')}</div>` : '';
+  return [
+    ['jb-ab', 'アビリティ', b.ab, '覚えるレベルの順。印の意味は <a href="' + BASE + 'ability/index.html">アビリティの一覧</a> と同じです。'],
+    ['jb-sp', '魔法', b.sp, '覚えるレベルの順（JPの数字はジョブポイントで覚える物）。名前を押すと魔法のページへ。'],
+    ['jb-ws', 'ウェポンスキル', b.ws, '武器ごとに、覚えるスキル値の順。'],
+    ['jb-tr', 'ジョブ特性', b.tr, '覚えるレベルの順（同じ特性はランクが上がる所ごと）。'],
+    ['jb-mr', 'メリットポイント', { n: ml.length, html: mHtml }, ''],
+    ['jb-jp', 'ジョブポイント', { n: jp.length, html: jpHtml }, ''],
+  ].filter(([, , x]) => x && x.n);
+};
+const jobNav = (j, more, ex) => `<nav class="catnav"><div><span class="lbl">見る</span><a href="#jb-eq">装備</a>${jobParts(j, more, ex).map(([id, ja, x]) => `<a href="#${id}">${ja}<span class="cnt">${x.n}</span></a>`).join('')}</div></nav>`;
+const jobMore = (j, more, ex) => jobParts(j, more, ex).map(([id, ja, x, note]) => `<h2 id="${id}">${ja} <span class="cnt">${x.n}件</span></h2>${note ? `<p class="note">${note}</p>` : ''}${x.html}`).join('\n');
 const jobPages = [];
-for (const j of JOB_LIST) {
+const writeJobPages = (more, ex) => { for (const j of JOB_LIST) {
   const mine = equip.filter(e => (e.it.jobs || 0) & (1 << j.id));
   const il119 = mine.filter(e => e.it.item_level === 119).length;
   const stats = ROLE[JOB_ROLE[j.ens] || 'melee'].filter(k => statIdx.has(k));
@@ -444,16 +465,19 @@ for (const j of JOB_LIST) {
   const blog = BLOG_JOB[j.ens] ? `<p>このジョブの装備セットと選んだ理由は、姉妹ブログの <a href="https://ff11ikou.blog.fc2.com/blog-entry-${BLOG_JOB[j.ens]}.html">${esc(j.ja)}の装備の記事</a> にまとめています。</p>` : '';
   const url = `${ORIGIN}/job/${j.ens.toLowerCase()}.html`;
   jobPages.push(url);
-  fs.writeFileSync(path.join(SITE, 'job', `${j.ens.toLowerCase()}.html`), head(`${j.ja}の装備一覧｜部位・武器ごと｜${SITE_SHORT}`,
-    `FF11 ${j.ja}が装備できる${mine.length.toLocaleString()}件（IL119は${il119}件）を、部位・武器ごとの一覧と、性能（${stats.slice(0, 4).map(k => k.replace(/%$/, '')).join('・')}など）で探せます。`, url)
-    + `<main class="wide"><p class="crumb"><a href="${BASE}">トップ</a> › ジョブ別 › ${esc(j.ja)}</p><h1>${esc(j.ja)}の装備 <span class="cnt">${mine.length.toLocaleString()}件（IL119 ${il119}件）</span></h1>
+  fs.writeFileSync(path.join(SITE, 'job', `${j.ens.toLowerCase()}.html`), head(`${j.ja}｜装備・アビリティ・魔法・WS・ジョブ特性・メリポ｜${SITE_SHORT}`,
+    `FF11 ${j.ja}のまとめ。装備${mine.length.toLocaleString()}件（IL119は${il119}件）を部位・武器ごとに、覚えるアビリティ・魔法・ウェポンスキル・ジョブ特性をレベル順に、メリットポイント（1群・2群）とジョブポイントも。`, url)
+    + `<main class="wide"><p class="crumb"><a href="${BASE}">トップ</a> › ジョブ別 › ${esc(j.ja)}</p><h1>${esc(j.ja)}</h1>
+${jobNav(j, more, ex)}
 ${blog}
+<h2 id="jb-eq">装備 <span class="cnt">${mine.length.toLocaleString()}件（IL119 ${il119}件）</span></h2>
 <div class="tw"><table class="grid"><tr><th>一覧</th><th>件数</th>${stats.map(k => `<th>${esc(k.replace(/%$/, ''))}</th>`).join('')}</tr>
 ${cats.map(([[key, ja], l]) => `<tr><th><a href="${BASE}list/${key}.html?job=${j.id}">${esc(ja)}</a>${rk(key) ? `<span class="rk" title="${esc(j.ja)}の${esc(ja)}スキルの段位">${rk(key)}</span>` : ''}</th><td>${l.length}</td>${stats.map(k => `<td>${cell(key, l, k)}</td>`).join('')}</tr>`).join('\n')}</table></div>
 <p class="note">武器は${esc(j.ja)}がスキルを持つ種類だけを出しています（右の A+〜F はスキルの段位）。部位・武器の名前を押すと、${esc(j.ja)}が装備できる物だけの一覧になります（全ジョブ装備できる物も入ります）。性能の列の数字は、その性能が付いている装備の件数で、押すと大きい順に並びます（潜在能力などの条件付きの性能とオーグメントは数えていません）。</p>
+${jobMore(j, more, ex)}
 <h2>ほかのジョブ</h2><p class="same">${JOB_LIST.map(o => o.id === j.id ? `<b>${esc(o.ja)}</b>` : `<a href="${BASE}job/${o.ens.toLowerCase()}.html">${esc(o.ja)}</a>`).join('　')}</p>
 </main>` + foot);
-}
+} };
 
 // ── 性能で探す（絞り込み・並べ替え）
 fs.writeFileSync(path.join(SITE, 'search.html'), head(`性能で探す（ヘイスト・ファストキャストなど）｜${SITE_SHORT}`,
@@ -485,6 +509,7 @@ console.log('装備以外', JSON.stringify(more.counts));
 const qs2 = writeQuests({ items, JOB_LIST, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE_SHORT, VER, tile });
 console.log('クエスト・ミッション', JSON.stringify(qs2.counts));
 const ex = writeExtra({ JOB_LIST, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE_SHORT, VER, tile });
+writeJobPages(more, ex);
 console.log('そのほか', JSON.stringify(ex.counts));
 const sy = writeSynth({ items, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE_SHORT, VER, tile, hasPage: id => equipById.has(id) || more.itemCatOf.has(id) });
 console.log('合成レシピ', sy.count);
@@ -505,13 +530,16 @@ fs.writeFileSync(path.join(SITE, 'index.html'), head(`${SITE_NAME}｜部位・�
 <p>装備${equip.length.toLocaleString()}件・アイテム${more.counts.items.toLocaleString()}件・だいじなもの${more.counts.ki.toLocaleString()}件・魔法${more.counts.spells}件・WS${more.counts.ws}件・アビリティ${more.counts.ab}件・クエスト${qs2.counts.quests}件・ミッション${qs2.counts.missions}件。装備は部位・武器の種類・ジョブごとに、IL・Lvの帯で並べています。装備できるジョブは22ジョブを1行で、性能はゲーム内の表記のまま。毎日、最新のデータを取り込んでいます（<b>${esc(asof.note)}</b>）。</p></section>
 <section class="box latest"><h2>最新の新装備・新アイテム <a class="all" href="${BASE}new.html">バージョンアップごとの一覧へ</a></h2>
 ${updates.slice(0, 2).map(u => updateBlock(u, false)).join('')}</section>
-<section class="box" id="armor"><h2>防具（部位ごと）</h2><div class="tiles">${ARMOR_CATS.map(([k, ja]) => tile(`${BASE}list/${k}.html`, ja, catCount.get(k) || 0, ICON[k])).join('')}</div></section>
+<section class="box" id="job"><h2>ジョブ別</h2><div class="tiles small">${JOB_LIST.map(j => tile(`${BASE}job/${j.ens.toLowerCase()}.html`, j.ja, equip.filter(e => (e.it.jobs || 0) & (1 << j.id)).length, j.jas, 'j')).join('')}</div></section>
 <section class="box" id="weapon"><h2>武器（種類ごと）</h2><div class="tiles">${WEAPON_CATS.filter(([k]) => catCount.get(k)).map(([k, ja]) => tile(`${BASE}list/${k}.html`, ja, catCount.get(k), ICON[k], 'w')).join('')}</div></section>
-${more.home}
+<section class="box" id="armor"><h2>防具（部位ごと）</h2><div class="tiles">${ARMOR_CATS.map(([k, ja]) => tile(`${BASE}list/${k}.html`, ja, catCount.get(k) || 0, ICON[k])).join('')}</div></section>
+${homeSec(more.home, 'items')}
 ${sy.home}
+${homeSec(more.home, 'ki')}
+${homeSec(more.home, 'magic')}
+${homeSec(more.home, 'ws')}
 ${qs2.home}
 ${ex.home.replace('</div></section>', fi.home + gu.home + au.home + lk.home + '</div></section>')}
-<section class="box" id="job"><h2>ジョブ別</h2><div class="tiles small">${JOB_LIST.map(j => tile(`${BASE}job/${j.ens.toLowerCase()}.html`, j.ja, equip.filter(e => (e.it.jobs || 0) & (1 << j.id)).length, j.jas, 'j')).join('')}</div></section>
 <section class="box" id="search"><h2>性能で探す</h2><p>ヘイスト・ファストキャスト・マジックバースト・被ダメージなど、性能の数値で絞り込んで大きい順に並べられます。 <a class="btn" href="${BASE}search.html">性能で探す</a></p>
 <div class="quick">${QUICK.map(([label, q]) => `<a href="${BASE}search.html?${q}">${esc(label)}</a>`).join('')}</div></section>
 </main><script src="${BASE}list.js?v=${VER}"></script>` + foot);
@@ -522,7 +550,7 @@ fs.writeFileSync(path.join(SITE, 'about.html'), head(`このサイトについ�
   + `<main class="item"><h1>このサイトについて</h1>
 <p>ヴァナDBは、ファイナルファンタジーXI（FF11）の装備を、ジョブ・部位・性能で絞り込んで比べられる日本語のデータベースです。毎日、最新のデータを取り込んで作り直しています（今は${esc(asof.note)}）。</p>
 <h2>運営者</h2><p>FF11のブログ「<a href="https://ff11ikou.blog.fc2.com/">【 FF11 】いこう！ の実験＆実用メモ帳</a>」の運営者が、個人で運営しています。株式会社スクウェア・エニックスとは関係ありません。</p>
-<h2>データについて</h2><p>装備の名前・性能の文は、ゲーム内の表記を有志が公開しているデータ（<a href="https://github.com/Windower/Resources" rel="noopener">Windower Resources</a>）から取り込んでいます。性能の内訳と絞り込みは、その文を機械で分けた物です。条件付きの性能（潜在能力など）とオーグメントは、絞り込みに含めていません。ドロップ率や使い心地のように、遊んで確かめる情報は載せていません。誤りがあれば、下のお問い合わせから教えてください。</p>
+<h2>データについて</h2><p>装備の名前・性能の文は、ゲーム内の表記を有志がまとめて公開しているデータから取り込んでいます（出典とライセンスは、このサイトの作りを置いている所に書いています）。性能の内訳と絞り込みは、その文を機械で分けた物です。条件付きの性能（潜在能力など）とオーグメントは、絞り込みに含めていません。ドロップ率や使い心地のように、遊んで確かめる情報は載せていません。誤りがあれば、下のお問い合わせから教えてください。</p>
 <h2>プライバシーポリシー</h2>
 <p>当サイトは、第三者配信の広告サービス「Google アドセンス」を利用しています。広告配信事業者は、ユーザーの興味に応じた広告を表示するために Cookie を使用することがあります。Cookie を無効にする方法や Google アドセンスについては、<a href="https://policies.google.com/technologies/ads?hl=ja" rel="noopener">広告 – ポリシーと規約 – Google</a> をご覧ください。パーソナライズ広告は <a href="https://adssettings.google.com/" rel="noopener">広告設定</a> で無効にできます。</p>
 <p>当サイトは、アクセスの傾向を知るために Google のサービス（Search Console など）を利用することがあります。これらは個人を特定する情報を含みません。</p>

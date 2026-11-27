@@ -33,7 +33,7 @@ export function writeSynth(ctx) {
 <nav class="bands">${[...groups].map(([g, l]) => `<a href="#${encodeURIComponent(g)}" data-band="${esc(g)}">${esc(g)}<span>${l.length}</span></a>`).join('')}</nav>
 <div class="tbl synth" data-ck="sy"><div class="r h"><div class="c-lv">スキル</div><div class="c-n">できる物（NQ）</div><div class="c-hq">HQ</div><div class="c-cr">クリスタル</div><div class="c-fx">素材</div><div class="c-ot">ほか</div></div>
 ${[...groups].map(([g, l]) => `<div class="band" id="${esc(g)}" data-band="${esc(g)}">${esc(g)} <span>${l.length}件</span></div>` + l.map(({ r, lv }) => `<div class="r" data-id="${esc(r.result + ':' + r.ings.map(i => i.join('x')).join('-'))}"><div class="c-lv">${lv}</div><div class="c-n">${ilink(r.result)}</div><div class="c-hq">${[...new Set(r.hq.filter(Boolean))].filter(h => h !== r.result).map(ilink).join('<br>') || '<span class="nl">—</span>'}</div><div class="c-cr">${esc(iname(r.crystal).replace('のクリスタル', ''))}</div><div class="c-fx">${r.ings.map(([i, n]) => `${ilink(i)}${n > 1 ? `×${n}` : ''}`).join('、')}</div><div class="c-ot">${Object.entries(r.skills).filter(([k]) => k !== ja).map(([k, v]) => `${esc(k)}${v}`).join(' ') || ''}</div></div>`).join('')).join('')}</div>
-<p class="note">レシピの元データ：有志のサーバー再現データ LandSandBoat（GPLv3）。数値は参考です。</p></main><script src="${BASE}list.js?v=${VER}"></script>` + foot;
+<p class="note">レシピの元データ：有志が公開しているデータ。数値は参考です。</p></main><script src="${BASE}list.js?v=${VER}"></script>` + foot;
     const f = path.join(SITE, rel); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, html); urls.push(`${ORIGIN}/${rel}`);
   }
   const count = [...byCraft.values()].reduce((a, b) => a + b.length, 0);

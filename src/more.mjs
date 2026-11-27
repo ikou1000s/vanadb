@@ -138,7 +138,7 @@ ${catNavItems(key)}${pager(pages, p, `items/${key}`)}
 ${foodById.has(id) ? `<h2>食事の効果</h2><ul class="stats">${Object.entries(foodById.get(id).s).map(([k, a]) => `<li><a href="${BASE}food.html?stat=${encodeURIComponent(k)}">${esc(k.replace(/%$/, ''))}</a> <b>${a[0] > 0 ? '+' : ''}${a[0]}${/%$/.test(k) ? '%' : ''}${a[1] != null ? `（最大${a[1]}）` : ''}</b></li>`).join('')}</ul>${Object.keys(foodById.get(id).p).length ? `<h2>ペットへの効果</h2><ul class="stats">${Object.entries(foodById.get(id).p).map(([k, a]) => `<li>${esc(k.replace(/%$/, ''))} <b>${a[0] > 0 ? '+' : ''}${a[0]}${/%$/.test(k) ? '%' : ''}${a[1] != null ? `（最大${a[1]}）` : ''}</b></li>`).join('')}</ul>` : ''}<p class="note">効果の名前を押すと、その効果の大きい順に食事が並びます（<a href="${BASE}food.html">食事の効果で探す</a>）。</p>` : ''}
 ${sp ? `<h2>この巻物で覚える魔法</h2><p><a class="bd cat" href="${BASE}spell/${sp.id}.html">${esc(sp.ja)}</a></p>` : ''}
 ${acqHtml(id) ? `<h2>入手方法</h2>${acqHtml(id)}` : ''}
-${made.length ? `<h2>作り方（合成）</h2><p class="note">有志のサーバー再現データ（LandSandBoat）のレシピ。数値は参考。</p>${made.slice(0, 6).map(r => `<div class="recipe"><div class="rq">${SK(r)}<span class="bd">${esc(iname(r.crystal))}</span></div><div class="ri">${r.ings.map(([i, n]) => `${ilink(i)}${n > 1 ? ` ×${n}` : ''}`).join('　')}</div><div class="ro">→ NQ：${ilink(r.result)}${r.hq.filter(Boolean).length ? `　HQ：${[...new Set(r.hq.filter(Boolean))].map(ilink).join('・')}` : ''}</div></div>`).join('')}` : ''}
+${made.length ? `<h2>作り方（合成）</h2><p class="note">数値は参考。</p>${made.slice(0, 6).map(r => `<div class="recipe"><div class="rq">${SK(r)}<span class="bd">${esc(iname(r.crystal))}</span></div><div class="ri">${r.ings.map(([i, n]) => `${ilink(i)}${n > 1 ? ` ×${n}` : ''}`).join('　')}</div><div class="ro">→ NQ：${ilink(r.result)}${r.hq.filter(Boolean).length ? `　HQ：${[...new Set(r.hq.filter(Boolean))].map(ilink).join('・')}` : ''}</div></div>`).join('')}` : ''}
 ${uses.length ? `<h2>使い道（この素材で作れる物 ${uses.length}品）</h2><p class="same">${uses.sort((a, b) => iname(a).localeCompare(iname(b), 'ja')).slice(0, 120).map(x => (equipById.has(x) || itemCatOf.has(x)) ? `<a href="${BASE}item/${x}.html">${esc(iname(x))}</a>` : `<b>${esc(iname(x))}</b>`).join('')}</p>` : ''}
 <p class="note">ドロップ・お店・報酬などの入手方法は、<a href="${ffo(it.ja)}" rel="noopener" target="_blank">FF11用語辞典の「${esc(it.ja)}」</a>を見てください。</p>
 </main>` + foot);
@@ -233,7 +233,7 @@ ${sc ? `<h2>スクロール</h2><p><a class="bd cat" href="${BASE}item/${sc}.htm
 <p class="lead">武器の種類ごとに、覚えるスキル値の順です。印の意味：<span class="tag ab-qu">クエスト</span>クエストで覚える　<span class="tag ab-mp">メリポ</span>メリットポイントで覚える　<span class="tag ab-mo">メインのみ</span>サポートジョブでは使えない　<span class="tag ab-wp">武器で習得</span>エンピリアン・ミシックなどの武器でWSポイントを貯めて覚える　<span class="tag ab-wp">レリック</span><span class="tag ab-wp">専用の武器</span>その武器を持つと使える。</p>
 <nav class="catnav"><div><span class="lbl">武器</span>${wsSkills.map(s => `<a href="#${wsKey(s)}">${esc(s)}</a>`).join('')}</div></nav>
 ${wsSkills.map(s => `<h2 id="${wsKey(s)}">${esc(s)} <span class="cnt">${wsBySkill.get(s).length}件</span></h2><div class="tbl ws" data-ck="ws"><div class="r h"><div class="c-no">スキル</div><div class="c-n">名前</div><div class="c-jb">使えるジョブ</div><div class="c-sc">連携属性</div><div class="c-x">用語辞典</div></div>${wsBySkill.get(s).sort(wsSort).map(w => { const h = wsHow(w); return `<div class="r" data-id="${w.id}"><div class="c-no">${h[0] || '—'}</div><div class="c-n"><b>${esc(w.ja)}</b>${wsTag(h)}<small>${esc(w.en)}</small></div><div class="c-jb">${jobGrid(lsb.ws && lsb.ws[w.id] ? lsb.ws[w.id][1] : 0)}</div><div class="c-sc">${scCell(w) || '<span class="nl">—</span>'}</div><div class="c-x"><a href="${ffo(w.ja)}" rel="noopener" target="_blank">見る</a></div></div>`; }).join('')}</div>`).join('')}
-<p class="src">覚えるスキル値・使えるジョブ・覚え方は LandSandBoat（GPLv3）の表から。</p>
+<p class="src">覚えるスキル値・使えるジョブ・覚え方は、有志が公開しているデータから。</p>
 </main><script src="${BASE}list.js?v=${VER}"></script>` + foot);
 
   // ── アビリティ（ジョブごと・覚えるレベルの順）
@@ -270,6 +270,7 @@ ${wsSkills.map(s => `<h2 id="${wsKey(s)}">${esc(s)} <span class="cnt">${wsBySkil
   const AVATARS = ['カーバンクル', 'ケット・シー', 'イフリート', 'タイタン', 'リヴァイアサン', 'ガルーダ', 'シヴァ', 'ラムウ', 'フェンリル', 'ディアボロス', 'セイレーン', 'アトモス', 'オーディン', 'アレキサンダー', 'そのほか'];
   const isBp = a => /^BloodPact/.test(a.type);
   const used = new Set();
+  const jobAbHtml = new Map(); // ジョブ別ページに出す分
   const jobSec = j => {
     const mine = abAll.filter(a => { const x = abX(a); return x && x[0] === j.id; });
     const main = mine.filter(a => !isBp(a) && a.type !== 'Monster').sort(abSort);
@@ -290,6 +291,7 @@ ${wsSkills.map(s => `<h2 id="${wsKey(s)}">${esc(s)} <span class="cnt">${wsBySkil
     }
     mine.forEach(a => { if (j.id === 9 || a.type !== 'Monster') used.add(a.id); });
     const n = main.length + (extra ? (extra.match(/class="r" data-id/g) || []).length : 0);
+    jobAbHtml.set(j.id, { n, html: abTbl(main) + extra });
     return `<h2 id="ab-j${j.id}">${esc(j.ja)} <span class="cnt">${n}件</span></h2>${abTbl(main)}${extra}`;
   };
   const jobHtml = JOB_LIST.map(jobSec).join('');
@@ -300,8 +302,31 @@ ${wsSkills.map(s => `<h2 id="${wsKey(s)}">${esc(s)} <span class="cnt">${wsBySkil
 <nav class="catnav"><div><span class="lbl">ジョブ</span>${JOB_LIST.map(j => `<a href="#ab-j${j.id}" title="${esc(j.ja)}">${esc(j.jas)}</a>`).join('')}${rest.length ? '<a href="#ab-other">そのほか</a>' : ''}</div></nav>
 ${jobHtml}
 ${rest.length ? `<h2 id="ab-other">そのほか <span class="cnt">${rest.length}件</span></h2><p class="lead">覚えるジョブ・レベルが元の表に無い物です。</p>${abTbl(rest, false)}` : ''}
-<p class="src">覚えるジョブ・レベル・再使用時間・メリポなどの印は LandSandBoat（GPLv3）の表から。ジョブポイントで変わる再使用時間は入っていません。</p>
+<p class="src">覚えるジョブ・レベル・再使用時間・メリポなどの印は、有志が公開しているデータから。ジョブポイントで変わる再使用時間は入っていません。</p>
 </main><script src="${BASE}list.js?v=${VER}"></script>` + foot);
+
+  // ── ジョブ別ページに出す部分（アビリティ・魔法・WS・ジョブ特性）
+  const byJob = new Map();
+  const SP_JA = new Map(SPELL_TYPES.map(([t, , ja]) => [t, ja]));
+  const spAll = [...spells.values()].filter(s => s.ja && s.ja !== '.' && s.type !== 'Trust');
+  const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
+  const lvShow = l => (l > 99 ? `<span title="ジョブポイント">JP${l}</span>` : l);
+  for (const j of JOB_LIST) {
+    const bit = 1 << j.id;
+    // 魔法（覚えるLvの順。100より上はジョブポイントの数）
+    const sp = spAll.map(s => [s, (parseLv(s.levels).find(([x]) => x === j.id) || [])[1]]).filter(([, l]) => l != null).sort((a, b) => (a[1] - b[1]) || (a[0].id - b[0].id));
+    const spHtml = sp.length ? `<div class="tbl jsp"><div class="r h"><div class="c-no">Lv</div><div class="c-n">名前</div><div class="c-ty">種類</div><div class="c-m">MP</div></div>${sp.map(([s, l]) => `<div class="r"><div class="c-no">${lvShow(l)}</div><div class="c-n"><a href="${BASE}spell/${s.id}.html">${esc(s.ja)}</a><small>${esc(s.en)}</small></div><div class="c-ty">${esc(SP_JA.get(s.type) || '')}</div><div class="c-m">${s.mp_cost ?? ''}</div></div>`).join('')}</div>` : '';
+    // WS（武器ごと・覚えるスキル値の順）
+    const wsMine = [...wsBySkill.entries()].map(([sk, l]) => [sk, l.filter(w => lsb.ws && lsb.ws[w.id] && (lsb.ws[w.id][1] & bit)).sort(wsSort)]).filter(([, l]) => l.length)
+      .sort((a, b) => wsSkills.indexOf(a[0]) - wsSkills.indexOf(b[0]));
+    const wsN = wsMine.reduce((a, [, l]) => a + l.length, 0);
+    const wsHtml = wsMine.map(([sk, l]) => `<h4>${esc(sk)} <span class="cnt">${l.length}件</span></h4><div class="tbl jws"><div class="r h"><div class="c-no">スキル</div><div class="c-n">名前</div><div class="c-sc">連携属性</div></div>${l.map(w => { const h = wsHow(w); return `<div class="r"><div class="c-no">${h[0] || '—'}</div><div class="c-n"><b>${esc(w.ja)}</b>${wsTag(h)}<small>${esc(w.en)}</small></div><div class="c-sc">${scCell(w) || '<span class="nl">—</span>'}</div></div>`; }).join('')}</div>`).join('');
+    // ジョブ特性（覚えるLvの順・ランク）
+    const tr = ((lsb && lsb.traits) || []).filter(t => t[1] === j.id).sort((a, b) => (a[2] - b[2]) || (a[0] - b[0]) || (a[3] - b[3]));
+    const maxRank = new Map(); for (const t of tr) maxRank.set(t[0], Math.max(maxRank.get(t[0]) || 0, t[3]));
+    const trHtml = tr.length ? `<div class="tbl jtr"><div class="r h"><div class="c-no">Lv</div><div class="c-n">特性</div></div>${tr.map(t => { const w = traitsW.get(t[0]) || {}; return `<div class="r"><div class="c-no">${lvShow(t[2])}</div><div class="c-n"><b>${esc(w.ja || '')}${maxRank.get(t[0]) > 1 ? ' ' + ROMAN[t[3]] : ''}</b>${t[4] ? '<span class="tag ab-mp">メリポ</span>' : ''}<small>${esc(w.en || '')}</small></div></div>`; }).join('')}</div>` : '';
+    byJob.set(j.id, { ab: jobAbHtml.get(j.id) || { n: 0, html: '' }, sp: { n: sp.length, html: spHtml }, ws: { n: wsN, html: wsHtml }, tr: { n: tr.length, html: trHtml } });
+  }
 
   // ── トップに出す節
   const home = `<section class="box" id="items"><h2>アイテム（装備以外 ${[...itemCount.values()].reduce((a, b) => a + b, 0).toLocaleString()}件）</h2><div class="tiles">${ITEM_CATS.filter(([k]) => itemCount.get(k)).map(([k, ja, ic]) => tile(`${BASE}items/${k}.html`, ja, itemCount.get(k), ic, 'it')).join('')}${tile(`${BASE}food.html`, '食事の効果で探す', foods.length, '探', 'it hot')}</div></section>
@@ -309,5 +334,5 @@ ${rest.length ? `<h2 id="ab-other">そのほか <span class="cnt">${rest.length}
 <section class="box" id="ws"><h2>ウェポンスキル・アビリティ</h2><div class="tiles">${tile(`${BASE}ws/index.html`, 'ウェポンスキル', [...wsBySkill.values()].flat().length, '技', 'w')}${tile(`${BASE}ability/index.html`, 'アビリティ', [...abByType.values()].flat().length, '能', 'w')}</div></section>
 <section class="box" id="ki"><h2>だいじなもの（${[...kiByCat.values()].flat().length.toLocaleString()}件）</h2><div class="tiles">${kiCats.map(c => tile(`${BASE}ki/${KI_KEY[c] || 'other'}.html`, KI_JA[c] || c, kiByCat.get(c).length, (KI_JA[c] || c)[0], 'ki')).join('')}</div></section>`;
   const counts = { foods: foods.length, items: [...itemCount.values()].reduce((a, b) => a + b, 0), ki: [...kiByCat.values()].flat().length, spells: [...spCount.values()].reduce((a, b) => a + b, 0), ws: [...wsBySkill.values()].flat().length, ab: [...abByType.values()].flat().length };
-  return { home, urls, counts, itemCatOf };
+  return { home, urls, counts, itemCatOf, byJob };
 }

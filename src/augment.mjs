@@ -71,7 +71,7 @@ ${weapons.map(([id, l]) => l.map((t, i) => `<div class="r" data-id="${id}"><div 
 <p>候補のうちいくつかが、表の幅の中の値で付きます（どれが付くかはランダム）。</p>
 <div class="tbl aug"><div class="r h"><div class="c-n">装備</div><div class="c-lv">エリア</div><div class="c-fx">候補と幅</div></div>
 ${px.map(p => `<div class="r" data-id="${p.id}"><div class="c-n">${ilink(p.id)}<small>${esc((items.get(p.id) || {}).en || '')}</small></div><div class="c-lv">${esc(zone(p.zone))}</div><div class="c-fx">${p.augs.map(x => `<span class="aug" title="${esc(x[3])}〜${esc(x[4])}">${esc(range(x))}</span>`).join(' ')}</div></div>`).join('')}</div>
-<p class="note">元データ：有志のサーバー再現データ LandSandBoat（GPLv3）の magian_data.lua・sturdypyxis/augmented_item.lua・augments.sql。英語の表記を、ゲーム内の日本語の略し方（攻・飛攻・D・隔など）に置き換えています。字にマウスを乗せると元の英語が出ます。再現データなので、今のゲームと違う所があり得ます（試練の番号・回数は参考）。</p></main><script src="${BASE}list.js?v=${VER}"></script>` + foot;
+<p class="note">元データ：有志が公開しているデータ。英語の表記を、ゲーム内の日本語の略し方（攻・飛攻・D・隔など）に置き換えています。字にマウスを乗せると元の英語が出ます。今のゲームと違う所があり得ます（試練の番号・回数は参考）。</p></main><script src="${BASE}list.js?v=${VER}"></script>` + foot;
   fs.writeFileSync(path.join(SITE, rel), html);
   const home = tile(`${BASE}augment.html`, 'オーグメント', tr.length + px.length, '強', 'ex');
   return { home, urls: [`${ORIGIN}/${rel}`], count: tr.length + px.length, byItem };

@@ -101,5 +101,7 @@ export function writeExtra(ctx) {
     ['titles.html', '称号', counts.titles, '称'], ['mounts.html', 'マウント', counts.mounts, '騎'], ['merits.html', 'メリットポイント', counts.merits, 'メ'], ['jobpoints.html', 'ジョブポイント', counts.jp, 'JP'],
     ['traits.html', 'ジョブ特性', counts.traits, '特'], ['buffs.html', '状態（強化・弱体）', counts.buffs, '状'], ['monster-abilities.html', 'モンスターの技', counts.mab, '技'], ['monstrosity.html', 'モンストロス', counts.mon, '魔'], ['zones.html', 'エリア', counts.zones, '地'],
   ].map(([u, ja, n, ic]) => tile(`${BASE}${u}`, ja, n, ic, 'ex')).join('')}</div></section>`;
-  return { home, urls, counts };
+  const meritByJob = new Map(); for (const [k, [, l]] of mGroups) if (k > 10000 && k < 10100) meritByJob.set(k - 10000, l);
+  const jpByJob = jGroups;
+  return { home, urls, counts, meritByJob, jpByJob };
 }

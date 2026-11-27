@@ -38,7 +38,7 @@ export function writeQuests(ctx) {
   // ── クエスト（エリアごと・ゾーンの帯・チェック欄）
   const qTotal = Q.quests.reduce((a, b) => a + b.list.length, 0);
   const qNav = cur => `<nav class="catnav"><div><span class="lbl">クエスト</span>${Q.quests.map(a => a.key === cur ? `<b>${esc(a.ja)}</b>` : `<a href="${BASE}quest/${a.key}.html">${esc(a.ja)}</a>`).join('')}<a href="${BASE}mission/index.html">ミッション</a></div></nav>`;
-  const credit = `<p class="note">一覧の元データ：<a href="${esc(Q.source)}" rel="noopener" target="_blank">Journal-FFXI-JP</a>（GPL-3.0・<a href="${BASE}data/quests.json">このサイトで使った形のデータ</a>）。名前・場所・依頼する人・条件・報酬だけを使い、手順の文は載せていません。手順や細かい条件は、各クエストの「用語辞典」から見てください。</p>`;
+  const credit = `<p class="note">一覧の元データ：有志が公開しているデータ（GPL-3.0・<a href="${BASE}data/quests.json">このサイトで使った形のデータ</a>）。名前・場所・依頼する人・条件・報酬だけを使い、手順の文は載せていません。手順や細かい条件は、各クエストの「用語辞典」から見てください。</p>`;
   for (const a of Q.quests) {
     const byZone = new Map();
     for (const q of a.list) { const z = zoneTxt(q.zone) || 'そのほか'; if (!byZone.has(z)) byZone.set(z, []); byZone.get(z).push(q); }
@@ -68,8 +68,10 @@ ${credit}</main><script src="${BASE}list.js?v=${VER}"></script>` + foot);
   write('quest/index.html', head(`クエストの一覧（${qTotal}件）｜エリアごとのチェックリスト｜${SITE_SHORT}`, `FF11のクエスト${qTotal}件をエリアごとに。やり忘れの確認に。`, `${ORIGIN}/quest/index.html`)
     + `<main class="wide">${crumb('クエスト')}<h1>クエスト <span class="cnt">${qTotal}件</span></h1><div class="tiles">${Q.quests.map(a => tile(`${BASE}quest/${a.key}.html`, a.ja, a.list.length, a.ja[0], 'qs')).join('')}${tile(`${BASE}mission/index.html`, 'ミッション', mTotal, '任', 'ms')}</div>${credit}</main>` + foot);
 
-  const home = `<section class="box" id="quest"><h2>クエスト・ミッション（チェックリスト）<a class="all" href="${BASE}quest/index.html">一覧へ</a></h2>
-<p class="note" style="margin:0 0 10px">やった物にチェックを付けて、やり忘れ・取り忘れを確認できます（チェックはこのブラウザに残ります）。</p>
-<div class="tiles">${Q.quests.map(a => tile(`${BASE}quest/${a.key}.html`, a.ja, a.list.length, a.ja[0], 'qs')).join('')}${Q.missions.map(m => tile(`${BASE}mission/${m.key}.html`, m.ja, m.list.length, m.ja[0], 'ms')).join('')}</div></section>`;
+  const ckNote = '<p class="note" style="margin:0 0 10px">やった物にチェックを付けて、やり忘れ・取り忘れを確認できます（チェックはこのブラウザに残ります）。</p>';
+  const home = `<section class="box" id="mission"><h2>ミッション（${mTotal}件・チェックリスト）<a class="all" href="${BASE}mission/index.html">一覧へ</a></h2>
+${ckNote}<div class="tiles">${Q.missions.map(m => tile(`${BASE}mission/${m.key}.html`, m.ja, m.list.length, m.ja[0], 'ms')).join('')}</div></section>
+<section class="box" id="quest"><h2>クエスト（${qTotal}件・チェックリスト）<a class="all" href="${BASE}quest/index.html">一覧へ</a></h2>
+${ckNote}<div class="tiles">${Q.quests.map(a => tile(`${BASE}quest/${a.key}.html`, a.ja, a.list.length, a.ja[0], 'qs')).join('')}</div></section>`;
   return { home, urls, counts: { quests: qTotal, missions: mTotal } };
 }
