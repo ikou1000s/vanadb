@@ -74,6 +74,9 @@ ${note}</main><script src="${BASE}list.js?v=${VER}"></script>` + foot);
     if (d.length) h += `<h3>このエリアで落とすアイテム <span class="cnt">${d.length}件</span></h3>${d.length > 40 ? `<p class="note">落とすモンスターの多い順に40件。</p>` : ''}<ul class="acq drops">${d.slice(0, 40).map(([id, e]) => `<li><a href="${BASE}item/${id}.html">${esc(e.ja)}</a> <small>${[...e.mobs].slice(0, 3).map(esc).join('・')}${e.mobs.size > 3 ? ` ほか${e.mobs.size - 3}` : ''}${e.nm ? '（NM）' : ''}</small></li>`).join('')}</ul>`;
     const fi = [...(fishZ.get(z) || new Map())].sort((a, b) => a[0] - b[0]);
     if (fi.length) h += `<h3>釣れる物 <span class="cnt">${fi.length}件</span></h3><ul class="chips">${fi.map(([id, ja]) => `<li><a href="${BASE}item/${id}.html">${esc(ja)}</a></li>`).join('')}</ul>`;
+    // 同じ地方のほかのエリア（隣のエリアに出た物は除く）。モンスターのいない街・船などのページにも行き先を
+    const nbS = new Set(nb), same = g ? g[2].filter(x => x !== z && !nbS.has(x)) : [];
+    if (same.length) h += `<h3>${esc(g[1])}のほかのエリア <span class="cnt">${same.length}件</span></h3><ul class="chips">${same.map(x => `<li><a href="${BASE}maps/${x}.html">${esc(zname(x))}</a> <small>${byZone.get(x).length}枚</small></li>`).join('')}</ul>`;
     return `<section class="mabout">${h}</section>`;
   };
   // エリアごと
