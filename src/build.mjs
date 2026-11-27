@@ -197,7 +197,7 @@ const head = (title, description, canonical) => `<!DOCTYPE html>
 <link rel="icon" href="${BASE}favicon.ico" sizes="48x48"><link rel="icon" href="${BASE}favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="${BASE}apple-touch-icon.png"><link rel="manifest" href="${BASE}site.webmanifest"><meta name="theme-color" content="#14254a">
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE}" crossorigin="anonymous"></script><script src="${BASE}find.js?v=${VER}" defer></script></head><body>
 <header class="top"><div class="in"><a class="brand" href="${BASE}">ヴァナDB<small>FF11 データベース</small></a><span class="asof">データ ${esc(asof.date)} 時点（${esc(asof.note)}）</span><form class="hfind" action="${BASE}find.html" method="get" role="search"><span class="hf-ic" aria-hidden="true"></span><input name="q" type="search" placeholder="名前で探す（装備・アイテム・魔法・クエスト…）" autocomplete="off" aria-label="名前で探す"><button type="submit">探す</button></form></div>
-<nav class="gnav"><a class="new" href="${BASE}#new">新装備・新アイテム</a><a href="${BASE}#job">ジョブ別</a><a href="${BASE}#weapon">武器</a><a href="${BASE}#armor">防具</a><a href="${BASE}#items">アイテム</a><a href="${BASE}#synth">合成</a><a href="${BASE}#ki">だいじなもの</a><a href="${BASE}#magic">魔法</a><a href="${BASE}#ws">WS・アビリティ</a><a href="${BASE}#mission">ミッション</a><a href="${BASE}#quest">クエスト</a><a href="${BASE}#more">そのほか</a><a href="${BASE}search.html">性能で探す</a></nav></header>`;
+<nav class="gnav"><a class="new" href="${BASE}#new">新装備・新アイテム</a><a href="${BASE}#job">ジョブ別</a><a href="${BASE}#weapon">武器</a><a href="${BASE}#armor">防具</a><a href="${BASE}#items">アイテム</a><a href="${BASE}#synth">合成</a><a href="${BASE}#ki">だいじなもの</a><a href="${BASE}#magic">魔法</a><a href="${BASE}#ws">WS・アビリティ</a><a href="${BASE}#mission">ミッション</a><a href="${BASE}#quest">クエスト</a><a href="${BASE}#more">そのほか</a></nav></header>`;
 const foot = `<footer class="foot"><p>装備の名前と性能の文はゲーム内の表記です。誤りに気づいたら教えてください。</p>
 <p>姉妹サイト：<a href="https://ff11ikou.blog.fc2.com/">【 FF11 】いこう！ の実験＆実用メモ帳</a>（ジョブ別の装備セットと選んだ理由）</p>
 <p><a href="${BASE}about.html">このサイトについて・プライバシーポリシー・お問い合わせ</a></p>
@@ -531,8 +531,9 @@ fs.writeFileSync(path.join(SITE, 'index.html'), head(`${SITE_NAME}｜部位・�
 <section class="box latest" id="new"><h2>最新の新装備・新アイテム <a class="all" href="${BASE}new.html">バージョンアップごとの一覧へ</a></h2>
 ${updates.slice(0, 2).map(u => updateBlock(u, false)).join('')}</section>
 <section class="box" id="job"><h2>ジョブ別</h2><div class="tiles small">${JOB_LIST.map(j => tile(`${BASE}job/${j.ens.toLowerCase()}.html`, j.ja, equip.filter(e => (e.it.jobs || 0) & (1 << j.id)).length, j.jas, 'j')).join('')}</div></section>
-<section class="box" id="weapon"><h2>武器（種類ごと）</h2><div class="tiles">${WEAPON_CATS.filter(([k]) => catCount.get(k)).map(([k, ja]) => tile(`${BASE}list/${k}.html`, ja, catCount.get(k), ICON[k], 'w')).join('')}</div></section>
-<section class="box" id="armor"><h2>防具（部位ごと）</h2><div class="tiles">${ARMOR_CATS.map(([k, ja]) => tile(`${BASE}list/${k}.html`, ja, catCount.get(k) || 0, ICON[k])).join('')}</div></section>
+<section class="box" id="weapon"><h2>武器（種類ごと）</h2><div class="tiles">${tile(`${BASE}search.html?cat=${WEAPON_CATS.filter(([k]) => catCount.get(k)).map(([k]) => k).join(',')}`, '性能で探す', WEAPON_CATS.reduce((a, [k]) => a + (catCount.get(k) || 0), 0), '探', 'w hot')}${WEAPON_CATS.filter(([k]) => catCount.get(k)).map(([k, ja]) => tile(`${BASE}list/${k}.html`, ja, catCount.get(k), ICON[k], 'w')).join('')}</div></section>
+<section class="box" id="armor"><h2>防具（部位ごと）</h2><div class="tiles">${tile(`${BASE}search.html?cat=${ARMOR_CATS.map(([k]) => k).join(',')}`, '性能で探す', ARMOR_CATS.reduce((a, [k]) => a + (catCount.get(k) || 0), 0), '探', 'hot')}${ARMOR_CATS.map(([k, ja]) => tile(`${BASE}list/${k}.html`, ja, catCount.get(k) || 0, ICON[k])).join('')}</div>
+<div class="quick"><b>性能で探す・よく使う：</b>${QUICK.map(([label, q]) => `<a href="${BASE}search.html?${q}">${esc(label)}</a>`).join('')}</div></section>
 ${homeSec(more.home, 'items')}
 ${sy.home}
 ${homeSec(more.home, 'ki')}
@@ -540,8 +541,6 @@ ${homeSec(more.home, 'magic')}
 ${homeSec(more.home, 'ws')}
 ${qs2.home}
 ${ex.home.replace('</div></section>', fi.home + gu.home + au.home + lk.home + '</div></section>')}
-<section class="box" id="search"><h2>性能で探す</h2><p>ヘイスト・ファストキャスト・マジックバースト・被ダメージなど、性能の数値で絞り込んで大きい順に並べられます。 <a class="btn" href="${BASE}search.html">性能で探す</a></p>
-<div class="quick">${QUICK.map(([label, q]) => `<a href="${BASE}search.html?${q}">${esc(label)}</a>`).join('')}</div></section>
 </main><script src="${BASE}list.js?v=${VER}"></script>` + foot);
 
 
