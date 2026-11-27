@@ -237,8 +237,14 @@ ${groups.map(([t, l]) => `<h2 id="${gid(t)}">${t} <span class="cnt">${l.length}�
 <div class="tbl spells${key === 'blue' ? ' blue' : ''}" data-ck="sp"><div class="r h"><div class="c-n">名前</div><div class="c-jl">覚えるジョブとLv</div><div class="c-m">MP</div><div class="c-m">詠唱</div><div class="c-m">再詠唱</div><div class="c-m">属性</div><div class="c-m">対象</div>${key === 'blue' ? '<div class="c-m">セット</div><div class="c-tr">特性</div><div class="c-sc">連携属性</div>' : ''}</div>
 ${list.map(s => `<div class="r" data-id="${s.id}" data-j="${parseLv(s.levels).reduce((a, [j]) => a | (1 << j), 0)}"><div class="c-n"><a href="${BASE}spell/${s.id}.html">${esc(s.ja)}</a><small>${esc(s.en)}</small></div><div class="c-jl">${lvText(s) || '<span class="nl">—</span>'}</div><div class="c-m">${s.mp_cost ?? ''}</div><div class="c-m">${s.cast_time ?? ''}秒</div><div class="c-m">${s.recast ?? ''}秒</div><div class="c-m el el${s.element}">${ELEMENT_JA[s.element] ?? ''}</div><div class="c-m">${tgt(s.targets || 0)}</div>${key === 'blue' ? `<div class="c-m">${blueOf(s) ? blueOf(s).sp : ''}</div><div class="c-tr">${esc(blueTrait(blueOf(s)))}</div><div class="c-sc">${blueSc(blueOf(s))}</div>` : ''}</div>`).join('')}</div>
 <p class="none" hidden>このジョブが覚える物はありません。</p></main><script src="${BASE}list.js?v=${VER}"></script>` + foot);
+    // 同じ系統の魔法：段階違い（Cure / Cure II…）と、最後の語が同じ物（Fire Threnody / Ice Threnody…）。同じ種類の中だけ
+    const spBase = s => String(s.en || '').trim().replace(/:\s*(Ichi|Ni|San)$/i, '').replace(/\s+(I{1,3}|IV|VI?|V)$/i, '');
+    const spLast = s => { const w = spBase(s).split(/\s+/); return w.length >= 2 ? w[w.length - 1].toLowerCase() : ''; };
+    const minLv = s => Math.min(...parseLv(s.levels).map(x => x[1]), 999);
+    const famOf = s => key === 'trust' ? [] : list.filter(o => o !== s && (spBase(o) === spBase(s) || (spLast(s) && spLast(o) === spLast(s)))).slice(0, 24);
     for (const s of list) {
       const sc = scrollOf.get((s.en || '').toLowerCase());
+      const fam = famOf(s);
       write(`spell/${s.id}.html`, head(`${s.ja}｜${ja}｜${SITE_SHORT}`, `${s.ja}（${ja}）の覚えるジョブとレベル、消費MP${s.mp_cost}、詠唱${s.cast_time}秒、再詠唱${s.recast}秒、属性、対象${sc ? '、スクロール' : ''}。`, `${ORIGIN}/spell/${s.id}.html`)
         + `<main class="item">${crumb(`<a href="${BASE}magic/${key}.html">${ja}</a>`, esc(s.ja))}
 <section class="ihead"><div class="nm"><h1>${esc(s.ja)}</h1><small>${esc(s.en)}</small></div>
@@ -246,6 +252,7 @@ ${list.map(s => `<div class="r" data-id="${s.id}" data-j="${parseLv(s.levels).re
 ${s.type === 'Trust' ? `<div class="jobsrow"><span class="lbl">戦闘タイプ</span><span class="lvs">${esc(trustType(s) || '—')}</span><span class="lbl">ジョブ</span><span class="lvs">${jobTxt(s)}</span></div>` : `<div class="jobsrow"><span class="lbl">覚えるジョブとLv</span><span class="lvs">${lvText(s) || '<span class="nl">—</span>'}</span></div>`}</section>
 <div class="extl"><a href="${ffo(s.ja)}" rel="noopener" target="_blank">FF11用語辞典で見る（効果・入手）</a><a href="https://www.bg-wiki.com/ffxi/${encodeURIComponent((s.en || '').replace(/ /g, '_'))}" rel="noopener" target="_blank">BG-Wiki（英語）</a></div>
 ${sc ? `<h2>スクロール</h2><p><a class="bd cat" href="${BASE}item/${sc}.html">${esc(iname(sc))}</a></p>` : ''}
+${fam.length ? `<h2>同じ系統の${ja} <span class="cnt">${fam.length}件</span></h2><div class="tbl spells fam"><div class="r h"><div class="c-n">名前</div><div class="c-jl">覚えるジョブとLv</div><div class="c-m">MP</div><div class="c-m">属性</div></div>${fam.sort((a, b) => minLv(a) - minLv(b) || a.id - b.id).map(o => `<div class="r"><div class="c-n"><a href="${BASE}spell/${o.id}.html">${esc(o.ja)}</a><small>${esc(o.en)}</small></div><div class="c-jl">${lvText(o) || '<span class="nl">—</span>'}</div><div class="c-m">${o.mp_cost ?? ''}</div><div class="c-m el el${o.element}">${ELEMENT_JA[o.element] ?? ''}</div></div>`).join('')}</div>` : ''}
 </main>` + foot);
     }
   }
