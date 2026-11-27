@@ -15,6 +15,7 @@ import { writeAugment } from './augment.mjs';
 import { writeGuild } from './guild.mjs';
 import { writeFind } from './find.mjs';
 import { writeMaps } from './mapsPage.mjs';
+import { writeCommands } from './commands.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DATA = path.join(ROOT, 'data');
@@ -512,6 +513,7 @@ console.log('クエスト・ミッション', JSON.stringify(qs2.counts));
 const ex = writeExtra({ JOB_LIST, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE_SHORT, VER, tile });
 const mp = writeMaps({ ROOT, SITE, DATA, head, foot, esc, BASE, ORIGIN, SITE_SHORT, VER, tile });
 console.log('地図', mp.count);
+const cm = writeCommands({ SITE, DATA, head, foot, esc, BASE, ORIGIN, SITE_SHORT, VER, readLua, fs, path });
 writeJobPages(more, ex);
 console.log('そのほか', JSON.stringify(ex.counts));
 const sy = writeSynth({ items, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE_SHORT, VER, tile, hasPage: id => equipById.has(id) || more.itemCatOf.has(id) });
@@ -544,7 +546,7 @@ ${homeSec(more.home, 'magic')}
 ${homeSec(more.home, 'ws')}
 ${qs2.home}
 ${mp.home}
-${ex.home.replace('</div></section>', fi.home + gu.home + au.home + lk.home + '</div></section>')}
+${ex.home.replace('</div></section>', tile(`${BASE}commands.html`, 'テキストコマンド', cm.count, '／', 'ex hot') + fi.home + gu.home + au.home + lk.home + '</div></section>')}
 </main><script src="${BASE}list.js?v=${VER}"></script>` + foot);
 
 
@@ -572,7 +574,7 @@ console.log('名前で探す', fd.count);
 // 検索エンジン向け
 fs.writeFileSync(path.join(SITE, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${ORIGIN}/sitemap.xml\n`);
 fs.writeFileSync(path.join(SITE, 'sitemap.xml'), '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-  + [`${ORIGIN}/`, `${ORIGIN}/new.html`, `${ORIGIN}/search.html`, `${ORIGIN}/about.html`, ...listPages, ...jobPages, ...more.urls, ...qs2.urls, ...ex.urls, ...mp.urls, ...sy.urls, ...fi.urls, ...au.urls, ...gu.urls, ...lk.urls, ...fd.urls, ...equip.map(e => `${ORIGIN}/item/${e.id}.html`)].map(u => `<url><loc>${u}</loc></url>`).join('\n') + '\n</urlset>\n');
+  + [`${ORIGIN}/`, `${ORIGIN}/new.html`, `${ORIGIN}/search.html`, `${ORIGIN}/about.html`, ...listPages, ...jobPages, ...more.urls, ...qs2.urls, ...ex.urls, ...mp.urls, ...cm.urls, ...sy.urls, ...fi.urls, ...au.urls, ...gu.urls, ...lk.urls, ...fd.urls, ...equip.map(e => `${ORIGIN}/item/${e.id}.html`)].map(u => `<url><loc>${u}</loc></url>`).join('\n') + '\n</urlset>\n');
 fs.writeFileSync(path.join(SITE, '.nojekyll'), '');
 
 console.log(`装備 ${equip.length}件 / 性能の種類 ${STATS.length}（ペット ${petCount.size}） / データ ${asof.date}`);

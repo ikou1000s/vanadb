@@ -480,3 +480,10 @@ p.src{color:var(--sub);font-size:12px;margin-top:18px}
 .maps figcaption{font-size:12.5px;color:var(--sub);margin-top:4px}
 h3.tsub{font-size:13.5px;color:var(--gold);margin:12px 0 6px}
 .box h2 .all + .all{margin-left:8px}
+
+/* テキストコマンド */
+@media (min-width:861px){ .tbl.cmd .r{grid-template-columns:300px 380px minmax(200px,1fr)} }
+.tbl.cmd code{font-family:Consolas,"Courier New",monospace;font-size:13px;color:#ffe9a8}
+.tbl.cmd .c-ex code{color:#9fc4ff;font-size:12.5px}
+.tbl.cmd .cnote{color:var(--sub);font-size:12.5px;padding:5px 12px;border-top:1px solid rgba(95,130,192,.25)}
+@media (max-width:860px){ .tbl.cmd .r{display:flex;flex-wrap:wrap;gap:0 8px} .tbl.cmd .r>div{padding:4px 8px} .tbl.cmd .c-n{flex:1 1 100%} .tbl.cmd .r.h{display:none} }
