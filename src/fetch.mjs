@@ -80,6 +80,8 @@ try { await import('./fetch_helm.mjs'); } catch (e) { console.log('HELMの取り
 try { await import('./fetch_weather.mjs'); } catch (e) { console.log('天候の取り込みに失敗', e.message); }
 // 栽培（植木鉢）で取れる物（失敗しても止めない）
 try { await import('./fetch_garden.mjs'); } catch (e) { console.log('栽培の取り込みに失敗', e.message); }
+// ギルドポイント（ギルドに納品して貰える点数。失敗しても止めない）
+try { await import('./fetch_guildpoints.mjs'); } catch (e) { console.log('ギルドポイントの取り込みに失敗', e.message); }
 
 // ドロップ・ぬすむ（LandSandBoat・GPLv3）
 await import('./fetch_mobs.mjs');

@@ -70,6 +70,11 @@ const gardenData = (() => { const f = path.join(DATA, 'garden.json'); return fs.
 const gardenFeed = g => g.feed.map(e => GARDEN_EL[e] || '?').join('→');
 const gardenOf = new Map(), gardenCombos = new Map();
 for (const g of gardenData.garden) { gardenCombos.set(g.seed, (gardenCombos.get(g.seed) || 0) + 1); for (const id of g.items) { if (!gardenOf.has(id)) gardenOf.set(id, new Map()); const m = gardenOf.get(id); if (!m.has(g.seed)) m.set(g.seed, []); m.get(g.seed).push(gardenFeed(g)); } }
+// ギルドポイント（data/guildpoints.json・src/fetch_guildpoints.mjs）：アイテム番号 → [[ギルド, 位, 1個の点数, その日の上限, 8日のうち求められる日数], ...]
+const GUILD_JA = ['釣り', '木工', '鍛冶', '彫金', '裁縫', '革細工', '骨細工', '錬金術', '調理'];
+const guildOf = new Map();
+{ const gF = path.join(DATA, 'guildpoints.json'); if (fs.existsSync(gF)) for (const [g, id, r, p, mx, d] of JSON.parse(fs.readFileSync(gF, 'utf8')).list || []) { if (!guildOf.has(id)) guildOf.set(id, []); guildOf.get(id).push([g, r, p, mx, d]); } }
+const guildHtml = id => { const gs = guildOf.get(id); if (!gs) return ''; return '<h2>ギルドに納品するとギルドポイント</h2><ul class="acq">' + gs.map(([g, r, p, mx, d]) => '<li><b>' + GUILD_JA[g] + 'ギルド</b> <span class="nl">（' + (CRAFT_RANK_JA[r] || '') + 'の時に求められる品）</span> 1個 ' + p.toLocaleString() + 'ポイント・その日の上限 ' + mx.toLocaleString() + 'ポイント <span class="nl">（求められる品は日替わり：8日のうち' + d + '日）</span></li>').join('') + '</ul><p class="note">ギルドの窓口に、自分の位（' + gs.map(([g]) => GUILD_JA[g]).join('・') + '）の時にその日求められている品を渡すと貰えます。点数は品質の良い物（HQ）ほど上がることがあり、目安です。</p>'; };
 const acqHtml = id => {
   const shops = (shopOf.get(id) || []).slice().sort((a, b) => a[2] - b[2]);
   const drops = (mobsData.drops[id] || []).map(([m, z, c, nm]) => [mobName(m), z, c, nm]);
@@ -373,6 +378,7 @@ ${seriesOk ? `<h2>同じシリーズ</h2>${tbl(series.sort((a, b) => catOrder(a)
 ${sameLook.length > 1 ? `<h2>見た目が同じ装備（${sameLook.length}件）</h2><p class="note">ゲームの中で同じ見た目になる装備です（同じ部位でモデル番号が同じ物）。見た目の固定（ロックスタイル）選びに。${cat ? ` <a href="${BASE}looks/${cat[0]}.html">${esc(cat[1])}の見た目で探す</a>` : ''}</p>${tbl(sameLook.slice(0, 40))}${sameLook.length > 40 ? `<p class="note">ほか${sameLook.length - 40}件。</p>` : ''}` : ''}
 ${au.pageHtml.get(id) || ''}
 <h2>入手方法</h2>${acqHtml(id)}${recs.length ? '<h3>合成</h3>' : ''}${recs.length ? `<p class="note">合成で作れます（数値は参考）。</p>${recs.slice(0, 4).map(recipeHtml).join('')}` : ''}
+${guildHtml(id)}
 <p class="note">${recs.length ? 'ほかの入手方法' : 'ドロップ・報酬・お店などの入手方法'}${au.pageHtml.has(id) ? 'と、ほかのオーグメント（オデシーなど）' : 'と、オーグメント（追加の性能）の中身'}は、<a href="${ffo(it.ja)}" rel="noopener" target="_blank">FF11用語辞典の「${esc(it.ja)}」</a>を見てください。</p>
 ${uses.length ? `<h2>この装備を使っているセット（姉妹ブログ）</h2><ul class="uses">${uses.map(u => `<li><a href="${u.url}">${esc(u.job)}：${esc(u.set)}</a> <span class="k">（${esc(u.parts.join('・'))}）</span></li>`).join('')}</ul>` : ''}
 ${sim.length ? `<h2>性能が近い装備（同じ${esc(kind)}・同じ帯）</h2>${tbl(sim)}` : ''}
@@ -550,7 +556,7 @@ fs.writeFileSync(path.join(SITE, 'search.html'), head(`性能で探す（ヘイ�
 const ICON = { head: '頭', body: '胴', hands: '手', legs: '脚', feet: '足', neck: '首', waist: '腰', back: '背', ear: '耳', ring: '指', shield: '盾', h2h: '拳', dagger: '短', sword: '剣', gsword: '大', axe: '斧', gaxe: '鉞', scythe: '鎌', polearm: '槍', katana: '刀', gkatana: '太', club: '棍', staff: '杖', archery: '弓', marksmanship: '銃', throwing: '投', wind: '笛', string: '琴', handbell: '鈴', fishing: '竿', ammo: '矢', grip: '握' };
 const tile = (href, label, n, ic, cls = '') => `<a class="tile ${cls}" href="${href}"><span class="ic">${esc(ic)}</span><span><b>${esc(label)}</b><span class="n">${n.toLocaleString()}件</span></span></a>`;
 const synthAll = fs.existsSync(path.join(DATA, 'synth.json')) ? JSON.parse(fs.readFileSync(path.join(DATA, 'synth.json'), 'utf8')) : [];
-const more = writeMore({ items, desc, JOB_LIST, skills, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE_SHORT, equipById, synth: synthAll, tile, VER, rxBadges, rxTags, lsb, acqHtml, gardenData, gardenFeed });
+const more = writeMore({ items, desc, JOB_LIST, skills, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE_SHORT, equipById, synth: synthAll, tile, VER, rxBadges, rxTags, lsb, acqHtml, gardenData, gardenFeed, guildHtml });
 console.log('装備以外', JSON.stringify(more.counts));
 const qs2 = writeQuests({ items, JOB_LIST, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE_SHORT, VER, tile });
 console.log('クエスト・ミッション', JSON.stringify(qs2.counts));
