@@ -82,6 +82,8 @@ try { await import('./fetch_weather.mjs'); } catch (e) { console.log('天候の�
 try { await import('./fetch_garden.mjs'); } catch (e) { console.log('栽培の取り込みに失敗', e.message); }
 // ギルドポイント（ギルドに納品して貰える点数。失敗しても止めない）
 try { await import('./fetch_guildpoints.mjs'); } catch (e) { console.log('ギルドポイントの取り込みに失敗', e.message); }
+// 調度品の属性・ストレージ・モグハンス（失敗しても止めない）
+try { await import('./fetch_furnishing.mjs'); } catch (e) { console.log('調度品の取り込みに失敗', e.message); }
 
 // ドロップ・ぬすむ（LandSandBoat・GPLv3）
 await import('./fetch_mobs.mjs');

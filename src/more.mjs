@@ -3,6 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { readLua } from './lua.mjs';
+import { loadFurnishing } from './furnishing.mjs';
 
 const ELEMENT_JA = { 0: '火', 1: '氷', 2: '風', 3: '土', 4: '雷', 5: '水', 6: '光', 7: '闇', 15: '—' };
 const SC_JA = { Light: '光', Darkness: '闇', Fusion: '核熱', Fragmentation: '分解', Distortion: '湾曲', Gravitation: '重力', Transfixion: '貫通', Compression: '収縮', Liquefaction: '溶解', Scission: '切断', Reverberation: '振動', Impaction: '衝撃', Detonation: '炸裂', Induration: '硬化', Radiance: '極光', Umbra: '黒闇' };
@@ -17,6 +18,7 @@ export function writeMore(ctx) {
   const { items, desc, JOB_LIST, skills, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE_SHORT, equipById, synth, tile, VER, rxBadges, rxTags, lsb, acqHtml, gardenData, gardenFeed, guildHtml } = ctx;
   // 種 → 与えるクリスタルの組み合わせごとの取れる物（栽培）
   const gardenBySeed = new Map(); for (const g of (gardenData || { garden: [] }).garden) { if (!gardenBySeed.has(g.seed)) gardenBySeed.set(g.seed, []); gardenBySeed.get(g.seed).push(g); }
+  const furn = loadFurnishing(DATA);
   const urls = [];
   const write = (rel, html) => { const f = path.join(SITE, rel); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, html); urls.push(`${ORIGIN}/${rel}`); };
   const load = f => (fs.existsSync(path.join(DATA, f)) ? readLua(path.join(DATA, f)) : new Map());
@@ -179,6 +181,7 @@ ${catNavItems(key)}${key === 'other' ? otherNav(list, grp, pages) : ''}${pager(p
 ${foodById.has(id) ? `<h2>食事の効果</h2><ul class="stats">${Object.entries(foodById.get(id).s).map(([k, a]) => `<li><a href="${BASE}food.html?stat=${encodeURIComponent(k)}">${esc(k.replace(/%$/, ''))}</a> <b>${a[0] > 0 ? '+' : ''}${a[0]}${/%$/.test(k) ? '%' : ''}${a[1] != null ? `（最大${a[1]}）` : ''}</b></li>`).join('')}</ul>${Object.keys(foodById.get(id).p).length ? `<h2>ペットへの効果</h2><ul class="stats">${Object.entries(foodById.get(id).p).map(([k, a]) => `<li>${esc(k.replace(/%$/, ''))} <b>${a[0] > 0 ? '+' : ''}${a[0]}${/%$/.test(k) ? '%' : ''}${a[1] != null ? `（最大${a[1]}）` : ''}</b></li>`).join('')}</ul>` : ''}<p class="note">効果の名前を押すと、その効果の大きい順に食事が並びます（<a href="${BASE}food.html">食事の効果で探す</a>）。</p>` : ''}
 ${sp ? `<h2>この巻物で覚える魔法</h2><p><a class="bd cat" href="${BASE}spell/${sp.id}.html">${esc(sp.ja)}</a></p>` : ''}
 ${gardenBySeed.has(id) ? `<h2>栽培すると取れる物（${gardenBySeed.get(id).length}通り）</h2><p class="note">植木鉢に植えて、育つ途中で与えたクリスタルの組み合わせごとに取れる物です${gardenBySeed.get(id)[0].tree ? '（この種類は2回与えます：1回目→2回目）' : '（1回与えます）'}。「なし」は与えない時。出やすさと数は載せていません。</p><ul class="acq">${gardenBySeed.get(id).map(g => `<li><b>${esc(gardenFeed(g))}</b> ${g.items.map(ilink).join('・')}</li>`).join('')}</ul>` : ''}
+${furn.html(id)}
 ${acqHtml(id) ? `<h2>入手方法</h2>${acqHtml(id)}` : ''}
 ${guildHtml(id)}
 ${made.length ? `<h2>作り方（合成）</h2><p class="note">数値は参考。</p>${made.slice(0, 6).map(r => `<div class="recipe"><div class="rq">${SK(r)}<span class="bd">${esc(iname(r.crystal))}</span></div><div class="ri">${r.ings.map(([i, n]) => `${ilink(i)}${n > 1 ? ` ×${n}` : ''}`).join('　')}</div><div class="ro">→ NQ：${ilink(r.result)}${r.hq.filter(Boolean).length ? `　HQ：${[...new Set(r.hq.filter(Boolean))].map(ilink).join('・')}` : ''}</div></div>`).join('')}` : ''}
