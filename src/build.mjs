@@ -18,6 +18,7 @@ import { writeMaps } from './mapsPage.mjs';
 import { writeCommands } from './commands.mjs';
 import { writeAscend } from './ascend.mjs';
 import { writeSynergy } from './synergy.mjs';
+import { giftSection } from './jpgifts.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DATA = path.join(ROOT, 'data');
@@ -497,6 +498,7 @@ const jobParts = (j, more, ex) => {
     ['jb-tr', 'ジョブ特性', b.tr, '覚えるレベルの順（同じ特性はランクが上がる所ごと）。'],
     ['jb-mr', 'メリットポイント', { n: ml.length, html: mHtml }, ''],
     ['jb-jp', 'ジョブポイント', { n: jp.length, html: jpHtml }, ''],
+    ['jb-gf', 'ジョブポイントのギフト', giftSection(j.id), 'そのジョブで使ったジョブポイントの合計が数字に届くと貰える効果です（ジョブポイントを割り振ると「使った」に数えられます）。'],
   ].filter(([, , x]) => x && x.n);
 };
 const jobNav = (j, more, ex) => `<nav class="catnav"><div><span class="lbl">見る</span><a href="#jb-eq">装備</a>${jobParts(j, more, ex).map(([id, ja, x]) => `<a href="#${id}">${ja}<span class="cnt">${x.n}</span></a>`).join('')}</div></nav>`;
