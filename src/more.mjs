@@ -3,7 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { readLua } from './lua.mjs';
-import { loadFurnishing } from './furnishing.mjs';
+import { loadFurnishing, mogJa } from './furnishing.mjs';
 
 const ELEMENT_JA = { 0: '火', 1: '氷', 2: '風', 3: '土', 4: '雷', 5: '水', 6: '光', 7: '闇', 15: '—' };
 const SC_JA = { Light: '光', Darkness: '闇', Fusion: '核熱', Fragmentation: '分解', Distortion: '湾曲', Gravitation: '重力', Transfixion: '貫通', Compression: '収縮', Liquefaction: '溶解', Scission: '切断', Reverberation: '振動', Impaction: '衝撃', Detonation: '炸裂', Induration: '硬化', Radiance: '極光', Umbra: '黒闇' };
@@ -95,7 +95,7 @@ export function writeMore(ctx) {
       write(`items/${key}${p ? '-' + (p + 1) : ''}.html`, head(`${ja}の一覧（${list.length.toLocaleString()}件${pages > 1 ? `・${p + 1}/${pages}` : ''}）｜${SITE_SHORT}`,
         `FF11の${ja}${list.length.toLocaleString()}件の一覧。名前・説明（ゲーム内の表記）・スタック数と、合成で作れるか・素材として使えるか。` + (pages > 1 ? `${p + 1}/${pages}ページ：${iname(part[0])}〜${iname(part[part.length - 1])}。` : ''), `${ORIGIN}/items/${key}${p ? '-' + (p + 1) : ''}.html`)
         + `<main class="wide">${crumb('アイテム', esc(ja))}<h1>${esc(ja)} <span class="cnt">${list.length.toLocaleString()}件</span></h1>
-${catNavItems(key)}${key === 'other' ? otherNav(list, grp, pages) : ''}${pager(pages, p, `items/${key}`)}
+${catNavItems(key)}${key === 'other' ? otherNav(list, grp, pages) : ''}${key === 'furnishing' && furn.by.size ? `<p class="lead">属性（火〜闇）・属性値・ストレージ・モグハンスの効果で並べた一覧は <a href="${BASE}items/furnishing-mog.html">調度品を属性・ストレージ・モグハンスで探す</a>。</p>` : ''}${pager(pages, p, `items/${key}`)}
 <div class="tbl items" data-ck="it">${itemHead}${key === 'other' ? part.map((id, i) => (i === 0 || grp.get(part[i - 1]) !== grp.get(id) ? otherBand(grp.get(id), list, grp, i === 0 && p > 0 && grp.get(list[p * PAGE - 1]) === grp.get(id)) : '') + itemRow(id)).join('') : part.map(itemRow).join('')}</div>${pager(pages, p, `items/${key}`)}</main><script src="${BASE}list.js?v=${VER}"></script>` + foot);
     }
   }
@@ -181,7 +181,7 @@ ${catNavItems(key)}${key === 'other' ? otherNav(list, grp, pages) : ''}${pager(p
 ${foodById.has(id) ? `<h2>食事の効果</h2><ul class="stats">${Object.entries(foodById.get(id).s).map(([k, a]) => `<li><a href="${BASE}food.html?stat=${encodeURIComponent(k)}">${esc(k.replace(/%$/, ''))}</a> <b>${a[0] > 0 ? '+' : ''}${a[0]}${/%$/.test(k) ? '%' : ''}${a[1] != null ? `（最大${a[1]}）` : ''}</b></li>`).join('')}</ul>${Object.keys(foodById.get(id).p).length ? `<h2>ペットへの効果</h2><ul class="stats">${Object.entries(foodById.get(id).p).map(([k, a]) => `<li>${esc(k.replace(/%$/, ''))} <b>${a[0] > 0 ? '+' : ''}${a[0]}${/%$/.test(k) ? '%' : ''}${a[1] != null ? `（最大${a[1]}）` : ''}</b></li>`).join('')}</ul>` : ''}<p class="note">効果の名前を押すと、その効果の大きい順に食事が並びます（<a href="${BASE}food.html">食事の効果で探す</a>）。</p>` : ''}
 ${sp ? `<h2>この巻物で覚える魔法</h2><p><a class="bd cat" href="${BASE}spell/${sp.id}.html">${esc(sp.ja)}</a></p>` : ''}
 ${gardenBySeed.has(id) ? `<h2>栽培すると取れる物（${gardenBySeed.get(id).length}通り）</h2><p class="note">植木鉢に植えて、育つ途中で与えたクリスタルの組み合わせごとに取れる物です${gardenBySeed.get(id)[0].tree ? '（この種類は2回与えます：1回目→2回目）' : '（1回与えます）'}。「なし」は与えない時。出やすさと数は載せていません。</p><ul class="acq">${gardenBySeed.get(id).map(g => `<li><b>${esc(gardenFeed(g))}</b> ${g.items.map(ilink).join('・')}</li>`).join('')}</ul>` : ''}
-${furn.html(id)}
+${furn.html(id).replace('効き目の大きさは載せていません。</p>', `効き目の大きさは載せていません。同じ属性の調度品は <a href="${BASE}items/furnishing-mog.html">属性・ストレージ・モグハンスで探す</a>。</p>`)}
 ${acqHtml(id) ? `<h2>入手方法</h2>${acqHtml(id)}` : ''}
 ${guildHtml(id)}
 ${made.length ? `<h2>作り方（合成）</h2><p class="note">数値は参考。</p>${made.slice(0, 6).map(r => `<div class="recipe"><div class="rq">${SK(r)}<span class="bd">${esc(iname(r.crystal))}</span></div><div class="ri">${r.ings.map(([i, n]) => `${ilink(i)}${n > 1 ? ` ×${n}` : ''}`).join('　')}</div><div class="ro">→ NQ：${ilink(r.result)}${r.hq.filter(Boolean).length ? `　HQ：${[...new Set(r.hq.filter(Boolean))].map(ilink).join('・')}` : ''}</div></div>`).join('')}` : ''}
@@ -442,8 +442,31 @@ ${rest.length ? `<h2 id="ab-other">そのほか <span class="cnt">${rest.length}
     byJob.set(j.id, { ab: jobAbHtml.get(j.id) || { n: 0, html: '' }, sp: { n: sp.length, html: spHtml }, ws: { n: wsN, html: wsHtml }, tr: { n: tr.length, html: trHtml } });
   }
 
+  // ── 調度品を属性・モグハンスで探す（data/furnishing.json）
+  const MOG_EL = ['', '火', '氷', '風', '土', '雷', '水', '光', '闇'];
+  const furnList = [...furn.by].filter(([id, v]) => items.has(id) && MOG_EL[v.el]).map(([id, v]) => ({ id, ...v, eff: mogJa(v.mog) }));
+  if (furnList.length) {
+    const fRow = f => `<div class="r" data-id="${f.id}"><div class="c-n"><a href="${BASE}item/${f.id}.html">${esc(iname(f.id))}</a><small>${esc((items.get(f.id) || {}).en || '')}</small></div><div class="c-st">${f.aura}</div>`
+      + `<div class="c-fx">${f.storage ? `<b class="tag">ストレージ+${f.storage}</b> ` : ''}${f.eff ? esc(f.eff) : '<span class="nl">（モグハンスの元にならない）</span>'}　<small>${f.x}×${f.y}マス</small></div></div>`;
+    const byEl = MOG_EL.map((ja, el) => [ja, furnList.filter(f => f.el === el).sort((a, b) => b.aura - a.aura || b.storage - a.storage || iname(a.id).localeCompare(iname(b.id), 'ja'))]).filter(([ja, l]) => ja && l.length);
+    const byStorage = furnList.filter(f => f.storage >= 5).sort((a, b) => b.storage - a.storage || iname(a.id).localeCompare(iname(b.id), 'ja'));
+    const effs = new Map(); for (const f of furnList) if (f.eff) { if (!effs.has(f.eff)) effs.set(f.eff, []); effs.get(f.eff).push(f); }
+    const fHead = '<div class="r h"><div class="c-n">名前</div><div class="c-st">属性値</div><div class="c-fx">ストレージ・モグハンスの元になった時の効果・大きさ</div></div>';
+    write('items/furnishing-mog.html', head(`調度品を属性・ストレージ・モグハンスで探す（${furnList.length}品）｜${SITE_SHORT}`,
+      `FF11の調度品${furnList.length}品を、属性（火〜闇）ごとに属性値の大きい順で。ストレージが増える調度品の順位と、モグハンスの効果ごとの調度品も。`, `${ORIGIN}/items/furnishing-mog.html`)
+      + `<main class="wide">${crumb(`<a href="${BASE}items/furnishing.html">調度品</a>`, '属性・ストレージ・モグハンスで探す')}<h1>調度品を属性・ストレージ・モグハンスで探す <span class="cnt">${furnList.length}品</span></h1>
+<p class="lead">モグハウスに置いた調度品の属性ごとの属性値の合計で、その時に効くモグハンスが決まります。属性ごとに属性値の大きい順、その下にストレージが増える調度品と、モグハンスの効果ごとの調度品を並べています（効き目の大きさは載せていません）。</p>
+<nav class="bands">${byEl.map(([ja, l]) => `<a href="#el-${encodeURIComponent(ja)}" data-band="${esc(ja)}">${esc(ja)}<span>${l.length}</span></a>`).join('')}<a href="#storage" data-band="ストレージ">ストレージ<span>${byStorage.length}</span></a><a href="#mog" data-band="効果">効果ごと<span>${effs.size}</span></a></nav>
+<div class="tbl items" data-ck="furn">${fHead}${byEl.map(([ja, l]) => `<div class="band" id="el-${encodeURIComponent(ja)}" data-band="${esc(ja)}">${esc(ja)}の属性 <span>${l.length}件</span></div>` + l.map(fRow).join('')).join('')}</div>
+<h2 id="storage">ストレージが大きく増える調度品（+5以上・${byStorage.length}品）</h2><p class="note">ほとんどの調度品は置くとストレージが+1〜4増えます。ここでは+5以上の物を、増える数の大きい順に並べています。</p>
+<div class="tbl items">${fHead}${byStorage.map(fRow).join('')}</div>
+<h2 id="mog">モグハンスの効果ごと（${effs.size}種）</h2>
+<ul class="acq">${[...effs].sort((a, b) => b[1].length - a[1].length).map(([e, l]) => `<li><b>${esc(e)}</b>（${l.length}品）：${l.sort((a, b) => b.aura - a.aura).slice(0, 12).map(f => `<a href="${BASE}item/${f.id}.html">${esc(iname(f.id))}</a>`).join('、')}${l.length > 12 ? ` ほか${l.length - 12}品` : ''}</li>`).join('')}</ul>
+</main><script src="${BASE}list.js?v=${VER}"></script>` + foot);
+  }
+
   // ── トップに出す節
-  const home = `<section class="box" id="items"><h2>アイテム（装備以外 ${[...itemCount.values()].reduce((a, b) => a + b, 0).toLocaleString()}件）</h2><div class="tiles">${ITEM_CATS.filter(([k]) => itemCount.get(k)).map(([k, ja, ic]) => tile(`${BASE}items/${k}.html`, ja, itemCount.get(k), ic, 'it')).join('')}${tile(`${BASE}food.html`, '食事の効果で探す', foods.length, '探', 'it hot')}</div></section>
+  const home =`<section class="box" id="items"><h2>アイテム（装備以外 ${[...itemCount.values()].reduce((a, b) => a + b, 0).toLocaleString()}件）</h2><div class="tiles">${ITEM_CATS.filter(([k]) => itemCount.get(k)).map(([k, ja, ic]) => tile(`${BASE}items/${k}.html`, ja, itemCount.get(k), ic, 'it')).join('')}${tile(`${BASE}food.html`, '食事の効果で探す', foods.length, '探', 'it hot')}${furn.by.size ? tile(`${BASE}items/furnishing-mog.html`, '調度品を属性で探す', [...furn.by.values()].filter(v => v.el >= 1 && v.el <= 8).length, '家', 'it') : ''}</div></section>
 <section class="box" id="magic"><h2>魔法（${[...spCount.values()].reduce((a, b) => a + b, 0)}件）</h2><div class="tiles">${SPELL_TYPES.map(([, k, ja]) => tile(`${BASE}magic/${k}.html`, ja, spCount.get(k) || 0, ja[0], 'mg')).join('')}</div></section>
 <section class="box" id="ws"><h2>ウェポンスキル・アビリティ</h2><div class="tiles">${tile(`${BASE}ws/index.html`, 'ウェポンスキル', [...wsBySkill.values()].flat().length, '技', 'w')}${tile(`${BASE}ability/index.html`, 'アビリティ', [...abByType.values()].flat().length, '能', 'w')}</div></section>
 <section class="box" id="ki"><h2>だいじなもの（${[...kiByCat.values()].flat().length.toLocaleString()}件）</h2><div class="tiles">${kiCats.map(c => tile(`${BASE}ki/${KI_KEY[c] || 'other'}.html`, KI_JA[c] || c, kiByCat.get(c).length, (KI_JA[c] || c)[0], 'ki')).join('')}</div></section>`;
