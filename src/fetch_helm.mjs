@@ -20,9 +20,9 @@ const zoneByName = { get: n => zoneIdByKey.get(n.toLowerCase().replace(/[^a-z0-9
 const src = await get('scripts/globals/hobbies/helm/data.lua');
 // { ... } の中身（括弧の深さで閉じを探す）
 const block = (t, from) => { const s = t.indexOf('{', from); let d = 0; for (let k = s; k < t.length; k++) { if (t[k] === '{') d++; else if (t[k] === '}' && --d === 0) return [t.slice(s + 1, k), k]; } return ['', t.length]; };
-const TYPES = ['HARVESTING', 'EXCAVATION', 'LOGGING', 'MINING'];
+const TYPES = ['HARVESTING', 'EXCAVATION', 'LOGGING', 'MINING', 'CLAMMING'];
 const helm = [];
-for (const type of TYPES) {
+for (const type of TYPES.slice(0, 4)) {
   const i = src.indexOf('[xi.helmType.' + type + ']'); if (i < 0) continue;
   const [body] = block(src, i);
   const zi = body.indexOf('zone'); if (zi < 0) continue;
@@ -37,6 +37,11 @@ for (const type of TYPES) {
     if (l.length) helm.push({ type, z, items: l });
   }
 }
+// 潮干狩り（ビビキー湾だけ・scripts/globals/hobbies/clamming/data.lua の itemData）。重さ（バケツの重さ）は遊び方の決まりなので載せる、出やすさは載せない
+{ const c = await get('scripts/globals/hobbies/clamming/data.lua'); const ci = c.indexOf('xi.clamming.itemData'); const z = zoneByName.get('BIBIKI_BAY');
+  if (ci >= 0 && z != null) { const [body] = block(c, ci); const l = [], w = {};
+    for (const r of body.matchAll(/\[\s*xi\.item\.([A-Z0-9_]+)\s*\]\s*=\s*\{\s*(\d+)/g)) { const id = idByName.get(r[1]); if (id && !l.includes(id)) { l.push(id); w[id] = Number(r[2]); } }
+    if (l.length) helm.push({ type: 'CLAMMING', z, items: l, weight: w }); } }
 helm.sort((a, b) => a.z - b.z || TYPES.indexOf(a.type) - TYPES.indexOf(b.type));
-if (helm.length > 20) fs.writeFileSync(path.join(DATA, 'helm.json'), JSON.stringify({ source: 'https://github.com/LandSandBoat/server (scripts/globals/hobbies/helm/data.lua)', license: 'GPL-3.0', helm }));
+if (helm.length > 20) fs.writeFileSync(path.join(DATA, 'helm.json'), JSON.stringify({ source: 'https://github.com/LandSandBoat/server (scripts/globals/hobbies/helm/data.lua, clamming/data.lua)', license: 'GPL-3.0', helm }));
 console.log('HELM', helm.length, 'か所', helm.reduce((s, x) => s + x.items.length, 0), '品');

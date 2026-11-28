@@ -77,7 +77,7 @@ ${note}</main><script src="${BASE}list.js?v=${VER}"></script>` + foot);
     if (!l.length) continue; if (!shopZ.has(s.z)) shopZ.set(s.z, []); shopZ.get(s.z).push({ npc: s.npc, nation: s.nation, guild: !!s.guild, note: s.note || '', l });
   } }
   // HELM（収穫・発掘・伐採・採掘）で取れる物（data/helm.json・src/fetch_helm.mjs）。エリア番号 → [{ type, l }]
-  const HELM_JA = { HARVESTING: '収穫', EXCAVATION: '発掘', LOGGING: '伐採', MINING: '採掘' };
+  const HELM_JA = { HARVESTING: '収穫', EXCAVATION: '発掘', LOGGING: '伐採', MINING: '採掘', CLAMMING: '潮干狩り' };
   const helmZ = new Map();
   { const { items, hasPage } = ctx; const hF = path.join(DATA, 'helm.json'); if (items && fs.existsSync(hF)) for (const x of JSON.parse(fs.readFileSync(hF, 'utf8')).helm || []) {
     const l = x.items.map(id => { const it = items.get(id); return it && it.ja && it.ja !== '.' && (!hasPage || hasPage(id)) ? [id, it.ja] : null; }).filter(Boolean);
@@ -96,7 +96,7 @@ ${note}</main><script src="${BASE}list.js?v=${VER}"></script>` + foot);
     const sh = shopZ.get(z) || [];
     if (sh.length) { const n = sh.reduce((s, x) => s + x.l.length, 0); h += `<h3>お店で買える物 <span class="cnt">${sh.length}店・${n}件</span></h3>${sh.some(x => x.nation) ? `<p class="note">国の店の「◯位まで」は、国の順位（コンクエスト）がその順位以内の時だけ買える物です。</p>` : ''}${sh.map(x => `<h4>${esc(x.npc)}${x.nation ? ' <small>国の店</small>' : ''}${x.note ? ` <small>${esc(x.note)}</small>` : ''}</h4><ul class="chips">${x.l.map(([id, ja, p, r]) => `<li><a href="${BASE}item/${id}.html">${esc(ja)}</a> <small>${p.toLocaleString()}ギル${x.nation && r && r < 3 ? `・${r}位まで` : ''}${x.guild && r && CRAFT_RANK_JA[r] ? `・${CRAFT_RANK_JA[r]}から` : ''}</small></li>`).join('')}</ul>`).join('')}`; }
     const hz = helmZ.get(z) || [];
-    if (hz.length) h += `<h3>採集（HELM）で取れる物 <span class="cnt">${hz.map(x => HELM_JA[x.type]).join('・')}</span></h3>${hz.map(x => `<h4>${HELM_JA[x.type]} <small>${x.l.length}件</small></h4><ul class="chips">${x.l.map(([id, ja]) => `<li><a href="${BASE}item/${id}.html">${esc(ja)}</a></li>`).join('')}</ul>`).join('')}`;
+    if (hz.length) h += `<h3>採集（${(hz.every(x => x.type === 'CLAMMING') ? '潮干狩り' : hz.some(x => x.type === 'CLAMMING') ? 'HELM・潮干狩り' : 'HELM')}）で取れる物 <span class="cnt">${hz.map(x => HELM_JA[x.type]).join('・')}</span></h3>${hz.map(x => `<h4>${HELM_JA[x.type]} <small>${x.l.length}件</small></h4><ul class="chips">${x.l.map(([id, ja]) => `<li><a href="${BASE}item/${id}.html">${esc(ja)}</a></li>`).join('')}</ul>`).join('')}`;
     const qs = questZ.get(zkey(zen(z))) || [];
     if (qs.length) { const ks = [...new Set(qs.map(q => q.key))]; h += `<h3>このエリアで受けるクエスト <span class="cnt">${qs.length}件</span></h3>${qs.length > 30 ? `<p class="note">30件まで。全部は${ks.map(k => { const q = qs.find(x => x.key === k); return `<a href="${BASE}quest/${k}.html#${encodeURIComponent(zname(z))}">${esc(q.area)}のクエスト一覧</a>`; }).join('・')}で。</p>` : ''}<ul class="chips">${qs.slice(0, 30).map(q => `<li><a href="${BASE}quest/${q.key}.html#${encodeURIComponent(zname(z))}">${esc(q.ja)}</a>${q.rep ? ' <small>くり返し可</small>' : ''}</li>`).join('')}</ul>`; }
     // 同じ地方のほかのエリア（隣のエリアに出た物は除く）。モンスターのいない街・船などのページにも行き先を
