@@ -84,6 +84,8 @@ try { await import('./fetch_garden.mjs'); } catch (e) { console.log('栽培の�
 try { await import('./fetch_guildpoints.mjs'); } catch (e) { console.log('ギルドポイントの取り込みに失敗', e.message); }
 // 調度品の属性・ストレージ・モグハンス（失敗しても止めない）
 try { await import('./fetch_furnishing.mjs'); } catch (e) { console.log('調度品の取り込みに失敗', e.message); }
+// オートマトンのヘッド・フレーム・アタッチメントの属性の容量（失敗しても止めない）
+try { await import('./fetch_puppet.mjs'); } catch (e) { console.log('オートマトンの部品の取り込みに失敗', e.message); }
 
 // ドロップ・ぬすむ（LandSandBoat・GPLv3）
 await import('./fetch_mobs.mjs');

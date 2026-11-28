@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { readLua } from './lua.mjs';
 import { loadFurnishing, mogJa } from './furnishing.mjs';
+import { loadPuppet, PUP_EL, PUP_SLOT } from './puppet.mjs';
 
 const ELEMENT_JA = { 0: '火', 1: '氷', 2: '風', 3: '土', 4: '雷', 5: '水', 6: '光', 7: '闇', 15: '—' };
 const SC_JA = { Light: '光', Darkness: '闇', Fusion: '核熱', Fragmentation: '分解', Distortion: '湾曲', Gravitation: '重力', Transfixion: '貫通', Compression: '収縮', Liquefaction: '溶解', Scission: '切断', Reverberation: '振動', Impaction: '衝撃', Detonation: '炸裂', Induration: '硬化', Radiance: '極光', Umbra: '黒闇' };
@@ -19,6 +20,7 @@ export function writeMore(ctx) {
   // 種 → 与えるクリスタルの組み合わせごとの取れる物（栽培）
   const gardenBySeed = new Map(); for (const g of (gardenData || { garden: [] }).garden) { if (!gardenBySeed.has(g.seed)) gardenBySeed.set(g.seed, []); gardenBySeed.get(g.seed).push(g); }
   const furn = loadFurnishing(DATA);
+  const pup = loadPuppet(DATA);
   const urls = [];
   const write = (rel, html) => { const f = path.join(SITE, rel); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, html); urls.push(`${ORIGIN}/${rel}`); };
   const load = f => (fs.existsSync(path.join(DATA, f)) ? readLua(path.join(DATA, f)) : new Map());
@@ -95,7 +97,7 @@ export function writeMore(ctx) {
       write(`items/${key}${p ? '-' + (p + 1) : ''}.html`, head(`${ja}の一覧（${list.length.toLocaleString()}件${pages > 1 ? `・${p + 1}/${pages}` : ''}）｜${SITE_SHORT}`,
         `FF11の${ja}${list.length.toLocaleString()}件の一覧。名前・説明（ゲーム内の表記）・スタック数と、合成で作れるか・素材として使えるか。` + (pages > 1 ? `${p + 1}/${pages}ページ：${iname(part[0])}〜${iname(part[part.length - 1])}。` : ''), `${ORIGIN}/items/${key}${p ? '-' + (p + 1) : ''}.html`)
         + `<main class="wide">${crumb('アイテム', esc(ja))}<h1>${esc(ja)} <span class="cnt">${list.length.toLocaleString()}件</span></h1>
-${catNavItems(key)}${key === 'other' ? otherNav(list, grp, pages) : ''}${key === 'furnishing' && furn.by.size ? `<p class="lead">属性（火〜闇）・属性値・ストレージ・モグハンスの効果で並べた一覧は <a href="${BASE}items/furnishing-mog.html">調度品を属性・ストレージ・モグハンスで探す</a>。</p>` : ''}${pager(pages, p, `items/${key}`)}
+${catNavItems(key)}${key === 'other' ? otherNav(list, grp, pages) : ''}${key === 'automaton' && pup.by.size ? `<p class="lead">アタッチメントを属性（火〜闇）と容量で並べた一覧は <a href="${BASE}items/automaton-element.html">オートマトンの部品を属性で探す</a>。</p>` : ''}${key === 'furnishing' && furn.by.size ? `<p class="lead">属性（火〜闇）・属性値・ストレージ・モグハンスの効果で並べた一覧は <a href="${BASE}items/furnishing-mog.html">調度品を属性・ストレージ・モグハンスで探す</a>。</p>` : ''}${pager(pages, p, `items/${key}`)}
 <div class="tbl items" data-ck="it">${itemHead}${key === 'other' ? part.map((id, i) => (i === 0 || grp.get(part[i - 1]) !== grp.get(id) ? otherBand(grp.get(id), list, grp, i === 0 && p > 0 && grp.get(list[p * PAGE - 1]) === grp.get(id)) : '') + itemRow(id)).join('') : part.map(itemRow).join('')}</div>${pager(pages, p, `items/${key}`)}</main><script src="${BASE}list.js?v=${VER}"></script>` + foot);
     }
   }
@@ -182,6 +184,7 @@ ${foodById.has(id) ? `<h2>食事の効果</h2><ul class="stats">${Object.entries
 ${sp ? `<h2>この巻物で覚える魔法</h2><p><a class="bd cat" href="${BASE}spell/${sp.id}.html">${esc(sp.ja)}</a></p>` : ''}
 ${gardenBySeed.has(id) ? `<h2>栽培すると取れる物（${gardenBySeed.get(id).length}通り）</h2><p class="note">植木鉢に植えて、育つ途中で与えたクリスタルの組み合わせごとに取れる物です${gardenBySeed.get(id)[0].tree ? '（この種類は2回与えます：1回目→2回目）' : '（1回与えます）'}。「なし」は与えない時。出やすさと数は載せていません。</p><ul class="acq">${gardenBySeed.get(id).map(g => `<li><b>${esc(gardenFeed(g))}</b> ${g.items.map(ilink).join('・')}</li>`).join('')}</ul>` : ''}
 ${furn.html(id).replace('効き目の大きさは載せていません。</p>', `効き目の大きさは載せていません。同じ属性の調度品は <a href="${BASE}items/furnishing-mog.html">属性・ストレージ・モグハンスで探す</a>。</p>`)}
+${pup.html(id, `ほかの部品は <a href="${BASE}items/automaton-element.html">オートマトンの部品を属性で探す</a>。`)}
 ${acqHtml(id) ? `<h2>入手方法</h2>${acqHtml(id)}` : ''}
 ${guildHtml(id)}
 ${made.length ? `<h2>作り方（合成）</h2><p class="note">数値は参考。</p>${made.slice(0, 6).map(r => `<div class="recipe"><div class="rq">${SK(r)}<span class="bd">${esc(iname(r.crystal))}</span></div><div class="ri">${r.ings.map(([i, n]) => `${ilink(i)}${n > 1 ? ` ×${n}` : ''}`).join('　')}</div><div class="ro">→ NQ：${ilink(r.result)}${r.hq.filter(Boolean).length ? `　HQ：${[...new Set(r.hq.filter(Boolean))].map(ilink).join('・')}` : ''}</div></div>`).join('')}` : ''}
@@ -465,8 +468,28 @@ ${rest.length ? `<h2 id="ab-other">そのほか <span class="cnt">${rest.length}
 </main><script src="${BASE}list.js?v=${VER}"></script>` + foot);
   }
 
+  // ── オートマトンの部品を属性で探す（data/puppet.json）
+  const pupList = [...pup.by].filter(([id]) => items.has(id)).map(([id, v]) => ({ id, ...v }));
+  if (pupList.length) {
+    const att = pupList.filter(p => p.slot === 3 && p.el.some(n => n));
+    const hf = pupList.filter(p => p.slot !== 3);
+    const pdesc = id => esc(((desc.get(id) || {}).ja || '').replace(/\n/g, ' ').slice(0, 60));
+    const byEl = PUP_EL.map((ja, i) => [ja, att.filter(p => p.el[i]).sort((a, b) => a.el[i] - b.el[i] || a.id - b.id), i]).filter(([, l]) => l.length);
+    const aRow = (p, i) => `<div class="r" data-id="${p.id}"><div class="c-n"><a href="${BASE}item/${p.id}.html">${esc(iname(p.id))}</a><small>${esc((items.get(p.id) || {}).en || '')}</small></div><div class="c-st">${p.el[i]}</div><div class="c-fx">${pdesc(p.id)}</div></div>`;
+    const aHead = '<div class="r h"><div class="c-n">名前</div><div class="c-st">容量</div><div class="c-fx">説明（はじめの部分）</div></div>';
+    write('items/automaton-element.html', head(`オートマトンの部品を属性で探す（アタッチメント${att.length}品）｜${SITE_SHORT}`,
+      `FF11のからくり士のオートマトン。アタッチメント${att.length}品を属性（火〜闇）ごとに必要な容量の順で、ヘッド・フレーム${hf.length}品の属性ごとの容量も。`, `${ORIGIN}/items/automaton-element.html`)
+      + `<main class="wide">${crumb(`<a href="${BASE}items/automaton.html">オートマトン</a>`, '部品を属性で探す')}<h1>オートマトンの部品を属性で探す <span class="cnt">アタッチメント${att.length}品</span></h1>
+<p class="lead">アタッチメントには属性があり、付けるとその属性の容量を使います。容量はヘッドとフレームで決まります。同じ属性のマニューバを使うと、その属性のアタッチメントの効果が強まります。属性ごとに必要な容量の小さい順に並べています（数値はLandSandBoatの値・参考）。</p>
+<nav class="bands">${byEl.map(([ja, l]) => `<a href="#el-${encodeURIComponent(ja)}" data-band="${esc(ja)}">${esc(ja)}<span>${l.length}</span></a>`).join('')}<a href="#hf" data-band="ヘッド・フレーム">ヘッド・フレーム<span>${hf.length}</span></a></nav>
+<div class="tbl items" data-ck="pup">${aHead}${byEl.map(([ja, l, i]) => `<div class="band" id="el-${encodeURIComponent(ja)}" data-band="${esc(ja)}">${esc(ja)}の属性 <span>${l.length}件</span></div>` + l.map(p => aRow(p, i)).join('')).join('')}</div>
+<h2 id="hf">ヘッド・フレームの属性ごとの容量（${hf.length}品）</h2>
+<div class="tbl items"><div class="r h"><div class="c-n">名前</div><div class="c-fx">部位・属性ごとの容量（${PUP_EL.join('・')}）</div></div>${hf.sort((a, b) => a.slot - b.slot || a.id - b.id).map(p => `<div class="r"><div class="c-n"><a href="${BASE}item/${p.id}.html">${esc(iname(p.id))}</a><small>${esc((items.get(p.id) || {}).en || '')}</small></div><div class="c-fx"><b class="tag">${PUP_SLOT[p.slot]}</b> ${p.el.map((n, i) => `${PUP_EL[i]}${n}`).join('　')}</div></div>`).join('')}</div>
+</main><script src="${BASE}list.js?v=${VER}"></script>` + foot);
+  }
+
   // ── トップに出す節
-  const home =`<section class="box" id="items"><h2>アイテム（装備以外 ${[...itemCount.values()].reduce((a, b) => a + b, 0).toLocaleString()}件）</h2><div class="tiles">${ITEM_CATS.filter(([k]) => itemCount.get(k)).map(([k, ja, ic]) => tile(`${BASE}items/${k}.html`, ja, itemCount.get(k), ic, 'it')).join('')}${tile(`${BASE}food.html`, '食事の効果で探す', foods.length, '探', 'it hot')}${furn.by.size ? tile(`${BASE}items/furnishing-mog.html`, '調度品を属性で探す', [...furn.by.values()].filter(v => v.el >= 1 && v.el <= 8).length, '家', 'it') : ''}</div></section>
+  const home =`<section class="box" id="items"><h2>アイテム（装備以外 ${[...itemCount.values()].reduce((a, b) => a + b, 0).toLocaleString()}件）</h2><div class="tiles">${ITEM_CATS.filter(([k]) => itemCount.get(k)).map(([k, ja, ic]) => tile(`${BASE}items/${k}.html`, ja, itemCount.get(k), ic, 'it')).join('')}${tile(`${BASE}food.html`, '食事の効果で探す', foods.length, '探', 'it hot')}${furn.by.size ? tile(`${BASE}items/furnishing-mog.html`, '調度品を属性で探す', [...furn.by.values()].filter(v => v.el >= 1 && v.el <= 8).length, '家', 'it') : ''}${pup.by.size ? tile(`${BASE}items/automaton-element.html`, 'オートマトンの部品を属性で探す', [...pup.by.values()].filter(v => v.slot === 3).length, '機', 'it') : ''}</div></section>
 <section class="box" id="magic"><h2>魔法（${[...spCount.values()].reduce((a, b) => a + b, 0)}件）</h2><div class="tiles">${SPELL_TYPES.map(([, k, ja]) => tile(`${BASE}magic/${k}.html`, ja, spCount.get(k) || 0, ja[0], 'mg')).join('')}</div></section>
 <section class="box" id="ws"><h2>ウェポンスキル・アビリティ</h2><div class="tiles">${tile(`${BASE}ws/index.html`, 'ウェポンスキル', [...wsBySkill.values()].flat().length, '技', 'w')}${tile(`${BASE}ability/index.html`, 'アビリティ', [...abByType.values()].flat().length, '能', 'w')}</div></section>
 <section class="box" id="ki"><h2>だいじなもの（${[...kiByCat.values()].flat().length.toLocaleString()}件）</h2><div class="tiles">${kiCats.map(c => tile(`${BASE}ki/${KI_KEY[c] || 'other'}.html`, KI_JA[c] || c, kiByCat.get(c).length, (KI_JA[c] || c)[0], 'ki')).join('')}</div></section>`;
