@@ -78,6 +78,8 @@ try { await import('./fetch_shops.mjs'); } catch (e) { console.log('お店の取
 try { await import('./fetch_helm.mjs'); } catch (e) { console.log('HELMの取り込みに失敗', e.message); }
 // エリアの天候の出やすさ（失敗しても止めない）
 try { await import('./fetch_weather.mjs'); } catch (e) { console.log('天候の取り込みに失敗', e.message); }
+// 栽培（植木鉢）で取れる物（失敗しても止めない）
+try { await import('./fetch_garden.mjs'); } catch (e) { console.log('栽培の取り込みに失敗', e.message); }
 
 // ドロップ・ぬすむ（LandSandBoat・GPLv3）
 await import('./fetch_mobs.mjs');

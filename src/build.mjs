@@ -64,6 +64,12 @@ const HELM_JA = { HARVESTING: '収穫', EXCAVATION: '発掘', LOGGING: '伐採',
 const HELM_TOOL = { HARVESTING: [1020, '草刈鎌'], EXCAVATION: [605, 'つるはし'], LOGGING: [1021, 'まさかり'], MINING: [605, 'つるはし'], CLAMMING: [0, '潮干狩りセット（だいじなもの）'] };
 const helmOf = new Map();
 { const hF = path.join(DATA, 'helm.json'); if (fs.existsSync(hF)) for (const x of JSON.parse(fs.readFileSync(hF, 'utf8')).helm || []) for (const id of x.items) { if (!helmOf.has(id)) helmOf.set(id, []); helmOf.get(id).push([x.type, x.z, (x.weight || {})[id]]); } }
+// 栽培（植木鉢）で取れる物（data/garden.json・src/fetch_garden.mjs）：アイテム番号 → Map(種 → [与えるクリスタル, ...])
+const GARDEN_EL = ['なし', '火', '氷', '風', '土', '雷', '水', '光', '闇'];
+const gardenData = (() => { const f = path.join(DATA, 'garden.json'); return fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : { garden: [] }; })();
+const gardenFeed = g => g.feed.map(e => GARDEN_EL[e] || '?').join('→');
+const gardenOf = new Map(), gardenCombos = new Map();
+for (const g of gardenData.garden) { gardenCombos.set(g.seed, (gardenCombos.get(g.seed) || 0) + 1); for (const id of g.items) { if (!gardenOf.has(id)) gardenOf.set(id, new Map()); const m = gardenOf.get(id); if (!m.has(g.seed)) m.set(g.seed, []); m.get(g.seed).push(gardenFeed(g)); } }
 const acqHtml = id => {
   const shops = (shopOf.get(id) || []).slice().sort((a, b) => a[2] - b[2]);
   const drops = (mobsData.drops[id] || []).map(([m, z, c, nm]) => [mobName(m), z, c, nm]);
@@ -74,6 +80,8 @@ const acqHtml = id => {
   if (shops.length) h += '<h3>お店で買える <span class="cnt">' + shops.length + '店</span></h3><ul class="acq">' + shops.slice(0, 20).map(([n, z, p, r, note]) =>'<li><b>' + esc(n) + '</b> <span class="zn">' + (mapZs.has(z) ? '<a href="' + BASE + 'maps/' + z + '.html">' + esc(zoneJaById(z) || ('#' + z)) + '</a>' : esc(zoneJaById(z) || ('#' + z))) + '</span> ' + p.toLocaleString() + 'ギル' + (r && r < 3 ? ' <span class="nl">（国の順位' + r + '位まで）</span>' : '') + (note ? ' <span class="nl">（' + esc(note) + '）</span>' : '') + '</li>').join('') + (shops.length > 20 ? '<li class="nl">ほか' + (shops.length - 20) + '店</li>' : '') + '</ul>';
   const hm = helmOf.get(id) || [];
   if (hm.length) h += '<h3>採集（' + (hm.every(x => x[0] === 'CLAMMING') ? '潮干狩り' : hm.some(x => x[0] === 'CLAMMING') ? 'HELM・潮干狩り' : 'HELM') + '）で取れる <span class="cnt">' + hm.length + 'か所</span></h3><ul class="acq">' + hm.map(([t, z, w]) => '<li><b>' + HELM_JA[t] + '</b> <span class="zn">' + (mapZs.has(z) ? '<a href="' + BASE + 'maps/' + z + '.html">' + esc(zoneJaById(z) || ('#' + z)) + '</a>' : esc(zoneJaById(z) || ('#' + z))) + '</span> <span class="nl">（' + (HELM_TOOL[t][0] ? '<a href="' + BASE + 'item/' + HELM_TOOL[t][0] + '.html">' + HELM_TOOL[t][1] + '</a>' : HELM_TOOL[t][1]) + 'を使う' + (w ? '・バケツの重さ' + w : '') + '）</span></li>').join('') + '</ul>';
+  const gd = gardenOf.get(id);
+  if (gd) h += '<h3>栽培で取れる <span class="cnt">' + gd.size + '種</span></h3><ul class="acq">' + [...gd].map(([s, fs_]) => '<li><b><a href="' + BASE + 'item/' + s + '.html">' + esc((items.get(s) || {}).ja || ('#' + s)) + '</a></b> <span class="nl">（与えるクリスタル：' + (fs_.length >= gardenCombos.get(s) ? 'どれでも' : fs_.slice(0, 6).join('／') + (fs_.length > 6 ? ' ほか' + (fs_.length - 6) + '通り' : '')) + '）</span></li>').join('') + '</ul>';
   if (qs.length) h += '<h3>クエストの報酬</h3><ul class="acq">' + qs.map(([k, aja, qja]) => '<li><a href="' + BASE + 'quest/' + k + '.html">' + esc(qja) + '</a> <span class="nl">（' + esc(aja) + 'のクエスト）</span></li>').join('') + '</ul>';
   if (dl.length) h += '<h3>ドロップ <span class="cnt">' + dl.length + '件</span></h3><ul class="acq drops">' + dl.slice(0, 40).map(([m, z, c, nm]) => '<li><b>' + esc(m) + '</b>' + (nm ? '<span class="tag nm">NM</span>' : '') + ' <span class="zn">' + esc(zoneJaById(z) || ('#' + z)) + '</span>' + (CHANCE_JA[c] ? ' <span class="ch ch-' + c + '">' + CHANCE_JA[c] + '</span>' : '') + '</li>').join('') + (dl.length > 40 ? '<li class="nl">ほか' + (dl.length - 40) + '件</li>' : '') + '</ul>';
   if (steal.length) h += '<h3>ぬすむ</h3><ul class="acq">' + steal.slice(0, 20).map(([m, z]) => '<li><b>' + esc(mobName(m)) + '</b> <span class="zn">' + esc(zoneJaById(z)) + '</span></li>').join('') + '</ul>';
@@ -542,7 +550,7 @@ fs.writeFileSync(path.join(SITE, 'search.html'), head(`性能で探す（ヘイ�
 const ICON = { head: '頭', body: '胴', hands: '手', legs: '脚', feet: '足', neck: '首', waist: '腰', back: '背', ear: '耳', ring: '指', shield: '盾', h2h: '拳', dagger: '短', sword: '剣', gsword: '大', axe: '斧', gaxe: '鉞', scythe: '鎌', polearm: '槍', katana: '刀', gkatana: '太', club: '棍', staff: '杖', archery: '弓', marksmanship: '銃', throwing: '投', wind: '笛', string: '琴', handbell: '鈴', fishing: '竿', ammo: '矢', grip: '握' };
 const tile = (href, label, n, ic, cls = '') => `<a class="tile ${cls}" href="${href}"><span class="ic">${esc(ic)}</span><span><b>${esc(label)}</b><span class="n">${n.toLocaleString()}件</span></span></a>`;
 const synthAll = fs.existsSync(path.join(DATA, 'synth.json')) ? JSON.parse(fs.readFileSync(path.join(DATA, 'synth.json'), 'utf8')) : [];
-const more = writeMore({ items, desc, JOB_LIST, skills, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE_SHORT, equipById, synth: synthAll, tile, VER, rxBadges, rxTags, lsb, acqHtml });
+const more = writeMore({ items, desc, JOB_LIST, skills, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE_SHORT, equipById, synth: synthAll, tile, VER, rxBadges, rxTags, lsb, acqHtml, gardenData, gardenFeed });
 console.log('装備以外', JSON.stringify(more.counts));
 const qs2 = writeQuests({ items, JOB_LIST, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE_SHORT, VER, tile });
 console.log('クエスト・ミッション', JSON.stringify(qs2.counts));

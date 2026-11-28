@@ -14,7 +14,9 @@ const JA_TYPES = [['JobAbility', 'job', 'ジョブアビリティ'], ['PetComman
   ['Scholar', 'stratagem', '戦術魔道書'], ['Rune', 'rune', 'ルーン'], ['Ward', 'ward', 'ワード'], ['Effusion', 'effusion', 'エフューズ'], ['BloodPactRage', 'bp-rage', '契約の履行：神獣'], ['BloodPactWard', 'bp-ward', '契約の履行：験術'], ['Monster', 'monster', 'モンストロス']];
 
 export function writeMore(ctx) {
-  const { items, desc, JOB_LIST, skills, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE_SHORT, equipById, synth, tile, VER, rxBadges, rxTags, lsb, acqHtml } = ctx;
+  const { items, desc, JOB_LIST, skills, head, foot, esc, BASE, ORIGIN, SITE, DATA, SITE_SHORT, equipById, synth, tile, VER, rxBadges, rxTags, lsb, acqHtml, gardenData, gardenFeed } = ctx;
+  // 種 → 与えるクリスタルの組み合わせごとの取れる物（栽培）
+  const gardenBySeed = new Map(); for (const g of (gardenData || { garden: [] }).garden) { if (!gardenBySeed.has(g.seed)) gardenBySeed.set(g.seed, []); gardenBySeed.get(g.seed).push(g); }
   const urls = [];
   const write = (rel, html) => { const f = path.join(SITE, rel); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, html); urls.push(`${ORIGIN}/${rel}`); };
   const load = f => (fs.existsSync(path.join(DATA, f)) ? readLua(path.join(DATA, f)) : new Map());
@@ -176,6 +178,7 @@ ${catNavItems(key)}${key === 'other' ? otherNav(list, grp, pages) : ''}${pager(p
 <div class="extl"><a href="${ffo(it.ja)}" rel="noopener" target="_blank">FF11用語辞典で見る（入手方法など）</a><a href="https://www.bg-wiki.com/ffxi/${encodeURIComponent((it.en || '').replace(/ /g, '_'))}" rel="noopener" target="_blank">BG-Wiki（英語）</a><a href="https://jp.ffxiah.com/item/${id}" rel="noopener" target="_blank">FFXIAH（競売の相場）</a></div>
 ${foodById.has(id) ? `<h2>食事の効果</h2><ul class="stats">${Object.entries(foodById.get(id).s).map(([k, a]) => `<li><a href="${BASE}food.html?stat=${encodeURIComponent(k)}">${esc(k.replace(/%$/, ''))}</a> <b>${a[0] > 0 ? '+' : ''}${a[0]}${/%$/.test(k) ? '%' : ''}${a[1] != null ? `（最大${a[1]}）` : ''}</b></li>`).join('')}</ul>${Object.keys(foodById.get(id).p).length ? `<h2>ペットへの効果</h2><ul class="stats">${Object.entries(foodById.get(id).p).map(([k, a]) => `<li>${esc(k.replace(/%$/, ''))} <b>${a[0] > 0 ? '+' : ''}${a[0]}${/%$/.test(k) ? '%' : ''}${a[1] != null ? `（最大${a[1]}）` : ''}</b></li>`).join('')}</ul>` : ''}<p class="note">効果の名前を押すと、その効果の大きい順に食事が並びます（<a href="${BASE}food.html">食事の効果で探す</a>）。</p>` : ''}
 ${sp ? `<h2>この巻物で覚える魔法</h2><p><a class="bd cat" href="${BASE}spell/${sp.id}.html">${esc(sp.ja)}</a></p>` : ''}
+${gardenBySeed.has(id) ? `<h2>栽培すると取れる物（${gardenBySeed.get(id).length}通り）</h2><p class="note">植木鉢に植えて、育つ途中で与えたクリスタルの組み合わせごとに取れる物です${gardenBySeed.get(id)[0].tree ? '（この種類は2回与えます：1回目→2回目）' : '（1回与えます）'}。「なし」は与えない時。出やすさと数は載せていません。</p><ul class="acq">${gardenBySeed.get(id).map(g => `<li><b>${esc(gardenFeed(g))}</b> ${g.items.map(ilink).join('・')}</li>`).join('')}</ul>` : ''}
 ${acqHtml(id) ? `<h2>入手方法</h2>${acqHtml(id)}` : ''}
 ${made.length ? `<h2>作り方（合成）</h2><p class="note">数値は参考。</p>${made.slice(0, 6).map(r => `<div class="recipe"><div class="rq">${SK(r)}<span class="bd">${esc(iname(r.crystal))}</span></div><div class="ri">${r.ings.map(([i, n]) => `${ilink(i)}${n > 1 ? ` ×${n}` : ''}`).join('　')}</div><div class="ro">→ NQ：${ilink(r.result)}${r.hq.filter(Boolean).length ? `　HQ：${[...new Set(r.hq.filter(Boolean))].map(ilink).join('・')}` : ''}</div></div>`).join('')}` : ''}
 ${uses.length ? `<h2>使い道（この素材で作れる物 ${uses.length}品）</h2><p class="same">${uses.sort((a, b) => iname(a).localeCompare(iname(b), 'ja')).slice(0, 120).map(x => (equipById.has(x) || itemCatOf.has(x)) ? `<a href="${BASE}item/${x}.html">${esc(iname(x))}</a>` : `<b>${esc(iname(x))}</b>`).join('')}</p>` : ''}
